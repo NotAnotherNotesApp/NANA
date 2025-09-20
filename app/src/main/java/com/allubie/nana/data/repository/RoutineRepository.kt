@@ -3,6 +3,8 @@ package com.allubie.nana.data.repository
 import com.allubie.nana.data.dao.RoutineDao
 import com.allubie.nana.data.entity.RoutineEntity
 import com.allubie.nana.data.entity.RoutineCompletionEntity
+import com.allubie.nana.data.entity.RoutineFactory
+import com.allubie.nana.core.BaseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -13,7 +15,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.minus
 import java.util.UUID
 
-class RoutineRepository(private val routineDao: RoutineDao) {
+class RoutineRepository(private val routineDao: RoutineDao) : BaseRepository() {
     
     fun getActiveRoutines(): Flow<List<RoutineEntity>> = routineDao.getActiveRoutinesFlow()
     
@@ -40,7 +42,7 @@ class RoutineRepository(private val routineDao: RoutineDao) {
             routineDao.deleteCompletion(existingCompletion)
         } else {
             val completion = RoutineCompletionEntity(
-                id = UUID.randomUUID().toString(),
+                id = idProvider.newId(),
                 routineId = routineId,
                 completionDate = date
             )
@@ -85,18 +87,12 @@ class RoutineRepository(private val routineDao: RoutineDao) {
     }
     
     suspend fun createRoutine(
-        title: String, 
-        description: String, 
-        frequency: String, 
+        title: String,
+        description: String,
+        frequency: String,
         reminderTime: String? = null
     ): RoutineEntity {
-        val routine = RoutineEntity(
-            id = UUID.randomUUID().toString(),
-            title = title,
-            description = description,
-            frequency = frequency,
-            reminderTime = reminderTime
-        )
+        val routine = RoutineFactory.create(id = idProvider.newId(), title = title, description = description, frequency = frequency, reminderTime = reminderTime)
         insertRoutine(routine)
         return routine
     }

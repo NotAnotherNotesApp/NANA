@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Check
@@ -47,9 +51,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.border
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -80,20 +86,13 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.allubie.nana.data.backup.BackupRestoreManager
+import com.allubie.nana.data.backup.AppBackupData
 
-data class AppBackupData(
-    val exportDate: String,
-    val notes: List<String> = emptyList(),
-    val schedules: List<String> = emptyList(),
-    val routines: List<String> = emptyList(),
-    val expenses: List<String> = emptyList(),
-    val preferences: Map<String, String> = emptyMap()
-)
+// AppBackupData moved to BackupRestoreManager.kt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,7 +135,7 @@ fun SettingsScreen(
     ) { uri ->
         uri?.let {
             scope.launch {
-                exportData(context, it, appPreferences, notesViewModel, schedulesViewModel, routinesViewModel, expensesViewModel) { _, message ->
+                BackupRestoreManager.exportData(context, it, appPreferences, notesViewModel, schedulesViewModel, routinesViewModel, expensesViewModel) { _, message ->
                     scope.launch {
                         snackbarHostState.showSnackbar(message)
                         isExporting = false
@@ -153,7 +152,7 @@ fun SettingsScreen(
     ) { uri ->
         uri?.let {
             scope.launch {
-                importData(context, it, appPreferences, notesViewModel, schedulesViewModel, routinesViewModel, expensesViewModel) { _, message ->
+                BackupRestoreManager.importData(context, it, appPreferences, notesViewModel, schedulesViewModel, routinesViewModel, expensesViewModel) { _, message ->
                     scope.launch {
                         snackbarHostState.showSnackbar(message)
                         isImporting = false
@@ -297,13 +296,22 @@ fun SettingsScreen(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 scrollBehavior = scrollBehavior
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    actionColor = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     ) { paddingValues ->
         LazyColumn(
             contentPadding = PaddingValues(Spacing.screenPadding),
@@ -414,9 +422,10 @@ fun SettingsScreen(
             
             item {
                 SettingsSection(title = "About") {
+                    var showLicenseDialog by remember { mutableStateOf(false) }
                     AboutClickableItem(
                         title = "About NANA",
-                        subtitle = "Version 1.0.0 - Your Productivity Companion"
+                        subtitle = "Version 1.1b - Your Productivity Companion"
                     ) {
                         // Show about dialog with app info
                     }
@@ -425,7 +434,63 @@ fun SettingsScreen(
                         title = "Open Source License",
                         subtitle = "MIT License - View source code and contributions"
                     ) {
-                        // Open license dialog or external link
+                        showLicenseDialog = true
+                    }
+
+                    if (showLicenseDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showLicenseDialog = false },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = { showLicenseDialog = false },
+                                    modifier = Modifier.border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.outline,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                ) {
+                                    Text("Close")
+                                }
+                            },
+                            title = { Text("MIT License") },
+                            text = {
+                                val licenseText = """
+MIT License
+
+Copyright (c) ${java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)} NANA contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+""".trimIndent()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 120.dp, max = 420.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    Text(
+                                        text = licenseText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -1022,7 +1087,49 @@ private suspend fun importData(
                         val description = scheduleJson.optString("description", "")
                         
                         if (title.isNotEmpty()) {
-                            // TODO: Implement schedule restoration with proper date/time parsing
+                            // Parse date/time fields (expecting ISO strings) with safe fallbacks
+                            val dateStr = scheduleJson.optString("date", "")
+                            val startStr = scheduleJson.optString("startTime", "")
+                            val endStr = scheduleJson.optString("endTime", "")
+                            val category = scheduleJson.optString("category", "General")
+                            val location = scheduleJson.optString("location", null)
+                            val isRecurring = scheduleJson.optBoolean("isRecurring", false)
+                            val recurringPattern = scheduleJson.optString("recurringPattern", null)
+                            val reminderMinutes = scheduleJson.optInt("reminderMinutes", 15)
+
+                            try {
+                                val date = if (dateStr.isNotBlank()) {
+                                    kotlinx.datetime.LocalDate.parse(dateStr)
+                                } else {
+                                    // Approximate current date via epoch day using system zone offset not available: fallback to today in UTC adjusted minimally
+                                    val instant = kotlinx.datetime.Clock.System.now()
+                                    val epochSeconds = instant.epochSeconds
+                                    val epochDays = (epochSeconds / 86400L).toInt()
+                                    kotlinx.datetime.LocalDate.fromEpochDays(epochDays)
+                                }
+                                val startTime = if (startStr.isNotBlank()) kotlinx.datetime.LocalTime.parse(startStr) else kotlinx.datetime.LocalTime(9,0)
+                                // Fallback endTime = startTime + 1 hour (manual)
+                                val endTime = if (endStr.isNotBlank()) {
+                                    kotlinx.datetime.LocalTime.parse(endStr)
+                                } else {
+                                    val hour = (startTime.hour + 1).coerceAtMost(23)
+                                    kotlinx.datetime.LocalTime(hour, startTime.minute)
+                                }
+                                schedulesViewModel.createSchedule(
+                                    title = title,
+                                    description = description,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    date = date,
+                                    location = location,
+                                    category = category.ifBlank { "General" },
+                                    isRecurring = isRecurring,
+                                    recurringPattern = recurringPattern,
+                                    reminderMinutes = reminderMinutes
+                                )
+                            } catch (_: Exception) {
+                                // Skip invalid schedule entry silently
+                            }
                         }
                     } catch (e: Exception) {
                         // Skip invalid schedule entries

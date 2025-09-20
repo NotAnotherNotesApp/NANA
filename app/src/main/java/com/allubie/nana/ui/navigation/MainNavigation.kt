@@ -17,13 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -32,11 +33,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +49,7 @@ import com.allubie.nana.NanaApplication
 import com.allubie.nana.ui.screens.expenses.ExpensesScreen
 import com.allubie.nana.ui.screens.expenses.BudgetManagerScreen
 import com.allubie.nana.ui.screens.expenses.CategoriesManagerScreen
+import com.allubie.nana.ui.screens.expenses.CategoriesBreakdownScreen
 import com.allubie.nana.ui.screens.notes.NotesScreen
 import com.allubie.nana.ui.screens.notes.NoteEditorScreen
 import com.allubie.nana.ui.screens.notes.NoteViewerScreen
@@ -117,7 +121,9 @@ fun MainNavigation(appPreferences: AppPreferences) {
     var showRoutineStats by remember { mutableStateOf(false) }
     var showBudgetManager by remember { mutableStateOf(false) }
     var showCategoriesManager by remember { mutableStateOf(false) }
+    var showCategoriesBreakdown by remember { mutableStateOf(false) }
     var editingNoteId by remember { mutableStateOf<String?>(null) }
+    var editingNoteType by remember { mutableStateOf("text") }
     var viewingNoteId by remember { mutableStateOf<String?>(null) }
     var editingScheduleId by remember { mutableStateOf<String?>(null) }
     var editingExpenseId by remember { mutableStateOf<String?>(null) }
@@ -131,8 +137,8 @@ fun MainNavigation(appPreferences: AppPreferences) {
     val navItems = listOf(
         BottomNavItem(
             title = "Notes",
-            selectedIcon = Icons.Filled.Notes,
-            unselectedIcon = Icons.Outlined.Notes,
+            selectedIcon = Icons.AutoMirrored.Filled.Notes,
+            unselectedIcon = Icons.AutoMirrored.Outlined.Notes,
             route = "notes"
         ),
         BottomNavItem(
@@ -160,7 +166,7 @@ fun MainNavigation(appPreferences: AppPreferences) {
         showSettings -> ScreenType.SETTINGS
         showNoteEditor || showScheduleEditor || showExpenseEditor || showRoutineEditor -> ScreenType.EDITOR
         showNoteViewer -> ScreenType.VIEWER
-        showBudgetManager || showCategoriesManager -> ScreenType.MANAGER
+    showBudgetManager || showCategoriesManager || showCategoriesBreakdown -> ScreenType.MANAGER
         showRoutineStats -> ScreenType.STATS
         showArchivedNotes || showRecycleBin -> ScreenType.VIEWER
         else -> ScreenType.MAIN_TAB
@@ -204,11 +210,17 @@ fun MainNavigation(appPreferences: AppPreferences) {
                     onNoteClick = { noteId ->
                         if (noteId == "-1") {
                             editingNoteId = null
+                            editingNoteType = "text"
                             showNoteEditor = true
                         } else {
                             viewingNoteId = noteId
                             showNoteViewer = true
                         }
+                    },
+                    onCreateNote = { noteType ->
+                        editingNoteId = null
+                        editingNoteType = noteType
+                        showNoteEditor = true
                     },
                     onArchivedNotesClick = { showArchivedNotes = true },
                     onRecycleBinClick = { showRecycleBin = true },
@@ -238,7 +250,7 @@ fun MainNavigation(appPreferences: AppPreferences) {
                         showExpenseEditor = true
                     },
                     onBudgetClick = { showBudgetManager = true },
-                    onCategoriesClick = { showCategoriesManager = true }
+                    onCategoriesClick = { showCategoriesBreakdown = true }
                 )
             }
             else -> {
@@ -247,6 +259,7 @@ fun MainNavigation(appPreferences: AppPreferences) {
                     showSettings = showSettings,
                     showBudgetManager = showBudgetManager,
                     showCategoriesManager = showCategoriesManager,
+                    showCategoriesBreakdown = showCategoriesBreakdown,
                     showArchivedNotes = showArchivedNotes,
                     showRecycleBin = showRecycleBin,
                     showNoteViewer = showNoteViewer,
@@ -260,6 +273,7 @@ fun MainNavigation(appPreferences: AppPreferences) {
                     context = context,
                     expensesViewModel = expensesViewModel,
                     editingNoteId = editingNoteId,
+                    editingNoteType = editingNoteType,
                     viewingNoteId = viewingNoteId,
                     editingScheduleId = editingScheduleId,
                     editingExpenseId = editingExpenseId,
@@ -267,6 +281,7 @@ fun MainNavigation(appPreferences: AppPreferences) {
                     onDismissSettings = { showSettings = false },
                     onDismissBudgetManager = { showBudgetManager = false },
                     onDismissCategoriesManager = { showCategoriesManager = false },
+                    onDismissCategoriesBreakdown = { showCategoriesBreakdown = false },
                     onDismissArchivedNotes = { showArchivedNotes = false },
                     onDismissRecycleBin = { showRecycleBin = false },
                     onDismissNoteViewer = { 
@@ -317,6 +332,7 @@ private fun MainTabContent(
     appPreferences: AppPreferences,
     onSettingsClick: () -> Unit,
     onNoteClick: (String) -> Unit,
+    onCreateNote: (String) -> Unit,
     onArchivedNotesClick: () -> Unit,
     onRecycleBinClick: () -> Unit,
     onAddRoutine: () -> Unit,
@@ -330,8 +346,13 @@ private fun MainTabContent(
     onCategoriesClick: () -> Unit
 ) {
     Scaffold(
+        // Remove default system bar padding; edge-to-edge handled at activity level
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0,0,0,0),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
                 navItems.forEachIndexed { index, item ->
                     NavigationBarItem(
                         icon = {
@@ -374,6 +395,7 @@ private fun MainTabContent(
                         NotesScreen(
                             viewModel = notesViewModel,
                             onNoteClick = onNoteClick,
+                            onCreateNote = onCreateNote,
                             onArchivedNotesClick = onArchivedNotesClick,
                             onRecycleBinClick = onRecycleBinClick,
                             onSettingsClick = onSettingsClick
@@ -424,6 +446,7 @@ private fun HandleOverlayScreens(
     showSettings: Boolean,
     showBudgetManager: Boolean,
     showCategoriesManager: Boolean,
+    showCategoriesBreakdown: Boolean,
     showArchivedNotes: Boolean,
     showRecycleBin: Boolean,
     showNoteViewer: Boolean,
@@ -437,6 +460,7 @@ private fun HandleOverlayScreens(
     context: android.content.Context,
     expensesViewModel: ExpensesViewModel,
     editingNoteId: String?,
+    editingNoteType: String,
     viewingNoteId: String?,
     editingScheduleId: String?,
     editingExpenseId: String?,
@@ -444,6 +468,7 @@ private fun HandleOverlayScreens(
     onDismissSettings: () -> Unit,
     onDismissBudgetManager: () -> Unit,
     onDismissCategoriesManager: () -> Unit,
+    onDismissCategoriesBreakdown: () -> Unit,
     onDismissArchivedNotes: () -> Unit,
     onDismissRecycleBin: () -> Unit,
     onDismissNoteViewer: () -> Unit,
@@ -477,6 +502,14 @@ private fun HandleOverlayScreens(
                 viewModel = expensesViewModel,
                 appPreferences = appPreferences,
                 onBackPressed = onDismissCategoriesManager
+            )
+        }
+        showCategoriesBreakdown -> {
+            BackHandler { onDismissCategoriesBreakdown() }
+            CategoriesBreakdownScreen(
+                viewModel = expensesViewModel,
+                appPreferences = appPreferences,
+                onBackPressed = onDismissCategoriesBreakdown
             )
         }
         showArchivedNotes -> {
@@ -517,17 +550,66 @@ private fun HandleOverlayScreens(
             val notesViewModel: NotesViewModel = viewModel(
                 factory = NotesViewModelFactory(application.noteRepository)
             )
-            NoteEditorScreen(
-                noteId = editingNoteId,
-                onSave = { title, content ->
-                    if (editingNoteId == null) {
-                        notesViewModel.createNote(title, content, "General")
-                    } else {
-                        // Update existing note logic would go here
+            
+            var initialTitle by remember { mutableStateOf("") }
+            var initialContent by remember { mutableStateOf("") }
+            var initialRich by remember { mutableStateOf("") }
+            var initialHtml by remember { mutableStateOf("") }
+            var initialCategory by remember { mutableStateOf("General") }
+            var initialNoteType by remember { mutableStateOf(editingNoteType) }
+            var isLoading by remember { mutableStateOf(editingNoteId != null) }
+            
+            // Load existing note data if editing
+            LaunchedEffect(editingNoteId) {
+                if (editingNoteId != null) {
+                    notesViewModel.getNoteByStringId(editingNoteId) { note ->
+                        if (note != null) {
+                            initialTitle = note.title
+                            initialContent = note.content
+                            initialNoteType = note.noteType
+                            initialRich = note.richContent
+                            initialHtml = note.htmlContent
+                            initialCategory = note.category ?: "General"
+                        }
+                        isLoading = false
                     }
-                },
-                onBack = onDismissNoteEditor
-            )
+                } else {
+                    // For new notes, use the selected note type
+                    initialNoteType = editingNoteType
+                    initialRich = ""
+                    initialHtml = ""
+                    initialCategory = "General"
+                    isLoading = false
+                }
+            }
+            
+            if (!isLoading) {
+                NoteEditorScreen(
+                    noteId = editingNoteId,
+                    initialTitle = initialTitle,
+                    initialContent = initialContent,
+                    initialRichContent = initialRich,
+                    initialNoteType = initialNoteType,
+                    initialHtmlContent = initialHtml,
+                    initialCategory = initialCategory,
+                    onSave = { title, content, richContent, htmlContent, noteType, category ->
+                        if (editingNoteId == null) {
+                            notesViewModel.createNote(title, content, category ?: "General", richContent, htmlContent, noteType)
+                        } else {
+                            notesViewModel.updateNoteContent(editingNoteId, title, content, richContent, htmlContent, noteType)
+                        }
+                    },
+                    onBack = onDismissNoteEditor
+                )
+            } else {
+                // Loading state
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
         showScheduleEditor -> {
             BackHandler { onDismissScheduleEditor() }

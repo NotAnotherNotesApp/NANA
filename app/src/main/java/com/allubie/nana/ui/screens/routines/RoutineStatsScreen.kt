@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -96,7 +97,7 @@ fun RoutineStatsScreen(
                 title = { Text("Routine Statistics") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -108,7 +109,11 @@ fun RoutineStatsScreen(
                         
                         DropdownMenu(
                             expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
+                            onDismissRequest = { showOverflowMenu = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Reset All Progress") },
@@ -167,7 +172,7 @@ fun RoutineStatsScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(
-                                progress = dailyCompletionRate / 100f,
+                                progress = { dailyCompletionRate / 100f },
                                 modifier = Modifier.fillMaxWidth(),
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -205,7 +210,7 @@ fun RoutineStatsScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(
-                                progress = weeklyCompletionRate / 100f,
+                                progress = { weeklyCompletionRate / 100f },
                                 modifier = Modifier.fillMaxWidth(),
                                 color = MaterialTheme.colorScheme.secondary
                             )
@@ -225,10 +230,7 @@ fun RoutineStatsScreen(
             
             item {
                 HabitTrackingCard(
-                    routines = displayRoutines.filter { !it.completedToday },
-                    onToggleComplete = { routineId ->
-                        viewModel.toggleCompletion(routineId)
-                    }
+                    routines = displayRoutines.filter { !it.completedToday }
                 )
             }
             
@@ -274,8 +276,7 @@ data class RoutineDisplayData(
 
 @Composable
 fun HabitTrackingCard(
-    routines: List<RoutineDisplayData>,
-    onToggleComplete: (String) -> Unit
+    routines: List<RoutineDisplayData>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -289,7 +290,7 @@ fun HabitTrackingCard(
         ) {
             if (routines.isEmpty()) {
                 Text(
-                    text = "All routines completed for today! 🎉",
+                    text = "All routines completed for today!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -298,8 +299,7 @@ fun HabitTrackingCard(
             } else {
                 routines.forEach { routine ->
                     HabitTrackingItem(
-                        routine = routine,
-                        onToggleComplete = { onToggleComplete(routine.id) }
+                        routine = routine
                     )
                     if (routine != routines.last()) {
                         Spacer(modifier = Modifier.height(Spacing.small))
@@ -437,8 +437,7 @@ fun StatsStatisticItem(
 
 @Composable
 private fun HabitTrackingItem(
-    routine: RoutineDisplayData,
-    onToggleComplete: () -> Unit
+    routine: RoutineDisplayData
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -466,19 +465,16 @@ private fun HabitTrackingItem(
                     shape = RoundedCornerShape(Spacing.cornerRadiusSmall)
                 ) {
                     Text(
-                        text = "🔥 ${routine.streak}",
+                        text = " ${routine.streak}",
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
+                // Removed checkbox; keep clean trailing space only when streak exists
+                Spacer(modifier = Modifier.width(4.dp))
             }
-            
-            Checkbox(
-                checked = routine.completedToday,
-                onCheckedChange = { onToggleComplete() }
-            )
+            // Checkbox removed per request; trailing area intentionally left minimal
         }
     }
 }

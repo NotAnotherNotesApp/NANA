@@ -17,3 +17,13 @@ data class RoutineEntity(
     val createdAt: Instant = Clock.System.now(),
     val isActive: Boolean = true
 )
+
+object RoutineFactory {
+    fun create(
+        id: String,
+        title: String,
+        description: String,
+        frequency: String,
+        reminderTime: String? = null
+    ) = RoutineEntity(id, title, description, frequency, reminderTime = reminderTime)
+}

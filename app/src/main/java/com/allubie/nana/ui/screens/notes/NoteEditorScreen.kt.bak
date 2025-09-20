@@ -1,0 +1,391 @@
+package com.allubie.nana.ui.screens.notes
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions                                    "image" -> {
+                                        // Save image note with rich text description and image URI
+                                        val imageBlock = RichTextBlock(
+                                            id = "image_block",
+                                            type = BlockType.IMAGE,
+                                            text = "",
+                                            imageUri = selectedImageUri?.toString()
+                                        )
+                                        
+                                        // Combine image block with description blocks
+                                        val combinedBlocks = listOf(imageBlock) + blocks
+                                        
+                                        val plainContent = RichTextConverter.blocksToPlainText(blocks)
+                                        val richContent = RichTextConverter.blocksToJson(combinedBlocks)
+                                        onSave(title, plainContent, richContent, noteType)
+                                    },rt androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
+import android.net.Uri
+import com.allubie.nana.ui.theme.Spacing
+import com.allubie.nana.ui.components.richtext.*
+import com.allubie.nana.ui.components.SimpleChecklistEditor
+import com.allubie.nana.ui.components.ChecklistItem
+import com.allubie.nana.ui.components.ImagePicker
+import com.allubie.nana.ui.components.CleanTextEditor
+import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NoteEditorScreen(
+    noteId: String? = null,
+    initialTitle: String = "",
+    initialContent: String = "",
+    initialRichContent: String = "",
+    initialNoteType: String = "text",
+    onSave: (title: String, content: String, richContent: String, noteType: String) -> Unit,
+    onBack: () -> Unit
+) {
+    var title by remember { mutableStateOf(initialTitle) }
+    var noteType by remember { mutableStateOf(initialNoteType) }
+    
+    // For checklist items (simple interface)
+    var checklistItems by remember { mutableStateOf(emptyList<ChecklistItem>()) }
+    
+    // For rich text blocks (complex interface)
+    var blocks by remember { 
+        mutableStateOf(
+            try {
+                if (initialRichContent.isNotBlank()) {
+                    RichTextConverter.jsonToBlocks(initialRichContent)
+                } else if (initialContent.isNotBlank()) {
+                    RichTextConverter.plainTextToBlocks(initialContent)
+                } else {
+                    listOf(RichTextBlock(
+                        id = "block_0",
+                        type = BlockType.TEXT,
+                        text = ""
+                    ))
+                }
+            } catch (e: Exception) {
+                listOf(RichTextBlock(
+                    id = "block_0",
+                    type = BlockType.TEXT,
+                    text = ""
+                ))
+            }
+        )
+    }
+    
+    // For image notes
+    var selectedImageUri by remember { 
+        mutableStateOf<Uri?>(
+            try {
+                // Try to recover image URI from rich content if available
+                if (initialRichContent.isNotBlank() && initialNoteType == "image") {
+                    val richContent = RichTextConverter.jsonToBlocks(initialRichContent)
+                    val imageBlock = richContent.find { it.imageUri != null }
+                    if (imageBlock?.imageUri != null) {
+                        Uri.parse(imageBlock.imageUri)
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        ) 
+    }
+    
+    // Initialize checklist items from existing data
+    LaunchedEffect(initialRichContent, initialContent, noteType) {
+        when (noteType) {
+            "text", "image" -> {
+                // For text and image notes, preserve existing structure if available
+                if (initialRichContent.isNotBlank()) {
+                    // Try to load from rich content first to preserve structure
+                    val richBlocks = RichTextConverter.jsonToBlocks(initialRichContent)
+                    if (richBlocks.size == 1 && richBlocks[0].type == BlockType.TEXT) {
+                        // Single text block - load as text
+                        checklistItems = listOf(ChecklistItem(text = richBlocks[0].text))
+                    } else {
+                        // Multiple blocks - convert to checklist to preserve data
+                        checklistItems = richBlocks.map { block ->
+                            ChecklistItem(
+                                id = block.id,
+                                text = block.text,
+                                isCompleted = block.isCompleted
+                            )
+                        }
+                    }
+                } else if (initialContent.isNotBlank()) {
+                    // Check if content has multiple lines or checklist format
+                    if (initialContent.contains('\n') || 
+                        initialContent.contains('☑') || 
+                        initialContent.contains('☐')) {
+                        // Multi-line or checklist content - parse as blocks
+                        val richBlocks = RichTextConverter.plainTextToBlocks(initialContent)
+                        checklistItems = richBlocks.map { block ->
+                            ChecklistItem(
+                                id = block.id,
+                                text = block.text,
+                                isCompleted = block.isCompleted
+                            )
+                        }
+                    } else {
+                        // Single line content
+                        checklistItems = listOf(ChecklistItem(text = initialContent))
+                    }
+                } else {
+                    checklistItems = listOf(ChecklistItem())
+                }
+            }
+            "list", "checklist" -> {
+                // For list notes, use rich content parsing
+                if (initialRichContent.isNotBlank()) {
+                    val richBlocks = RichTextConverter.jsonToBlocks(initialRichContent)
+                    checklistItems = richBlocks.map { block ->
+                        ChecklistItem(
+                            id = block.id,
+                            text = block.text,
+                            isCompleted = block.isCompleted
+                        )
+                    }
+                } else if (initialContent.isNotBlank()) {
+                    val richBlocks = RichTextConverter.plainTextToBlocks(initialContent)
+                    checklistItems = richBlocks.map { block ->
+                        ChecklistItem(
+                            id = block.id,
+                            text = block.text,
+                            isCompleted = block.isCompleted
+                        )
+                    }
+                } else {
+                    checklistItems = listOf(ChecklistItem())
+                }
+            }
+            else -> {
+                // Default handling
+                checklistItems = listOf(ChecklistItem())
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        text = if (noteId == null) "New Note" else "Edit Note",
+                        fontWeight = FontWeight.Medium
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { 
+                            if (title.isNotBlank()) {
+                                when (noteType) {
+                                    "text" -> {
+                                        // Save rich text content
+                                        val plainContent = RichTextConverter.blocksToPlainText(blocks)
+                                        val richContent = RichTextConverter.blocksToJson(blocks)
+                                        onSave(title, plainContent, richContent, noteType)
+                                    }
+                                    "image" -> {
+                                        // Save image note with rich text description
+                                        val plainContent = RichTextConverter.blocksToPlainText(blocks)
+                                        val richContent = RichTextConverter.blocksToJson(blocks)
+                                        onSave(title, plainContent, richContent, noteType)
+                                    }
+                                    "list", "checklist" -> {
+                                        // Save as checklist format
+                                        val richBlocks = checklistItems.map { item ->
+                                            RichTextBlock(
+                                                id = item.id,
+                                                type = BlockType.CHECKLIST,
+                                                text = item.text,
+                                                isCompleted = item.isCompleted
+                                            )
+                                        }
+                                        val plainContent = RichTextConverter.blocksToPlainText(richBlocks)
+                                        val richContent = RichTextConverter.blocksToJson(richBlocks)
+                                        onSave(title, plainContent, richContent, noteType)
+                                    }
+                                    else -> {
+                                        // Default handling
+                                        val richBlocks = checklistItems.map { item ->
+                                            RichTextBlock(
+                                                id = item.id,
+                                                type = BlockType.CHECKLIST,
+                                                text = item.text,
+                                                isCompleted = item.isCompleted
+                                            )
+                                        }
+                                        val plainContent = RichTextConverter.blocksToPlainText(richBlocks)
+                                        val richContent = RichTextConverter.blocksToJson(richBlocks)
+                                        onSave(title, plainContent, richContent, noteType)
+                                    }
+                                }
+                                onBack()
+                            }
+                        },
+                        enabled = title.isNotBlank()
+                    ) {
+                        Text("Save")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Always use simple interface to match reference exactly
+            when (noteType) {
+                "image" -> {
+                    // Image note interface with image picker and notes
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Spacing.screenPadding),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+                    ) {
+                        // Title Field
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            label = { Text("Title") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next
+                            )
+                        )
+                        
+                        // Image picker section
+                        ImagePicker(
+                            selectedImageUri = selectedImageUri,
+                            onImageSelected = { uri -> 
+                                println("NoteEditor: Image selected: $uri")
+                                selectedImageUri = uri 
+                            },
+                            modifier = Modifier.height(200.dp)
+                        )
+                        
+                        // Notes/Description area without any boxes
+                        Text(
+                            text = "Notes",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        CleanTextEditor(
+                            blocks = blocks,
+                            onBlocksChange = { newBlocks -> 
+                                blocks = newBlocks
+                                // Convert blocks to checklist items for saving
+                                checklistItems = newBlocks.map { block ->
+                                    ChecklistItem(
+                                        id = block.id,
+                                        text = block.text,
+                                        isCompleted = block.isCompleted
+                                    )
+                                }
+                            },
+                            placeholder = "Add notes about the image...",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
+                }
+                "list", "checklist" -> {
+                    // Checklist interface for list notes
+                    SimpleChecklistEditor(
+                        title = title,
+                        onTitleChange = { title = it },
+                        items = checklistItems,
+                        onItemsChange = { newItems -> 
+                            checklistItems = newItems
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Spacing.screenPadding)
+                    )
+                }
+                "text" -> {
+                    // Clean text editor without any boxes or borders
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Spacing.screenPadding),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.medium)
+                    ) {
+                        // Title Field
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            label = { Text("Title") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next
+                            )
+                        )
+                        
+                        // Clean Text Editor without boxes
+                        CleanTextEditor(
+                            blocks = blocks,
+                            onBlocksChange = { newBlocks -> 
+                                blocks = newBlocks
+                                // Convert blocks to checklist items for saving
+                                checklistItems = newBlocks.map { block ->
+                                    ChecklistItem(
+                                        id = block.id,
+                                        text = block.text,
+                                        isCompleted = block.isCompleted
+                                    )
+                                }
+                            },
+                            placeholder = "Start writing your note...",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+                    }
+                }
+                else -> {
+                    // Default to simple text interface
+                    SimpleChecklistEditor(
+                        title = title,
+                        onTitleChange = { title = it },
+                        items = checklistItems,
+                        onItemsChange = { newItems -> 
+                            checklistItems = newItems
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Spacing.screenPadding),
+                        placeholder = "Add note content..."
+                    )
+                }
+            }
+        }
+    }
+}

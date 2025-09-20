@@ -17,3 +17,14 @@ data class ExpenseEntity(
     val description: String? = null,
     val createdAt: Instant = Clock.System.now()
 )
+
+object ExpenseFactory {
+    fun create(
+        id: String,
+        title: String,
+        amount: Double,
+        category: String,
+        date: LocalDate,
+        description: String? = null
+    ) = ExpenseEntity(id, title, amount, category, date, description)
+}

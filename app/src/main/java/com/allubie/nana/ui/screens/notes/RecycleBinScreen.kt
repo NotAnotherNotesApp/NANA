@@ -16,8 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
@@ -158,7 +160,7 @@ fun RecycleBinScreen(
                 title = { Text("Recycle Bin") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -189,25 +191,38 @@ fun RecycleBinScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(Spacing.medium),
+                            .padding(Spacing.medium)
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (selectedNotes.isNotEmpty()) {
                             Button(
                                 onClick = { showRestoreSelectedDialog = true }
                             ) {
-                                Text("Restore Selected (${selectedNotes.size})")
+                                Text(
+                                    "Restore Selected (${selectedNotes.size})",
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
                             }
                             Button(
                                 onClick = { showDeleteSelectedDialog = true }
                             ) {
-                                Text("Delete Selected (${selectedNotes.size})")
+                                Text(
+                                    "Delete Selected (${selectedNotes.size})",
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
                             }
                         }
                         Button(
                             onClick = { showEmptyTrashDialog = true }
                         ) {
-                            Text("Delete All")
+                            Text(
+                                "Delete All",
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -276,7 +291,7 @@ fun RecycleBinNoteCard(
                 MaterialTheme.colorScheme.surface
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(

@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
+    <!-- Include all application data for backup -->
+    <include domain="database" path="."/>
+    <include domain="sharedpref" path="."/>
+    <include domain="file" path="."/>
+    
     <!-- Exclude sensitive or cache files from backup -->
     <exclude domain="cache" />
     <exclude domain="no_backup" />

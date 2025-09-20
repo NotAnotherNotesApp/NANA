@@ -25,3 +25,31 @@ data class ScheduleEntity(
     val reminderMinutes: Int = 15, // Minutes before event to show reminder
     val createdAt: Instant = Clock.System.now()
 )
+
+object ScheduleFactory {
+    fun create(
+        id: String,
+        title: String,
+        description: String,
+        startTime: LocalTime,
+        endTime: LocalTime,
+        date: LocalDate,
+        category: String,
+        location: String? = null,
+        isRecurring: Boolean = false,
+        recurringPattern: String? = null,
+        reminderMinutes: Int = 15
+    ) = ScheduleEntity(
+        id = id,
+        title = title,
+        description = description,
+        startTime = startTime,
+        endTime = endTime,
+        date = date,
+        location = location,
+        category = category,
+        isRecurring = isRecurring,
+        recurringPattern = recurringPattern,
+        reminderMinutes = reminderMinutes
+    )
+}

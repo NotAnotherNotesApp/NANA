@@ -8,9 +8,11 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import com.allubie.nana.data.entity.ScheduleFactory
+import com.allubie.nana.core.BaseRepository
 import java.util.UUID
 
-class ScheduleRepository(private val scheduleDao: ScheduleDao) {
+class ScheduleRepository(private val scheduleDao: ScheduleDao) : BaseRepository() {
     
     fun getAllSchedules(): Flow<List<ScheduleEntity>> = scheduleDao.getAllSchedulesFlow()
     
@@ -62,15 +64,15 @@ class ScheduleRepository(private val scheduleDao: ScheduleDao) {
         recurringPattern: String? = null,
         reminderMinutes: Int = 15
     ): ScheduleEntity {
-        val schedule = ScheduleEntity(
-            id = UUID.randomUUID().toString(),
+        val schedule = ScheduleFactory.create(
+            id = idProvider.newId(),
             title = title,
             description = description,
             startTime = startTime,
             endTime = endTime,
             date = date,
-            location = location,
             category = category,
+            location = location,
             isRecurring = isRecurring,
             recurringPattern = recurringPattern,
             reminderMinutes = reminderMinutes

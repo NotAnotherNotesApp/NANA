@@ -1,0 +1,36 @@
+# Android/Gradle build
+.gradle/
+**/build/
+.cxx/
+.externalNativeBuild/
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.vscode/*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Outputs / Artifacts
+*.apk
+*.aab
+**/mapping.txt
+app/release/
+app/debug/
+
+# Local config / secrets
+local.properties
+*.jks
+*.keystore
+*.pem
+*.p12
+
+# Captures / logs
+captures/
+*.log
+
+# Compose preview caches
+**/compose-snapshots/

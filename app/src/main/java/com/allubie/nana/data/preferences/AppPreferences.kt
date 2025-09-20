@@ -32,6 +32,12 @@ class AppPreferences(context: Context) {
     
     var defaultReminderMinutes by mutableStateOf(preferences.getInt(DEFAULT_REMINDER_MINUTES_KEY, 15))
         private set
+
+    // Global total monthly budget cap (separate from per-category sum)
+    var totalMonthlyBudget by mutableStateOf(
+        preferences.getString(TOTAL_MONTHLY_BUDGET_KEY, "0.0")?.toDoubleOrNull() ?: 0.0
+    )
+        private set
     
     fun updateDarkTheme(enabled: Boolean) {
         isDarkTheme = enabled
@@ -72,6 +78,12 @@ class AppPreferences(context: Context) {
         defaultReminderMinutes = minutes
         preferences.edit().putInt(DEFAULT_REMINDER_MINUTES_KEY, minutes).apply()
     }
+
+    fun updateTotalMonthlyBudget(value: Double) {
+        totalMonthlyBudget = value
+        // Store as String to avoid precision loss (SharedPreferences has no Double)
+        preferences.edit().putString(TOTAL_MONTHLY_BUDGET_KEY, value.toString()).apply()
+    }
     
     companion object {
         private const val DARK_THEME_KEY = "dark_theme"
@@ -82,5 +94,6 @@ class AppPreferences(context: Context) {
         private const val ROUTINE_REMINDERS_KEY = "routine_reminders_enabled"
         private const val SCHEDULE_REMINDERS_KEY = "schedule_reminders_enabled"
         private const val DEFAULT_REMINDER_MINUTES_KEY = "default_reminder_minutes"
+        private const val TOTAL_MONTHLY_BUDGET_KEY = "total_monthly_budget"
     }
 }

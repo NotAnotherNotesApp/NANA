@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,6 +28,10 @@ import com.allubie.nana.data.entity.ExpenseCategoryEntity
 import com.allubie.nana.ui.viewmodel.ExpensesViewModel
 import com.allubie.nana.data.preferences.AppPreferences
 import com.allubie.nana.utils.getCurrencySymbol
+import com.allubie.nana.utils.parseLocalizedDouble
+import com.allubie.nana.ui.screens.expenses.CATEGORY_AVAILABLE_ICONS
+import com.allubie.nana.ui.screens.expenses.CATEGORY_DEFAULT_COLORS
+import com.allubie.nana.ui.screens.expenses.getIconFromName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +52,7 @@ fun CategoriesManagerScreen(
                 title = { Text("Manage Categories") },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -131,7 +135,8 @@ fun CategoriesManagerScreen(
             onSave = { name, iconName, colorHex, budget ->
                 viewModel.createCategory(name, iconName, colorHex, budget)
                 showAddCategoryDialog = false
-            }
+            },
+            existingNames = allCategories.map { it.name }.toSet()
         )
     }
     
@@ -142,16 +147,27 @@ fun CategoriesManagerScreen(
             currencySymbol = currencySymbol,
             onDismiss = { editingCategory = null },
             onSave = { name, iconName, colorHex, budget ->
-                viewModel.updateCategory(
-                    category.copy(
-                        name = name,
+                if (name != category.name) {
+                    // Perform safe rename that updates dependent expenses
+                    viewModel.renameCategory(
+                        oldName = category.name,
+                        newName = name,
                         iconName = iconName,
                         colorHex = colorHex,
                         monthlyBudget = budget
                     )
-                )
+                } else {
+                    viewModel.updateCategory(
+                        category.copy(
+                            iconName = iconName,
+                            colorHex = colorHex,
+                            monthlyBudget = budget
+                        )
+                    )
+                }
                 editingCategory = null
-            }
+            },
+            existingNames = allCategories.map { it.name }.filter { it != category.name }.toSet()
         )
     }
 }
@@ -187,7 +203,7 @@ private fun CategoryCard(
                 Icon(
                     imageVector = getIconFromName(category.iconName),
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -255,7 +271,8 @@ private fun CategoryDialog(
     category: ExpenseCategoryEntity?,
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, Double) -> Unit
+    onSave: (String, String, String, Double) -> Unit,
+    existingNames: Set<String> = emptySet()
 ) {
     var name by remember { mutableStateOf(category?.name ?: "") }
     var selectedIcon by remember { mutableStateOf(category?.iconName ?: "ShoppingCart") }
@@ -263,7 +280,11 @@ private fun CategoryDialog(
     var budget by remember { mutableStateOf(category?.monthlyBudget?.toString() ?: "0.0") }
     
     val isEditing = category != null
-    val canSave = name.isNotBlank() && budget.toDoubleOrNull() != null
+    val isDuplicate = remember(name, existingNames, category) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) false else existingNames.contains(trimmed)
+    }
+    val canSave = name.isNotBlank() && !isDuplicate && parseLocalizedDouble(budget) != null
     
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -290,7 +311,22 @@ private fun CategoryDialog(
                     onValueChange = { name = it },
                     label = { Text("Category Name") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = name.isBlank() || isDuplicate,
+                    supportingText = {
+                        when {
+                            name.isBlank() -> Text(
+                                text = "Title is required",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            isDuplicate -> Text(
+                                text = "Duplicate title",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
                 )
                 
                 // Icon Selection
@@ -303,7 +339,7 @@ private fun CategoryDialog(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(availableIcons) { iconData ->
+                    items(CATEGORY_AVAILABLE_ICONS) { iconData ->
                         IconSelectionItem(
                             icon = iconData.icon,
                             iconName = iconData.name,
@@ -324,7 +360,7 @@ private fun CategoryDialog(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(availableColors) { colorHex ->
+                    items(CATEGORY_DEFAULT_COLORS) { colorHex ->
                         ColorSelectionItem(
                             color = Color(android.graphics.Color.parseColor(colorHex)),
                             isSelected = selectedColor == colorHex,
@@ -357,7 +393,7 @@ private fun CategoryDialog(
                     
                     Button(
                         onClick = {
-                            val budgetValue = budget.toDoubleOrNull() ?: 0.0
+                            val budgetValue = parseLocalizedDouble(budget) ?: 0.0
                             onSave(name, selectedIcon, selectedColor, budgetValue)
                         },
                         enabled = canSave
@@ -396,7 +432,7 @@ private fun IconSelectionItem(
         Icon(
             imageVector = icon,
             contentDescription = iconName,
-            tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
     }
@@ -414,7 +450,7 @@ private fun ColorSelectionItem(
             .background(color = color, shape = CircleShape)
             .border(
                 width = if (isSelected) 3.dp else 1.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                 shape = CircleShape
             )
             .clickable { onClick() }
@@ -423,7 +459,7 @@ private fun ColorSelectionItem(
             Icon(
                 Icons.Default.Check,
                 contentDescription = "Selected",
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(20.dp)
@@ -432,46 +468,4 @@ private fun ColorSelectionItem(
     }
 }
 
-// Available icons for categories
-private data class IconData(val name: String, val icon: ImageVector)
-
-private val availableIcons = listOf(
-    IconData("ShoppingCart", Icons.Default.ShoppingCart),
-    IconData("Fastfood", Icons.Default.Fastfood),
-    IconData("LocalGasStation", Icons.Default.LocalGasStation),
-    IconData("School", Icons.Default.School),
-    IconData("Home", Icons.Default.Home),
-    IconData("Work", Icons.Default.Work),
-    IconData("Flight", Icons.Default.Flight),
-    IconData("LocalHospital", Icons.Default.LocalHospital),
-    IconData("SportsEsports", Icons.Default.SportsEsports),
-    IconData("FitnessCenter", Icons.Default.FitnessCenter),
-    IconData("Movie", Icons.Default.Movie),
-    IconData("MusicNote", Icons.Default.MusicNote),
-    IconData("Pets", Icons.Default.Pets),
-    IconData("Build", Icons.Default.Build),
-    IconData("AttachMoney", Icons.Default.AttachMoney)
-)
-
-// Available colors for categories
-private val availableColors = listOf(
-    "#FF6B6B", // Red
-    "#4ECDC4", // Teal
-    "#45B7D1", // Blue
-    "#96CEB4", // Green
-    "#FECA57", // Yellow
-    "#FF9FF3", // Pink
-    "#54A0FF", // Light Blue
-    "#5F27CD", // Purple
-    "#00D2D3", // Cyan
-    "#FF9F43", // Orange
-    "#10AC84", // Dark Green
-    "#EE5A24", // Dark Orange
-    "#0984E3", // Dark Blue
-    "#6C5CE7", // Light Purple
-    "#A29BFE"  // Lavender
-)
-
-private fun getIconFromName(iconName: String): ImageVector {
-    return availableIcons.find { it.name == iconName }?.icon ?: Icons.Default.ShoppingCart
-}
+// icons/colors and getIconFromName are centralized in CategoryUi.kt

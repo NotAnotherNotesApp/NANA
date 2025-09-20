@@ -22,7 +22,7 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getNoteById(id: String): NoteEntity?
     
-    @Query("SELECT * FROM notes WHERE (title LIKE '%' || :searchQuery || '%' OR content LIKE '%' || :searchQuery || '%') AND isDeleted = 0 AND isArchived = 0")
+    @Query("SELECT * FROM notes WHERE (title LIKE '%' || :searchQuery || '%' OR content LIKE '%' || :searchQuery || '%' OR richContent LIKE '%' || :searchQuery || '%' OR htmlContent LIKE '%' || :searchQuery || '%') AND isDeleted = 0 AND isArchived = 0")
     fun searchNotesFlow(searchQuery: String): Flow<List<NoteEntity>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)

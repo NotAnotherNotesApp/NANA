@@ -7,10 +7,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import kotlinx.datetime.*
 import java.text.SimpleDateFormat
 import java.util.*
 import com.allubie.nana.utils.getCurrencySymbol
+import com.allubie.nana.utils.parseLocalizedDouble
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,11 +85,11 @@ fun ExpenseEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    val amountValue = amount.toDoubleOrNull()
+                    val amountValue = parseLocalizedDouble(amount)
                     val isValidAmount = amountValue != null && amountValue > 0
                     val isFormValid = title.isNotBlank() && isValidAmount && categoryNames.isNotEmpty()
                     
@@ -149,14 +151,18 @@ fun ExpenseEditorScreen(
                     readOnly = true,
                     label = { Text("Category") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    // Use new menuAnchor overload per Material3 API.
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
                         .fillMaxWidth(),
                     enabled = categoryNames.isNotEmpty()
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
                 ) {
                     if (categoryNames.isEmpty()) {
                         DropdownMenuItem(

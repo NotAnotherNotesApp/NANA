@@ -19,15 +19,20 @@ class NotesViewModel(private val repository: NoteRepository) : ViewModel() {
     val archivedNotes = repository.getArchivedNotes()
     val deletedNotes = repository.getDeletedNotes()
     
+    private var searchJob: kotlinx.coroutines.Job? = null
     fun searchNotes(query: String) {
         if (query.isBlank()) {
+            searchJob?.cancel()
             _uiState.value = _uiState.value.copy(searchQuery = "", searchResults = emptyList())
-        } else {
-            _uiState.value = _uiState.value.copy(searchQuery = query)
-            viewModelScope.launch {
-                repository.searchNotes(query).collect { results ->
-                    _uiState.value = _uiState.value.copy(searchResults = results)
-                }
+            return
+        }
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            // Simple debounce
+            kotlinx.coroutines.delay(250)
+            repository.searchNotes(query).collect { results ->
+                _uiState.value = _uiState.value.copy(searchResults = results)
             }
         }
     }
@@ -36,15 +41,32 @@ class NotesViewModel(private val repository: NoteRepository) : ViewModel() {
         _uiState.value = _uiState.value.copy(searchQuery = "", searchResults = emptyList())
     }
     
-    fun createNote(title: String, content: String, category: String? = null) {
+    fun createNote(title: String, content: String, category: String? = null, richContent: String = "", htmlContent: String = "", noteType: String = "text") {
         viewModelScope.launch {
-            repository.createNote(title, content, category)
+            repository.createNote(title, content, category, richContent, htmlContent, noteType)
         }
     }
     
     fun updateNote(note: NoteEntity) {
         viewModelScope.launch {
             repository.updateNote(note.copy(updatedAt = kotlinx.datetime.Clock.System.now()))
+        }
+    }
+    
+    fun updateNoteContent(noteId: String, title: String, content: String, richContent: String, htmlContent: String, noteType: String) {
+        viewModelScope.launch {
+            val note = repository.getNoteById(noteId)
+            note?.let {
+                val updatedNote = it.copy(
+                    title = title,
+                    content = content,
+                    richContent = richContent,
+                    htmlContent = htmlContent,
+                    noteType = noteType,
+                    updatedAt = kotlinx.datetime.Clock.System.now()
+                )
+                repository.updateNote(updatedNote)
+            }
         }
     }
     

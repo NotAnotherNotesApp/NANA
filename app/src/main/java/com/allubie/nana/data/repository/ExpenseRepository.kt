@@ -3,6 +3,8 @@ package com.allubie.nana.data.repository
 import com.allubie.nana.data.dao.ExpenseDao
 import com.allubie.nana.data.entity.ExpenseEntity
 import com.allubie.nana.data.entity.ExpenseCategoryEntity
+import com.allubie.nana.data.entity.ExpenseFactory
+import com.allubie.nana.core.BaseRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -10,7 +12,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import java.util.UUID
 
-class ExpenseRepository(private val expenseDao: ExpenseDao) {
+class ExpenseRepository(private val expenseDao: ExpenseDao) : BaseRepository() {
     
     fun getAllExpenses(): Flow<List<ExpenseEntity>> = expenseDao.getAllExpensesFlow()
     
@@ -63,6 +65,16 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
     suspend fun updateCategory(category: ExpenseCategoryEntity) = expenseDao.updateCategory(category)
     
     suspend fun deleteCategory(category: ExpenseCategoryEntity) = expenseDao.deleteCategory(category)
+
+    suspend fun renameCategory(
+        oldName: String,
+        newName: String,
+        iconName: String,
+        colorHex: String,
+        monthlyBudget: Double
+    ) {
+        expenseDao.renameAndUpdateCategory(oldName, newName, iconName, colorHex, monthlyBudget)
+    }
     
     suspend fun createExpense(
         title: String,
@@ -71,8 +83,8 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         date: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
         description: String? = null
     ): ExpenseEntity {
-        val expense = ExpenseEntity(
-            id = UUID.randomUUID().toString(),
+        val expense = ExpenseFactory.create(
+            id = idProvider.newId(),
             title = title,
             amount = amount,
             category = category,
@@ -89,12 +101,7 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         colorHex: String,
         monthlyBudget: Double = 0.0
     ): ExpenseCategoryEntity {
-        val category = ExpenseCategoryEntity(
-            name = name,
-            iconName = iconName,
-            colorHex = colorHex,
-            monthlyBudget = monthlyBudget
-        )
+        val category = ExpenseCategoryEntity(name, iconName, colorHex, monthlyBudget)
         insertCategory(category)
         return category
     }

@@ -12,11 +12,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,7 +87,7 @@ fun RoutineEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -172,17 +173,25 @@ fun RoutineEditorScreen(
                             readOnly = true,
                             label = { Text("Select Category") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
+                            // Use new menuAnchor overload per Material3 API.
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                         
-                        ExposedDropdownMenu(
-                            expanded = showCategoryDropdown,
-                            onDismissRequest = { showCategoryDropdown = false }
-                        ) {
+                            ExposedDropdownMenu(
+                                expanded = showCategoryDropdown,
+                                onDismissRequest = { showCategoryDropdown = false },
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 0.dp,
+                                shadowElevation = 0.dp
+                            ) {
                             categories.forEach { category ->
-                                DropdownMenuItem(
+                                    DropdownMenuItem(
                                     text = { Text(category) },
                                     onClick = {
                                         selectedCategory = category
@@ -214,15 +223,28 @@ fun RoutineEditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(Spacing.itemSpacing)
                     ) {
                         items(frequencies) { frequency ->
+                            val isSelected = selectedFrequency == frequency
                             FilterChip(
-                                selected = selectedFrequency == frequency,
-                                onClick = { 
+                                selected = isSelected,
+                                onClick = {
                                     selectedFrequency = frequency
                                     if (frequency != "Weekly") {
                                         selectedDays = emptySet()
                                     }
                                 },
-                                label = { Text(frequency) }
+                                label = { Text(frequency) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    labelColor = MaterialTheme.colorScheme.onSurface,
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = MaterialTheme.colorScheme.outline,
+                                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                                    )
                             )
                         }
                     }
@@ -258,16 +280,25 @@ fun RoutineEditorScreen(
                             horizontalArrangement = Arrangement.spacedBy(Spacing.itemSpacing)
                         ) {
                             items(daysOfWeek) { day ->
+                                val isSelected = selectedDays.contains(day)
                                 FilterChip(
-                                    selected = selectedDays.contains(day),
-                                    onClick = { 
-                                        selectedDays = if (selectedDays.contains(day)) {
-                                            selectedDays - day
-                                        } else {
-                                            selectedDays + day
-                                        }
+                                    selected = isSelected,
+                                    onClick = {
+                                        selectedDays = if (isSelected) selectedDays - day else selectedDays + day
                                     },
-                                    label = { Text(day.take(3)) }
+                                    label = { Text(day.take(3)) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                        labelColor = MaterialTheme.colorScheme.onSurface,
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = isSelected,
+                                        borderColor = MaterialTheme.colorScheme.outline,
+                                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                                    )
                                 )
                             }
                         }
@@ -306,6 +337,7 @@ fun RoutineEditorScreen(
                                 "${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}"
                             } ?: "No reminder set",
                             style = MaterialTheme.typography.bodyMedium,
+                            color = if (reminderTime != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         

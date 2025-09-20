@@ -38,6 +38,15 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -132,9 +141,17 @@ fun RoutinesScreen(
                             Icon(Icons.Default.MoreVert, contentDescription = "More options")
                         }
                         
+                        val menuShape = RoundedCornerShape(12.dp)
                         DropdownMenu(
                             expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
+                            onDismissRequest = { showOverflowMenu = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            shape = menuShape,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier
+                                .clip(menuShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), menuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Settings") },
@@ -149,10 +166,24 @@ fun RoutinesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddRoutine
+            AnimatedVisibility(
+                visible = true,
+                enter = scaleIn(animationSpec = tween(180, easing = LinearOutSlowInEasing), initialScale = 0.9f) +
+                        fadeIn(animationSpec = tween(160, easing = LinearOutSlowInEasing)),
+                exit = scaleOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
+                       fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Routine")
+                FloatingActionButton(
+                    onClick = onAddRoutine,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        hoveredElevation = 0.dp
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Routine")
+                }
             }
         }
     ) { paddingValues ->
@@ -305,7 +336,7 @@ fun ProgressSummaryCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             LinearProgressIndicator(
-                progress = overallProgress,
+                progress = { overallProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -340,7 +371,7 @@ fun RoutineCard(
                 MaterialTheme.colorScheme.surface
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(
@@ -422,7 +453,7 @@ fun RoutineCard(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            if (routine.streak > 0) {
+                            if (!routine.completedToday && routine.streak > 0) {
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = "${routine.streak} day streak",
@@ -459,7 +490,7 @@ fun RoutineCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 
                 LinearProgressIndicator(
-                    progress = routine.progress,
+                    progress = { routine.progress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)

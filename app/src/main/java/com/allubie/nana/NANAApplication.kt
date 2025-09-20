@@ -17,7 +17,9 @@ class NanaApplication : Application() {
             AppDatabase::class.java,
             "nana_database"
         )
-        .addMigrations(AppDatabase.MIGRATION_1_2)
+    .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
+    // Allow destructive migration only when no defined migration covers the path
+    .fallbackToDestructiveMigration(true)
         .addCallback(DatabaseCallback())
         .build()
         
@@ -26,19 +28,8 @@ class NanaApplication : Application() {
         db
     }
     
-    val noteRepository by lazy {
-        NoteRepository(database.noteDao())
-    }
-    
-    val routineRepository by lazy {
-        RoutineRepository(database.routineDao())
-    }
-    
-    val scheduleRepository by lazy {
-        ScheduleRepository(database.scheduleDao())
-    }
-    
-    val expenseRepository by lazy {
-        ExpenseRepository(database.expenseDao())
-    }
+    val noteRepository by lazy { NoteRepository(database.noteDao()) }
+    val routineRepository by lazy { RoutineRepository(database.routineDao()) }
+    val scheduleRepository by lazy { ScheduleRepository(database.scheduleDao()) }
+    val expenseRepository by lazy { ExpenseRepository(database.expenseDao()) }
 }

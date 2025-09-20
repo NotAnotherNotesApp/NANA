@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">NANA</string>
     <string name="app_full_name">Notes and Nana Assistant</string>
-    <string name="app_version">1.0.0</string>
+    <string name="app_version">1.1b</string>
     <string name="app_description">Your comprehensive productivity companion for notes, routines, schedules, and expense tracking</string>
     
     <!-- Navigation -->
@@ -50,6 +50,14 @@
     <string name="notes_recycle_bin">Recycle Bin</string>
     <string name="notes_title_hint">Note title</string>
     <string name="notes_content_hint">Start typing your note...</string>
+
+    <!-- FAB Menu -->
+    <string name="fab_menu_open">Open add menu</string>
+    <string name="fab_menu_close">Close menu</string>
+    <string name="fab_add_text">Text</string>
+    <string name="fab_add_list">List</string>
+    <string name="fab_add_text_desc">Add Text Note</string>
+    <string name="fab_add_list_desc">Add List Note</string>
     
     <!-- Routines -->
     <string name="routines_title">Routines</string>

@@ -51,4 +51,26 @@ interface ExpenseDao {
     
     @Delete
     suspend fun deleteCategory(category: ExpenseCategoryEntity)
+
+    @Query("DELETE FROM expense_categories WHERE name = :name")
+    suspend fun deleteCategoryByName(name: String)
+
+    @Query("UPDATE expenses SET category = :newName WHERE category = :oldName")
+    suspend fun renameCategoryInExpenses(oldName: String, newName: String)
+
+    @Transaction
+    suspend fun renameAndUpdateCategory(
+        oldName: String,
+        newName: String,
+        iconName: String,
+        colorHex: String,
+        monthlyBudget: Double
+    ) {
+        // Update dependent expenses first to maintain referential consistency
+        if (oldName != newName) {
+            renameCategoryInExpenses(oldName, newName)
+            deleteCategoryByName(oldName)
+        }
+        insertCategory(ExpenseCategoryEntity(newName, iconName, colorHex, monthlyBudget))
+    }
 }

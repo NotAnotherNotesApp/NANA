@@ -7,13 +7,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,20 +91,13 @@ fun ScheduleEditorScreen(
         1440 to "1 day before"
     )
 
-    // TODO: Implement date picker
-    @Suppress("UNUSED_VARIABLE")
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.toEpochDays() * 24 * 60 * 60 * 1000L
     )
-
-    // TODO: Implement time pickers
-    @Suppress("UNUSED_VARIABLE")
     val startTimePickerState = rememberTimePickerState(
         initialHour = selectedStartTime.hour,
         initialMinute = selectedStartTime.minute
     )
-    
-    @Suppress("UNUSED_VARIABLE")
     val endTimePickerState = rememberTimePickerState(
         initialHour = selectedEndTime.hour,
         initialMinute = selectedEndTime.minute
@@ -120,7 +114,7 @@ fun ScheduleEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -196,13 +190,21 @@ fun ScheduleEditorScreen(
                             readOnly = true,
                             label = { Text("Category") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
+                            // Pending: migrate to new menuAnchor API once constant name confirmed.
                             modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                         ExposedDropdownMenu(
                             expanded = showCategoryDropdown,
-                            onDismissRequest = { showCategoryDropdown = false }
+                            onDismissRequest = { showCategoryDropdown = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp
                         ) {
                             categories.forEach { option ->
                                 DropdownMenuItem(
@@ -385,13 +387,21 @@ fun ScheduleEditorScreen(
                                 readOnly = true,
                                 label = { Text("Repeat") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRecurringDropdown) },
+                                // Pending: migrate to new menuAnchor API once constant name confirmed.
                                 modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth()
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                                )
                             )
                             ExposedDropdownMenu(
                                 expanded = showRecurringDropdown,
-                                onDismissRequest = { showRecurringDropdown = false }
+                                onDismissRequest = { showRecurringDropdown = false },
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 0.dp,
+                                shadowElevation = 0.dp
                             ) {
                                 recurringTypes.forEach { option ->
                                     DropdownMenuItem(
@@ -433,13 +443,21 @@ fun ScheduleEditorScreen(
                             readOnly = true,
                             label = { Text("Reminder Time") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showReminderDropdown) },
+                            // Pending: migrate to new menuAnchor API once constant name confirmed.
                             modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                         ExposedDropdownMenu(
                             expanded = showReminderDropdown,
-                            onDismissRequest = { showReminderDropdown = false }
+                            onDismissRequest = { showReminderDropdown = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp
                         ) {
                             reminderOptions.forEach { (minutes, text) ->
                                 DropdownMenuItem(

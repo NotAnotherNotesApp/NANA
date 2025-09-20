@@ -1,0 +1,116 @@
+--------- beginning of main
+[34m09-19 18:47:45.753 15692 15692 D ViewRootImpl: Skipping stats log for color mode[0m
+[34m09-19 18:47:45.850 15692 15692 D ImeBackDispatcher: switch root view (mImeCallbacks.size=0)[0m
+[34m09-19 18:47:45.852 15692 15692 D InsetsController: hide(ime())[0m
+[32m09-19 18:47:45.852 15692 15692 I ImeTracker: com.allubie.nana:8e7b623d: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN[0m
+[33m09-19 18:47:50.178 15692 15692 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.[0m
+[33m09-19 18:47:50.178 15692 15692 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.[0m
+[34m09-19 18:47:50.215 15692 15692 D CompatChangeReporter: Compat change id reported: 312399441; UID 10383; state: ENABLED[0m
+[33m09-19 18:47:51.092 15692 15692 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.[0m
+[33m09-19 18:47:51.092 15692 15692 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.[0m
+[34m09-19 18:47:51.117 15692 15692 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): android.view.ViewRootImpl$$ExternalSyntheticLambda12@8240889[0m
+[34m09-19 18:47:51.199 15692 15692 D ImeBackDispatcher: switch root view (mImeCallbacks.size=0)[0m
+[34m09-19 18:47:51.201 15692 15692 D InsetsController: hide(ime())[0m
+[32m09-19 18:47:51.201 15692 15692 I ImeTracker: com.allubie.nana:d15860bb: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN[0m
+--------- beginning of crash
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: FATAL EXCEPTION: main[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: Process: com.allubie.nana, PID: 15692[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: java.lang.SecurityException: Permission Denial: starting Intent { act=android.media.action.IMAGE_CAPTURE flg=0x3 xflg=0x4 cmp=com.google.android.GoogleCamera/com.android.camera.activity.CaptureActivity clip={text/uri-list hasLabel(0) {U(content)}} (has extras) } from ProcessRecord{e48292c 15692:com.allubie.nana/u0a383} (pid=15692, uid=10383) with revoked permission android.permission.CAMERA[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3355)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.os.Parcel.createException(Parcel.java:3339)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3322)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:3264)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.app.IActivityTaskManager$Stub$Proxy.startActivity(IActivityTaskManager.java:2233)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.app.Instrumentation.execStartActivity(Instrumentation.java:1998)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at android.app.Activity.startActivityForResult(Activity.java:6016)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.ComponentActivity.startActivityForResult(ComponentActivity.kt:704)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.core.app.ActivityCompat.startActivityForResult(ActivityCompat.java:244)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.ComponentActivity$activityResultRegistry$1.onLaunch(ComponentActivity.kt:225)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.result.ActivityResultRegistry$register$3.launch(ActivityResultRegistry.kt:199)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.compose.ActivityResultLauncherHolder.launch(ActivityResultRegistry.kt:154)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.compose.ManagedActivityResultLauncher.launch(ActivityResultRegistry.kt:143)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.activity.result.ActivityResultLauncher.launch(ActivityResultLauncher.kt:37)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at com.allubie.nana.ui.components.ImagePickerKt$ImagePicker$5.invoke$lambda$4$lambda$3$lambda$2(ImagePicker.kt:215)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at com.allubie.nana.ui.components.ImagePickerKt$ImagePicker$5.$r8$lambda$CD4EzA1Ruwjn3QJx3v4QKPyMCQA(Unknown Source:0)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at com.allubie.nana.ui.components.ImagePickerKt$ImagePicker$5$$ExternalSyntheticLambda1.invoke(D8$$SyntheticClass:0)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.foundation.ClickableNode$clickPointerInput$3.invoke-k-4lQ0M(Clickable.kt:699)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.foundation.ClickableNode$clickPointerInput$3.invoke(Clickable.kt:693)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.foundation.gestures.TapGestureDetectorKt$detectTapAndPress$2$1.invokeSuspend(TapGestureDetector.kt:266)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.DispatchedTaskKt.resume(DispatchedTask.kt:175)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.DispatchedTaskKt.dispatch(DispatchedTask.kt:164)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.CancellableContinuationImpl.dispatchResume(CancellableContinuationImpl.kt:466)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.CancellableContinuationImpl.resumeImpl(CancellableContinuationImpl.kt:500)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.CancellableContinuationImpl.resumeImpl$default(CancellableContinuationImpl.kt:489)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at kotlinx.coroutines.CancellableContinuationImpl.resumeWith(CancellableContinuationImpl.kt:364)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl$PointerEventHandlerCoroutine.offerPointerEvent(SuspendingPointerInputFilter.kt:830)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl.dispatchPointerEvent(SuspendingPointerInputFilter.kt:698)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl.onPointerEvent-H0pRuoY(SuspendingPointerInputFilter.kt:724)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.foundation.AbstractClickableNode.onPointerEvent-H0pRuoY(Clickable.kt:1159)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:436)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:422)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.NodeParent.dispatchMainEventPass(HitPathTracker.kt:275)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.HitPathTracker.dispatchChanges(HitPathTracker.kt:171)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.input.pointer.PointerInputEventProcessor.process-BIzXfog(PointerInputEventProcessor.kt:117)[0m
+[31m09-19 18:47:51.872 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.platform.AndroidComposeView.sendMotionEvent-8iAsVTc(AndroidComposeView.android.kt:2363)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.platform.AndroidComposeView.handleMotionEvent-8iAsVTc(AndroidComposeView.android.kt:2313)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at androidx.compose.ui.platform.AndroidComposeView.dispatchTouchEvent(AndroidComposeView.android.kt:2184)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTransformedTouchEvent(ViewGroup.java:3148)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTouchEvent(ViewGroup.java:2831)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTransformedTouchEvent(ViewGroup.java:3148)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTouchEvent(ViewGroup.java:2831)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTransformedTouchEvent(ViewGroup.java:3148)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTouchEvent(ViewGroup.java:2831)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTransformedTouchEvent(ViewGroup.java:3148)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewGroup.dispatchTouchEvent(ViewGroup.java:2831)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.internal.policy.DecorView.superDispatchTouchEvent(DecorView.java:510)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.internal.policy.PhoneWindow.superDispatchTouchEvent(PhoneWindow.java:2019)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.app.Dialog.dispatchTouchEvent(Dialog.java:937)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.internal.policy.DecorView.dispatchTouchEvent(DecorView.java:445)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.View.dispatchPointerEvent(View.java:17128)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$ViewPostImeInputStage.processPointerEvent(ViewRootImpl.java:8247)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$ViewPostImeInputStage.onProcess(ViewRootImpl.java:8001)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.deliver(ViewRootImpl.java:7382)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.onDeliverToNext(ViewRootImpl.java:7439)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.forward(ViewRootImpl.java:7405)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$AsyncInputStage.forward(ViewRootImpl.java:7571)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.apply(ViewRootImpl.java:7413)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$AsyncInputStage.apply(ViewRootImpl.java:7628)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.deliver(ViewRootImpl.java:7386)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.onDeliverToNext(ViewRootImpl.java:7439)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.forward(ViewRootImpl.java:7405)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.apply(ViewRootImpl.java:7413)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$InputStage.deliver(ViewRootImpl.java:7386)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl.deliverInputEvent(ViewRootImpl.java:10549)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl.doProcessInputEvents(ViewRootImpl.java:10500)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl.enqueueInputEvent(ViewRootImpl.java:10468)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl.processRawInputEvent(ViewRootImpl.java:10914)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$WindowInputEventReceiver.onInputEvent(ViewRootImpl.java:10671)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.InputEventReceiver.dispatchInputEvent(InputEventReceiver.java:303)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.InputEventReceiver.nativeConsumeBatchedInputEvents(Native Method)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.InputEventReceiver.consumeBatchedInputEvents(InputEventReceiver.java:262)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl.doConsumeBatchedInput(ViewRootImpl.java:10648)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.ViewRootImpl$ConsumeBatchedInputRunnable.run(ViewRootImpl.java:10763)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1570)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.Choreographer$CallbackRecord.run(Choreographer.java:1579)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.Choreographer.doCallbacks(Choreographer.java:1179)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.Choreographer.doFrame(Choreographer.java:1101)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.view.Choreographer$FrameDisplayEventReceiver.run(Choreographer.java:1553)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:1041)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:103)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.os.Looper.dispatchMessage(Looper.java:315)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:251)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:349)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:9041)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:593)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:929)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [androidx.compose.ui.platform.MotionDurationScaleImpl@8d02638, androidx.compose.runtime.BroadcastFrameClock@3958611, StandaloneCoroutine{Cancelling}@7a97376, AndroidUiDispatcher@7984d77][0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: Caused by: android.os.RemoteException: Remote stack trace:[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.server.wm.ActivityTaskSupervisor.checkStartAnyActivityPermission(ActivityTaskSupervisor.java:1227)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:1233)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:869)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1319)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: 	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1263)[0m
+[31m09-19 18:47:51.874 15692 15692 E AndroidRuntime: [0m
+[32m09-19 18:47:51.883 15692 15692 I Process : Sending signal. PID: 15692 SIG: 9[0m

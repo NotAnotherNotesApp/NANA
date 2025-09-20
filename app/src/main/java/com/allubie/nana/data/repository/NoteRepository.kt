@@ -2,10 +2,12 @@ package com.allubie.nana.data.repository
 
 import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.entity.NoteEntity
+import com.allubie.nana.data.entity.NoteFactory
+import com.allubie.nana.core.BaseRepository
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
-class NoteRepository(private val noteDao: NoteDao) {
+class NoteRepository(private val noteDao: NoteDao) : BaseRepository() {
     
     fun getAllNotes(): Flow<List<NoteEntity>> = noteDao.getActiveNotesFlow()
     
@@ -37,12 +39,22 @@ class NoteRepository(private val noteDao: NoteDao) {
     
     suspend fun emptyTrash() = noteDao.emptyTrash()
     
-    suspend fun createNote(title: String, content: String, category: String? = null): NoteEntity {
-        val note = NoteEntity(
-            id = UUID.randomUUID().toString(),
+    suspend fun createNote(
+        title: String,
+        content: String,
+        category: String? = null,
+        richContent: String = "",
+        htmlContent: String = "",
+        noteType: String = "text"
+    ): NoteEntity {
+        val note = NoteFactory.create(
+            id = idProvider.newId(),
             title = title,
             content = content,
-            category = category
+            category = category,
+            rich = richContent.ifBlank { content },
+            html = htmlContent.ifBlank { richContent.ifBlank { content } },
+            type = noteType
         )
         insertNote(note)
         return note

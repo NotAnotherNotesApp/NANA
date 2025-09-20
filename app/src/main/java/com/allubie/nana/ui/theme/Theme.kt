@@ -69,12 +69,13 @@ fun NANATheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (amoledTheme) {
-                Color.Black.toArgb()
-            } else {
-                colorScheme.primary.toArgb()
+            // Rely on edge-to-edge and themed surfaces; only adjust system bar icon appearance.
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = when {
+                amoledTheme -> false
+                else -> !darkTheme
             }
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = when {
+            controller.isAppearanceLightNavigationBars = when {
                 amoledTheme -> false
                 else -> !darkTheme
             }

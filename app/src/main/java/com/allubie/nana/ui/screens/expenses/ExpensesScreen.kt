@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Flight
@@ -39,8 +38,6 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.StackedBarChart
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,6 +49,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -80,14 +86,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.allubie.nana.data.preferences.AppPreferences
 import com.allubie.nana.utils.getCurrencySymbol
+import com.allubie.nana.ui.screens.expenses.getIconFromName
 
-data class ExpenseCategory(
-    val name: String,
-    val icon: ImageVector,
-    val color: Color,
-    val spent: Double,
-    val budget: Double
-)
 
 data class Expense(
     val id: String,
@@ -128,17 +128,6 @@ fun ExpensesScreen(
         )
     }
     
-    // Use actual category data from ViewModel instead of hardcoded values
-    val expenseCategories = uiState.categoriesWithSpending.map { categoryWithSpending ->
-        ExpenseCategory(
-            name = categoryWithSpending.category.name,
-            icon = getIconFromName(categoryWithSpending.category.iconName),
-            color = Color(android.graphics.Color.parseColor(categoryWithSpending.category.colorHex)),
-            spent = categoryWithSpending.spent,
-            budget = categoryWithSpending.category.monthlyBudget
-        )
-    }.filter { it.spent > 0 || it.budget > 0 }
-    
     val totalSpent = uiState.totalSpent
     val totalBudget = uiState.totalBudget
     
@@ -148,18 +137,25 @@ fun ExpensesScreen(
             TopAppBar(
                 title = { Text("Expenses") },
                 actions = {
-                    IconButton(onClick = { 
-                        // Show statistics - could expand the monthly overview card or navigate to detailed stats
-                    }) {
-                        Icon(Icons.Default.StackedBarChart, contentDescription = "Statistics")
+                    // Categories quick access moved here from overflow
+                    IconButton(onClick = { onCategoriesClick() }) {
+                        Icon(Icons.Default.Category, contentDescription = "Categories")
                     }
                     Box {
                         IconButton(onClick = { showOverflowMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
+                        val menuShape = RoundedCornerShape(12.dp)
                         DropdownMenu(
                             expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
+                            onDismissRequest = { showOverflowMenu = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            shape = menuShape,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier
+                                .clip(menuShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), menuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Settings") },
@@ -175,13 +171,6 @@ fun ExpensesScreen(
                                     onBudgetClick()
                                 }
                             )
-                            DropdownMenuItem(
-                                text = { Text("Manage Categories") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    onCategoriesClick()
-                                }
-                            )
                         }
                     }
                 },
@@ -189,10 +178,24 @@ fun ExpensesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddExpense
+            AnimatedVisibility(
+                visible = true,
+                enter = scaleIn(animationSpec = tween(180, easing = LinearOutSlowInEasing), initialScale = 0.9f) +
+                        fadeIn(animationSpec = tween(160, easing = LinearOutSlowInEasing)),
+                exit = scaleOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
+                       fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                FloatingActionButton(
+                    onClick = onAddExpense,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        hoveredElevation = 0.dp
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Expense")
+                }
             }
         }
     ) { paddingValues ->
@@ -244,82 +247,8 @@ fun ExpensesScreen(
                     )
                 }
                 
-                if (expenseCategories.isEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    Icons.Default.Category,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = "No budget categories",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Create categories with budgets to track your spending effectively",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Button(
-                                    onClick = onBudgetClick,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Manage Budget")
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Categories",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    
-                    items(expenseCategories.chunked(2)) { categoryPair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            categoryPair.forEach { category ->
-                                CategoryCard(
-                                    category = category,
-                                    currencySymbol = currencySymbol,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            // Fill remaining space if odd number of categories
-                            if (categoryPair.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-                
+                // Categories breakdown removed from this screen. Use the top app bar action to manage/view categories.
+
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -421,12 +350,12 @@ fun MonthlyOverviewCard(totalSpent: Double, totalBudget: Double, currencySymbol:
             Spacer(modifier = Modifier.height(16.dp))
             
             LinearProgressIndicator(
-                progress = budgetProgress,
+                progress = { budgetProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = if (budgetProgress > 0.8f) Color.Red else MaterialTheme.colorScheme.primary,
+                color = if (budgetProgress > 0.8f) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             )
             
@@ -444,87 +373,13 @@ fun MonthlyOverviewCard(totalSpent: Double, totalBudget: Double, currencySymbol:
                 Text(
                     text = "Remaining: $currencySymbol${"%.2f".format(remainingBudget)}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (remainingBudget < 0) Color.Red else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = if (remainingBudget < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
         }
     }
 }
 
-@Composable
-fun CategoryCard(category: ExpenseCategory, currencySymbol: String, modifier: Modifier = Modifier) {
-    val progress = if (category.budget > 0) (category.spent / category.budget).toFloat() else 0f
-    
-    Card(
-        modifier = modifier
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(category.color.copy(alpha = 0.2f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = category.icon,
-                        contentDescription = category.name,
-                        tint = category.color,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                Column {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "$currencySymbol${"%.0f".format(category.spent)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            LinearProgressIndicator(
-                progress = progress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp)),
-                color = category.color,
-                trackColor = category.color.copy(alpha = 0.2f)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "Budget: $currencySymbol${"%.0f".format(category.budget)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-        }
-    }
-}
 
 @Composable
 fun ExpenseCard(
@@ -548,7 +403,7 @@ fun ExpenseCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -636,48 +491,8 @@ fun ExpenseCard(
     }
 }
 
-private fun getIconFromName(iconName: String): ImageVector {
-    return when (iconName) {
-        "ShoppingCart" -> Icons.Default.ShoppingCart
-        "Fastfood" -> Icons.Default.Fastfood
-        "LocalGasStation" -> Icons.Default.LocalGasStation
-        "School" -> Icons.Default.School
-        "Home" -> Icons.Default.Home
-        "Work" -> Icons.Default.Work
-        "Flight" -> Icons.Default.Flight
-        "LocalHospital" -> Icons.Default.LocalHospital
-        "SportsEsports" -> Icons.Default.SportsEsports
-        "FitnessCenter" -> Icons.Default.FitnessCenter
-        "Movie" -> Icons.Default.Movie
-        "MusicNote" -> Icons.Default.MusicNote
-        "Pets" -> Icons.Default.Pets
-        "Build" -> Icons.Default.Build
-        "AttachMoney" -> Icons.Default.AttachMoney
-        else -> Icons.Default.AttachMoney
-    }
-}
+// icon mapping centralized in CategoryUi.kt
 
-private fun getCategoryIcon(categoryName: String): ImageVector {
-    return when (categoryName.lowercase()) {
-        "food" -> Icons.Default.Fastfood
-        "education" -> Icons.Default.School
-        "transport" -> Icons.Default.LocalGasStation
-        "shopping" -> Icons.Default.ShoppingCart
-        "general" -> Icons.Default.AttachMoney
-        else -> Icons.Default.AttachMoney
-    }
-}
-
-private fun getCategoryColor(categoryName: String): Color {
-    return when (categoryName.lowercase()) {
-        "food" -> Color(0xFFFF6B6B)
-        "education" -> Color(0xFF4ECDC4)
-        "transport" -> Color(0xFF45B7D1)
-        "shopping" -> Color(0xFF96CEB4)
-        "general" -> Color(0xFFDDA0DD)
-        else -> Color(0xFFDDA0DD)
-    }
-}
 
 private fun formatExpenseDate(date: kotlinx.datetime.LocalDate): String {
     val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date

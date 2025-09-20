@@ -23,18 +23,9 @@ class DatabaseCallback : RoomDatabase.Callback() {
     private suspend fun populateDefaultCategories(database: AppDatabase) {
         val expenseDao = database.expenseDao()
         
-        val defaultCategories = listOf(
-            ExpenseCategoryEntity("Food", "Fastfood", "#FF6B6B", 600.0),
-            ExpenseCategoryEntity("Education", "School", "#4ECDC4", 300.0),
-            ExpenseCategoryEntity("Transport", "LocalGasStation", "#45B7D1", 200.0),
-            ExpenseCategoryEntity("Shopping", "ShoppingCart", "#96CEB4", 250.0),
-            ExpenseCategoryEntity("Entertainment", "Movie", "#FFA726", 150.0),
-            ExpenseCategoryEntity("Health", "LocalHospital", "#AB47BC", 200.0)
-        )
-        
-        defaultCategories.forEach { category ->
-            expenseDao.insertCategory(category)
-        }
+        // No hard-coded categories. Start with an empty set and let users create their own.
+        val defaultCategories = emptyList<ExpenseCategoryEntity>()
+        defaultCategories.forEach { category -> expenseDao.insertCategory(category) }
     }
     
     companion object {

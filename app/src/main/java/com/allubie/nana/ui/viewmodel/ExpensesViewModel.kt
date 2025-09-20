@@ -113,6 +113,18 @@ class ExpensesViewModel(private val repository: ExpenseRepository) : ViewModel()
             repository.updateCategory(category)
         }
     }
+
+    fun renameCategory(
+        oldName: String,
+        newName: String,
+        iconName: String,
+        colorHex: String,
+        monthlyBudget: Double
+    ) {
+        viewModelScope.launch {
+            repository.renameCategory(oldName, newName, iconName, colorHex, monthlyBudget)
+        }
+    }
     
     fun deleteCategory(category: ExpenseCategoryEntity) {
         viewModelScope.launch {

@@ -21,7 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
@@ -38,9 +38,21 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,6 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,6 +82,8 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.plus
 import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.Instant
 
 data class ScheduleItem(
     val id: String,
@@ -95,8 +110,12 @@ fun SchedulesScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val allSchedules by viewModel.allSchedules.collectAsState(initial = emptyList())
-    var showCalendarDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate?.atStartOfDayIn(TimeZone.currentSystemDefault())?.toEpochMilliseconds()
+    )
     
     val displaySchedules = allSchedules.map { schedule: com.allubie.nana.data.entity.ScheduleEntity ->
         ScheduleItem(
@@ -137,15 +156,25 @@ fun SchedulesScreen(
         )
     }
     
-    if (showCalendarDialog) {
-        CalendarViewDialog(
-            schedules = displaySchedules,
-            onDismiss = { showCalendarDialog = false },
-            onDateSelected = { date ->
-                selectedDate = if (selectedDate == date) null else date
-                showCalendarDialog = false
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = datePickerState.selectedDateMillis
+                    if (millis != null) {
+                        val picked = Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault()).date
+                        selectedDate = if (selectedDate == picked) null else picked
+                    }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
             }
-        )
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
     
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -162,21 +191,57 @@ fun SchedulesScreen(
             TopAppBar(
                 title = { Text("Schedules") },
                 actions = {
-                    IconButton(onClick = { showCalendarDialog = true }) {
+                    IconButton(onClick = { showDatePicker = true }) {
                         Icon(Icons.Default.CalendarMonth, contentDescription = "Calendar")
                     }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More")
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                        }
+                        val menuShape = RoundedCornerShape(12.dp)
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            shape = menuShape,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier
+                                .clip(menuShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), menuShape)
+                        ) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Settings") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onSettingsClick()
+                                }
+                            )
+                        }
                     }
                 },
                 scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddSchedule
+            AnimatedVisibility(
+                visible = true,
+                enter = scaleIn(animationSpec = tween(180, easing = LinearOutSlowInEasing), initialScale = 0.9f) +
+                        fadeIn(animationSpec = tween(160, easing = LinearOutSlowInEasing)),
+                exit = scaleOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
+                       fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Schedule")
+                FloatingActionButton(
+                    onClick = onAddSchedule,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        hoveredElevation = 0.dp
+                    )
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Schedule")
+                }
             }
         }
     ) { paddingValues ->
@@ -401,7 +466,7 @@ fun ScheduleCard(
                 MaterialTheme.colorScheme.surface
             }
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.elevation),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(Spacing.cornerRadiusSmall)
     ) {
         Column(
@@ -563,140 +628,4 @@ private fun formatDate(date: LocalDate): String {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CalendarViewDialog(
-    schedules: List<ScheduleItem>,
-    onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit
-) {
-    val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Date") },
-        text = {
-            CalendarGrid(
-                month = currentDate,
-                schedules = schedules,
-                onDateSelected = onDateSelected
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun CalendarGrid(
-    month: LocalDate,
-    schedules: List<ScheduleItem>,
-    onDateSelected: (LocalDate) -> Unit
-) {
-    val firstDayOfMonth = LocalDate(month.year, month.month, 1)
-    @Suppress("UNUSED_VARIABLE")
-    val lastDayOfMonth = firstDayOfMonth.plus(DatePeriod(months = 1)).minus(DatePeriod(days = 1))
-    val startCalendar = firstDayOfMonth.minus(DatePeriod(days = firstDayOfMonth.dayOfWeek.ordinal))
-    
-    Column {
-        // Day headers
-        Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
-                Text(
-                    text = day,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Calendar days
-        for (week in 0..5) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                for (day in 0..6) {
-                    val date = startCalendar.plus(DatePeriod(days = week * 7 + day))
-                    val isCurrentMonth = date.month == month.month
-                    val hasSchedules = schedules.any { parseDate(it.date) == date }
-                    val isToday = date == Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-                    
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clickable(enabled = isCurrentMonth) { 
-                                if (isCurrentMonth) onDateSelected(date)
-                            }
-                            .background(
-                                when {
-                                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                    hasSchedules -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                                    else -> MaterialTheme.colorScheme.surface
-                                },
-                                RoundedCornerShape(4.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = date.dayOfMonth.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = when {
-                                !isCurrentMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                isToday -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                        if (hasSchedules) {
-                            Box(
-                                modifier = Modifier
-                                    .size(4.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.secondary,
-                                        CircleShape
-                                    )
-                                    .align(Alignment.BottomCenter)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun getMonthName(monthNumber: Int): String {
-    return when (monthNumber) {
-        1 -> "January"
-        2 -> "February"
-        3 -> "March"
-        4 -> "April"
-        5 -> "May"
-        6 -> "June"
-        7 -> "July"
-        8 -> "August"
-        9 -> "September"
-        10 -> "October"
-        11 -> "November"
-        12 -> "December"
-        else -> "Unknown"
-    }
-}
-
-private fun parseDate(dateString: String): LocalDate {
-    return try {
-        // Assuming format is MM/dd/yyyy or similar
-        val parts = dateString.split("/")
-        if (parts.size == 3) {
-            LocalDate(parts[2].toInt(), parts[0].toInt(), parts[1].toInt())
-        } else {
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-        }
-    } catch (e: Exception) {
-        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-    }
-}
+// Removed custom calendar; using Material3 DatePicker instead.
