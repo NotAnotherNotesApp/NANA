@@ -33,6 +33,19 @@ NANA is a minimal Android application designed specifically for students to mana
 - Customizable expense categories
 - Visual spending analytics
 
+### Screenshots
+
+<div align="center">
+<div>
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/1.png" width="30%" />
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/2.png" width="30%" />
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/4.png" width="30%" />
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/5.png" width="30%" />
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/6.png" width="30%" />
+<img src="fastlane/metadata/metadata/images/phoneScreenshots/7.png" width="30%" />
+</div>
+</div>
+
 ## Technical Specifications
 
 - **Platform**: Android
