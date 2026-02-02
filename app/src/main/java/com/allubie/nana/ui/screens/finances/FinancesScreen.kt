@@ -527,6 +527,7 @@ private fun TransactionItem(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val isExpense = transaction.type == TransactionType.EXPENSE
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     
     // Format amount with currency symbol
     val formattedAmount = remember(transaction.amount, currencySymbol) {
@@ -536,6 +537,31 @@ private fun TransactionItem(
     // Get label from map for icon
     val label = labelMap[transaction.category.lowercase()]
     val icon = CategoryIcons.getIcon(label?.iconName)
+    
+    // Theme-aware colors
+    val cardColor = if (isDarkTheme) CardSurfaceDark else CardSurfaceLight
+    val cardBorder = if (isDarkTheme) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+    } else {
+        CardBorderLight
+    }
+    val titleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
+    val subtitleColor = if (isDarkTheme) TextSecondary else OnSurfaceVariantLight
+    val amountColor = if (isExpense) {
+        if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
+    } else {
+        if (isDarkTheme) MaterialTheme.colorScheme.primary else Income
+    }
+    val iconBackgroundColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+    }
+    val iconTintColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        OnSurfaceVariantLight
+    }
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
@@ -592,8 +618,8 @@ private fun TransactionItem(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = CardSurfaceDark,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+            color = cardColor,
+            border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder)
         ) {
         Row(
             modifier = Modifier
@@ -606,13 +632,13 @@ private fun TransactionItem(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(iconBackgroundColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = iconTintColor,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -624,13 +650,13 @@ private fun TransactionItem(
                     text = transaction.title.ifEmpty { transaction.category },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = titleColor
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "${transaction.category} - ${dayFormat.format(Date(transaction.date))}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = subtitleColor
                 )
             }
             
@@ -638,7 +664,7 @@ private fun TransactionItem(
                 text = "${if (isExpense) "-" else "+"}$formattedAmount",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isExpense) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
+                color = amountColor
             )
         }
     }
