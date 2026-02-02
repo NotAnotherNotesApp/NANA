@@ -73,17 +73,15 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 
 ## Screenshots
 
-| Notes | Schedule | Routines |
-|:---:|:---:|:---:|
-| ![notes](https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true) | ![schedule](https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true) | ![routine](https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true) |
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true" width="19.2%" alt="notes"> 
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true" width="19.2%" alt="schedule">
+ <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true" width="19.2%" alt="routine"> 
+ <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true" width="19.2%" alt="finance">
 
-| Finance | Finance Overview | Finance Budget |
-|:---:|:---:|:---:|
-| ![finance](https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true) | ![finance-overview](https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true) | ![finance-budget](https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true) |
-
-| Schedule Editor | Notes Editor |
-|:---:|:---:|
-| ![schedule-add](https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true) | ![notes-editor](https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true) |
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true" width="19.2%" alt="finance-overview"> 
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true" width="19.2%" alt="finance-budget"> 
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true" width="19.2%" alt="schedule-add">
+<img src="https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true" width="19.2%" alt="notes-editor">
 
 ## Contributing
 
