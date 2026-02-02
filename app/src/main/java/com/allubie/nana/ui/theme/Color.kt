@@ -87,6 +87,15 @@ val CardSurfaceDark = Color(0xFF252836)
 val CardSurfaceElevatedDark = Color(0xFF2E3344)
 val CardBorderDark = Color(0xFF3A3F4D)
 
+// Card/Surface colors for light theme
+val CardSurfaceLight = Color(0xFFFFFFFF)
+val CardSurfaceElevatedLight = Color(0xFFF0F4F8)
+val CardBorderLight = Color(0xFFE2E8F0)
+
+// Finance card colors for light theme (better contrast)
+val IncomeCardLight = Color(0xFFE8F5E9)  // Light green tint
+val ExpenseCardLight = Color(0xFFFBE9E7) // Light red/coral tint
+
 // Text colors
 val TextSecondary = Color(0xFF9CA3AF)
 val TextTertiary = Color(0xFF6B7280)

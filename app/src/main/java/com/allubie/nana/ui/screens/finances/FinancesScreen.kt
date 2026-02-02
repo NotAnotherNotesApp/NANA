@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -439,11 +440,22 @@ private fun FinanceCard(
     isIncome: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    
+    val cardColor = if (isDarkTheme) {
+        if (isIncome) CardSurfaceElevatedDark else CardSurfaceDark
+    } else {
+        if (isIncome) IncomeCardLight else ExpenseCardLight
+    }
+    
+    val titleColor = if (isDarkTheme) TextSecondary else OnSurfaceVariantLight
+    val amountColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
+    
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        color = if (isIncome) CardSurfaceElevatedDark else CardSurfaceDark,
-        border = if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
+        color = cardColor,
+        border = if (!isDarkTheme) androidx.compose.foundation.BorderStroke(1.dp, if (isIncome) Income.copy(alpha = 0.3f) else Expense.copy(alpha = 0.3f)) else if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
     ) {
         Box {
             // Large background icon (opacity-10)
@@ -454,7 +466,7 @@ private fun FinanceCard(
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
                     .size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                tint = if (isDarkTheme) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f) else OnSurfaceLight.copy(alpha = 0.08f)
             )
             
             Column(
@@ -468,15 +480,15 @@ private fun FinanceCard(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(
-                                if (isIncome) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                                if (isIncome) Income.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
+                                else Expense.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            tint = if (isIncome) Income else Expense,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -485,7 +497,7 @@ private fun FinanceCard(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = TextSecondary
+                        color = titleColor
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -493,7 +505,7 @@ private fun FinanceCard(
                     text = amount,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = amountColor,
                     letterSpacing = (-0.5).sp
                 )
             }
