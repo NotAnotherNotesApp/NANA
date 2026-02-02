@@ -7,6 +7,24 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+
+
+## Screenshots
+
+<div align="center">
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true" width="19.2%" alt="notes" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true" width="19.2%" alt="schedule" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true" width="19.2%" alt="routine" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true" width="19.2%" alt="finance" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true" width="19.2%" alt="finance-overview" />
+    <br/>
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true" width="19.2%" alt="finance-budget" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true" width="19.2%" alt="schedule-add" />
+    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true" width="19.2%" alt="notes-editor" />
+    <br/>
+    <br/>
+</div>
+
 ## Features
 
 ### Notes
@@ -51,41 +69,9 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 - Customizable labels and categories
 - Currency symbol configuration
 
-## Requirements
+## Download
 
-- Android 8.0 (API 26) or higher
-- Android Studio Hedgehog or newer
-
-## Building
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/nana.git
-   cd nana/android
-   ```
-
-2. Open in Android Studio
-
-3. Sync Gradle files
-
-4. Run on an emulator or on your device
-
-## Screenshots
-
-<div align="center">
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true" width="19.2%" alt="notes" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true" width="19.2%" alt="schedule" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true" width="19.2%" alt="routine" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true" width="19.2%" alt="finance" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true" width="19.2%" alt="finance-overview" />
-    <br/>
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true" width="19.2%" alt="finance-budget" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true" width="19.2%" alt="schedule-add" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true" width="19.2%" alt="notes-editor" />
-    <br/>
-    <br/>
-</div>
+[<img src="https://s1.ax1x.com/2023/01/12/pSu1a36.png" alt="Get it on GitHub" height="80">](https://github.com/allubie/NANA/releases)
 
 ## Contributing
 
