@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -455,11 +456,17 @@ fun NoteEditorScreen(
                             description = "Highlight",
                             isActive = isHighlight,
                             onClick = { 
+                                // Use addSpanStyle for highlight as it works better with selection
                                 if (isHighlight) {
                                     richTextState.removeSpanStyle(SpanStyle(background = Color.Yellow.copy(alpha = 0.4f)))
                                 } else {
                                     richTextState.addSpanStyle(SpanStyle(background = Color.Yellow.copy(alpha = 0.4f)))
                                 }
+                                // Insert and delete a zero-width space to force UI refresh
+                                val currentSelection = richTextState.selection
+                                richTextState.addTextAfterSelection("\u200B")
+                                richTextState.selection = currentSelection
+                                richTextState.removeTextRange(TextRange(currentSelection.max, currentSelection.max + 1))
                             }
                         )
                         FormattingButton(

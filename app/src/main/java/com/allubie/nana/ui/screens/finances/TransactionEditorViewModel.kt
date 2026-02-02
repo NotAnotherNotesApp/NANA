@@ -29,7 +29,7 @@ data class TransactionEditorUiState(
     val title: String = "",
     val amount: String = "",
     val type: TransactionType = TransactionType.EXPENSE,
-    val category: String = "Food",
+    val category: String = "",  // Will be set from available labels
     val note: String = "",
     val date: Long = System.currentTimeMillis(),
     val isLoading: Boolean = false
@@ -119,11 +119,15 @@ class TransactionEditorViewModel(
     }
     
     fun updateType(type: TransactionType) {
-        _uiState.update { 
-            it.copy(
-                type = type,
-                category = if (type == TransactionType.EXPENSE) "Food" else "Allowance"
-            ) 
+        viewModelScope.launch {
+            val labels = if (type == TransactionType.EXPENSE) expenseLabels.value else incomeLabels.value
+            val firstCategory = labels.firstOrNull()?.name ?: ""
+            _uiState.update { 
+                it.copy(
+                    type = type,
+                    category = firstCategory
+                ) 
+            }
         }
     }
     

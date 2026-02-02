@@ -80,6 +80,13 @@ fun TransactionEditorScreen(
     val currentLabels = if (uiState.type == TransactionType.EXPENSE) expenseLabels else incomeLabels
     val currentLabel = currentLabels.find { it.name == uiState.category } ?: currentLabels.firstOrNull()
     
+    // Set initial category from available labels when they load (only for new transactions)
+    LaunchedEffect(currentLabels, transactionId) {
+        if (transactionId == null && uiState.category.isEmpty() && currentLabels.isNotEmpty()) {
+            viewModel.updateCategory(currentLabels.first().name)
+        }
+    }
+    
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {

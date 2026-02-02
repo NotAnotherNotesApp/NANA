@@ -373,10 +373,8 @@ fun NoteViewerScreen(
                             .fillMaxWidth()
                             .padding(bottom = 32.dp),
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 18.sp,
                             lineHeight = 28.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.87f),
-                            fontWeight = FontWeight.Medium
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.87f)
                         )
                     )
                 }

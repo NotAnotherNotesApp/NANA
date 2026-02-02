@@ -9,7 +9,8 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 
 ## Features
 
-### 📝 Notes
+### Notes
+
 - Rich text editor with formatting (bold, italic, underline, strikethrough)
 - Headers (H1, H2, H3), lists (ordered/unordered), and code blocks
 - Note labels/tags with customizable colors
@@ -17,43 +18,38 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 - Pin important notes
 - Archive and trash management
 
-### ✅ Checklists
+### Checklists
+
 - Create and manage task lists
 - Check off completed items
 - Organize with labels
 
-### 💰 Finance Tracker
+### Finance Tracker
+
 - Track income and expenses
 - Customizable expense/income categories with unique colors
 - Budget management with weekly/monthly/yearly periods
 - Visual spending breakdown with donut charts
 - Cash flow overview and insights
 
-### 📅 Schedule
+### Schedule
+
 - Event management with categories
 - Visual calendar integration
 - Event viewer with details
 
-### 🔄 Routines
+### Routines
+
 - Create daily/weekly routines
 - Track routine completion
 - Statistics and progress tracking
 
-### ⚙️ Settings
+### Settings
+
 - Multiple theme options (Light, Dark, AMOLED Black, System)
 - Dynamic color support (Material You)
 - Customizable labels and categories
 - Currency symbol configuration
-
-## Tech Stack
-
-- **Language:** Kotlin
-- **UI Framework:** Jetpack Compose with Material Design 3
-- **Architecture:** MVVM with ViewModels
-- **Database:** Room (SQLite)
-- **Dependency Injection:** Manual with ViewModelProvider.Factory
-- **Async:** Kotlin Coroutines & Flow
-- **Rich Text:** Compose Rich Editor
 
 ## Requirements
 
@@ -63,6 +59,7 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 ## Building
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/nana.git
    cd nana/android
@@ -72,31 +69,21 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 
 3. Sync Gradle files
 
-4. Run on an emulator or physical device
-
-## Project Structure
-
-```
-app/src/main/java/com/allubie/nana/
-├── data/
-│   ├── dao/          # Room DAOs
-│   ├── model/        # Data models & entities
-│   └── repository/   # Repository layer
-├── ui/
-│   ├── screens/      # Feature screens
-│   │   ├── finances/
-│   │   ├── notes/
-│   │   ├── routines/
-│   │   ├── schedule/
-│   │   └── settings/
-│   └── theme/        # App theming
-├── util/             # Utility classes
-└── NanaApplication.kt
-```
+4. Run on an emulator or on your device
 
 ## Screenshots
 
-*Coming soon*
+| Notes | Schedule | Routines |
+|:---:|:---:|:---:|
+| ![notes](https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true) | ![schedule](https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true) | ![routine](https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true) |
+
+| Finance | Finance Overview | Finance Budget |
+|:---:|:---:|:---:|
+| ![finance](https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true) | ![finance-overview](https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true) | ![finance-budget](https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true) |
+
+| Schedule Editor | Notes Editor |
+|:---:|:---:|
+| ![schedule-add](https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true) | ![notes-editor](https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true) |
 
 ## Contributing
 
