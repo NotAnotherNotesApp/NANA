@@ -52,4 +52,10 @@ interface LabelDao {
     
     @Query("UPDATE labels SET sortOrder = :sortOrder WHERE id = :id")
     suspend fun updateSortOrder(id: Long, sortOrder: Int)
+    
+    @Query("SELECT * FROM labels")
+    suspend fun getAllLabelsSync(): List<Label>
+    
+    @Query("DELETE FROM labels")
+    suspend fun deleteAllLabels()
 }

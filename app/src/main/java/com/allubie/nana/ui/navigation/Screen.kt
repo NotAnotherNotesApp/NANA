@@ -152,13 +152,11 @@ sealed class Screen(
     )
     
     data object LabelsAndCategories : Screen(
-        route = "settings/labels/{labelType}",
+        route = "settings/labels",
         title = "Labels & Categories",
         selectedIcon = Icons.Filled.StickyNote2,
         unselectedIcon = Icons.Outlined.StickyNote2
-    ) {
-        fun createRoute(labelType: String? = null) = "settings/labels/${labelType ?: "all"}"
-    }
+    )
 }
 
 val bottomNavItems = listOf(

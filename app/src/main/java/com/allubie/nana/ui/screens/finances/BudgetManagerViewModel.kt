@@ -9,12 +9,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.dao.BudgetDao
-import com.allubie.nana.data.dao.LabelDao
 import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
-import com.allubie.nana.data.model.Label
-import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.TransactionType
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,22 +20,14 @@ import java.util.*
 class BudgetManagerViewModel(
     private val budgetDao: BudgetDao,
     private val transactionDao: TransactionDao,
-    private val labelDao: LabelDao,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance().get(Calendar.MONTH))
     val selectedMonth: StateFlow<Int> = _selectedMonth.asStateFlow()
     
-    private val _selectedYear = MutableStateFlow(Calendar.getInstance().get(Calendar.YEAR))
-    val selectedYear: StateFlow<Int> = _selectedYear.asStateFlow()
-    
     val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
-    
-    // Expense labels from database (synced with settings)
-    val expenseLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EXPENSE)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     // Total budget from preferences (user-set overall limit)
     val totalBudgetLimit: StateFlow<Double> = preferencesManager.totalBudget
@@ -72,10 +61,12 @@ class BudgetManagerViewModel(
     // Calculate spending per category for the selected month
     val categorySpending: StateFlow<Map<String, Double>> = combine(
         transactionDao.getAllTransactions(),
-        _selectedMonth,
-        _selectedYear
-    ) { transactions, month, year ->
-        // Filter transactions for selected month/year and calculate per category
+        _selectedMonth
+    ) { transactions, month ->
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        
+        // Filter transactions for selected month and calculate per category
         transactions
             .filter { transaction ->
                 transaction.type == TransactionType.EXPENSE &&
@@ -101,9 +92,8 @@ class BudgetManagerViewModel(
         initialValue = 0.0
     )
     
-    fun selectMonth(month: Int, year: Int) {
+    fun selectMonth(month: Int) {
         _selectedMonth.value = month
-        _selectedYear.value = year
     }
     
     fun addBudget(category: String, amount: Double, iconName: String = "") {
@@ -145,7 +135,6 @@ class BudgetManagerViewModel(
                 BudgetManagerViewModel(
                     budgetDao = database.budgetDao(),
                     transactionDao = database.transactionDao(),
-                    labelDao = database.labelDao(),
                     preferencesManager = application.preferencesManager
                 )
             }

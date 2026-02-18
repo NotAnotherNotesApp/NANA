@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +35,7 @@ import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.ui.theme.Expense
 import com.allubie.nana.ui.theme.Income
 import com.allubie.nana.util.CategoryIcons
-import com.allubie.nana.util.CurrencyFormatter
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import com.allubie.nana.ui.theme.*
@@ -72,12 +71,16 @@ fun FinancesScreen(
     val balance = totalIncome - totalExpenses
     // If budget exists, compare expenses to budget; otherwise compare income to expenses
     val isOnTrack = if (hasBudget && totalBudget > 0) totalExpenses <= totalBudget else balance >= 0
-    val dateFormat = remember { SimpleDateFormat("MMMM yyyy", Locale.getDefault()) }
-    val dayFormat = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
+    val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val dayFormat = SimpleDateFormat("MMM d", Locale.getDefault())
     
-    // Format currency using centralized formatter
-    fun formatCurrency(amount: Double, showSign: Boolean = false): String {
-        return CurrencyFormatter.formatWithSymbol(amount, currencySymbol, showSign)
+    // Format currency with symbol from settings
+    fun formatCurrency(amount: Double): String {
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(kotlin.math.abs(amount))
+        return "$currencySymbol$formatted"
     }
     
     Scaffold(
@@ -215,8 +218,7 @@ fun FinancesScreen(
                         text = formatCurrency(balance),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-1).sp,
-                        color = if (balance < 0) Expense else MaterialTheme.colorScheme.onSurface
+                        letterSpacing = (-1).sp
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -440,22 +442,11 @@ private fun FinanceCard(
     isIncome: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    
-    val cardColor = if (isDarkTheme) {
-        if (isIncome) CardSurfaceElevatedDark else CardSurfaceDark
-    } else {
-        if (isIncome) IncomeCardLight else ExpenseCardLight
-    }
-    
-    val titleColor = if (isDarkTheme) TextSecondary else OnSurfaceVariantLight
-    val amountColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
-    
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        color = cardColor,
-        border = if (!isDarkTheme) androidx.compose.foundation.BorderStroke(1.dp, if (isIncome) Income.copy(alpha = 0.3f) else Expense.copy(alpha = 0.3f)) else if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
+        color = if (isIncome) CardSurfaceElevatedDark else CardSurfaceDark,
+        border = if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
     ) {
         Box {
             // Large background icon (opacity-10)
@@ -466,7 +457,7 @@ private fun FinanceCard(
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
                     .size(48.dp),
-                tint = if (isDarkTheme) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f) else OnSurfaceLight.copy(alpha = 0.08f)
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
             )
             
             Column(
@@ -480,15 +471,15 @@ private fun FinanceCard(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(
-                                if (isIncome) Income.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
-                                else Expense.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
+                                if (isIncome) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (isIncome) Income else Expense,
+                            tint = if (isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -497,7 +488,7 @@ private fun FinanceCard(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = titleColor
+                        color = TextSecondary
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -505,7 +496,7 @@ private fun FinanceCard(
                     text = amount,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = amountColor,
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.5).sp
                 )
             }
@@ -527,41 +518,22 @@ private fun TransactionItem(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val isExpense = transaction.type == TransactionType.EXPENSE
-    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     
     // Format amount with currency symbol
     val formattedAmount = remember(transaction.amount, currencySymbol) {
-        CurrencyFormatter.formatWithSymbol(transaction.amount, currencySymbol)
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(transaction.amount)
+        "$currencySymbol$formatted"
     }
     
-    // Get label from map for icon
+    // Get label from map for colors and icon
     val label = labelMap[transaction.category.lowercase()]
+    val iconColor = label?.let { Color(it.color) } 
+        ?: if (isExpense) Color(0xFF9E9E9E) else Color(0xFF9C27B0)
+    val bgColor = iconColor.copy(alpha = 0.15f)
     val icon = CategoryIcons.getIcon(label?.iconName)
-    
-    // Theme-aware colors
-    val cardColor = if (isDarkTheme) CardSurfaceDark else CardSurfaceLight
-    val cardBorder = if (isDarkTheme) {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-    } else {
-        CardBorderLight
-    }
-    val titleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
-    val subtitleColor = if (isDarkTheme) TextSecondary else OnSurfaceVariantLight
-    val amountColor = if (isExpense) {
-        if (isDarkTheme) MaterialTheme.colorScheme.onSurface else OnSurfaceLight
-    } else {
-        if (isDarkTheme) MaterialTheme.colorScheme.primary else Income
-    }
-    val iconBackgroundColor = if (isDarkTheme) {
-        MaterialTheme.colorScheme.surfaceVariant
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-    }
-    val iconTintColor = if (isDarkTheme) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        OnSurfaceVariantLight
-    }
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
@@ -618,8 +590,8 @@ private fun TransactionItem(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = cardColor,
-            border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder)
+            color = CardSurfaceDark,
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
         ) {
         Row(
             modifier = Modifier
@@ -627,18 +599,18 @@ private fun TransactionItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category icon
+            // Category icon with pastel background
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(iconBackgroundColor),
+                    .background(bgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = iconTintColor,
+                    tint = iconColor,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -650,13 +622,13 @@ private fun TransactionItem(
                     text = transaction.title.ifEmpty { transaction.category },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = titleColor
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "${transaction.category} - ${dayFormat.format(Date(transaction.date))}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = subtitleColor
+                    color = TextSecondary
                 )
             }
             
@@ -664,7 +636,7 @@ private fun TransactionItem(
                 text = "${if (isExpense) "-" else "+"}$formattedAmount",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = amountColor
+                color = if (isExpense) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
             )
         }
     }

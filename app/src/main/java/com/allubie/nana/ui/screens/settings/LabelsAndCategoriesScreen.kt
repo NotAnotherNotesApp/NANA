@@ -7,9 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +34,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.model.Label
-import com.allubie.nana.data.model.LabelColors
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.repository.LabelRepository
 import com.allubie.nana.util.CategoryIcons
@@ -45,30 +43,23 @@ import kotlinx.coroutines.launch
 // ViewModel
 class LabelsViewModel(private val repository: LabelRepository) : ViewModel() {
     
-    // Loading state - true until first data arrives
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val noteLabels: StateFlow<List<Label>> = repository.getLabelsByType(LabelType.NOTE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    // Single query, filter in memory - Eagerly starts flow immediately
-    private val allLabels: StateFlow<List<Label>> = repository.getAllLabels()
-        .onEach { _isLoading.value = false }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val eventLabels: StateFlow<List<Label>> = repository.getLabelsByType(LabelType.EVENT)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    val noteLabels: StateFlow<List<Label>> = allLabels
-        .map { labels -> labels.filter { it.type == LabelType.NOTE } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val expenseCategories: StateFlow<List<Label>> = repository.getLabelsByType(LabelType.EXPENSE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    val eventLabels: StateFlow<List<Label>> = allLabels
-        .map { labels -> labels.filter { it.type == LabelType.EVENT } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val incomeCategories: StateFlow<List<Label>> = repository.getLabelsByType(LabelType.INCOME)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    val expenseCategories: StateFlow<List<Label>> = allLabels
-        .map { labels -> labels.filter { it.type == LabelType.EXPENSE } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    
-    val incomeCategories: StateFlow<List<Label>> = allLabels
-        .map { labels -> labels.filter { it.type == LabelType.INCOME } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    init {
+        viewModelScope.launch {
+            repository.seedPresetsIfNeeded()
+        }
+    }
     
     fun createLabel(name: String, type: LabelType, iconName: String?, color: Int) {
         viewModelScope.launch {
@@ -104,14 +95,12 @@ class LabelsViewModel(private val repository: LabelRepository) : ViewModel() {
 @Composable
 fun LabelsAndCategoriesScreen(
     database: NanaDatabase,
-    onNavigateBack: () -> Unit,
-    initialLabelType: String? = null
+    onNavigateBack: () -> Unit
 ) {
     val viewModel: LabelsViewModel = viewModel(
         factory = LabelsViewModel.Factory(database)
     )
     
-    val isLoading by viewModel.isLoading.collectAsState()
     val noteLabels by viewModel.noteLabels.collectAsState()
     val eventLabels by viewModel.eventLabels.collectAsState()
     val expenseCategories by viewModel.expenseCategories.collectAsState()
@@ -120,28 +109,6 @@ fun LabelsAndCategoriesScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var editingLabel by remember { mutableStateOf<Label?>(null) }
     var addingType by remember { mutableStateOf<LabelType?>(null) }
-    
-    // Handle initial type from navigation (for quick add mode)
-    LaunchedEffect(initialLabelType) {
-        when (initialLabelType) {
-            "expense" -> {
-                addingType = LabelType.EXPENSE
-                showAddDialog = true
-            }
-            "income" -> {
-                addingType = LabelType.INCOME
-                showAddDialog = true
-            }
-            "note" -> {
-                addingType = LabelType.NOTE
-                showAddDialog = true
-            }
-            "event" -> {
-                addingType = LabelType.EVENT
-                showAddDialog = true
-            }
-        }
-    }
     
     Scaffold(
         topBar = {
@@ -163,18 +130,13 @@ fun LabelsAndCategoriesScreen(
             )
         }
     ) { padding ->
-        AnimatedVisibility(
-            visible = !isLoading,
-            enter = fadeIn(),
-            exit = fadeOut()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
             // Note Labels
             item {
                 LabelSection(
@@ -235,41 +197,20 @@ fun LabelsAndCategoriesScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
-        }
     }
     
     // Add Label Dialog
     if (showAddDialog && addingType != null) {
-        // Get existing colors for the label type to auto-assign unique color
-        val existingColors = remember(addingType, noteLabels, expenseCategories, incomeCategories, eventLabels) {
-            when (addingType) {
-                LabelType.NOTE -> noteLabels.map { it.color }.toSet()
-                LabelType.EXPENSE -> expenseCategories.map { it.color }.toSet()
-                LabelType.INCOME -> incomeCategories.map { it.color }.toSet()
-                LabelType.EVENT -> eventLabels.map { it.color }.toSet()
-                else -> emptySet()
-            }
-        }
-        
         LabelEditorDialog(
             labelType = addingType!!,
             existingLabel = null,
-            existingColorsForType = existingColors,
             onDismiss = { 
                 showAddDialog = false
-                // If opened via quick-add mode, navigate back
-                if (initialLabelType != null) {
-                    onNavigateBack()
-                }
                 addingType = null
             },
             onSave = { name, iconName, color ->
                 viewModel.createLabel(name, addingType!!, iconName, color)
                 showAddDialog = false
-                // If opened via quick-add mode, navigate back after save
-                if (initialLabelType != null) {
-                    onNavigateBack()
-                }
                 addingType = null
             },
             onDelete = null
@@ -281,7 +222,6 @@ fun LabelsAndCategoriesScreen(
         LabelEditorDialog(
             labelType = editingLabel!!.type,
             existingLabel = editingLabel,
-            existingColorsForType = emptySet(), // Not needed for editing - label already has color
             onDismiss = { editingLabel = null },
             onSave = { name, iconName, color ->
                 viewModel.updateLabel(
@@ -289,10 +229,12 @@ fun LabelsAndCategoriesScreen(
                 )
                 editingLabel = null
             },
-            onDelete = { 
-                viewModel.deleteLabel(editingLabel!!)
-                editingLabel = null
-            }
+            onDelete = if (!editingLabel!!.isPreset) {
+                { 
+                    viewModel.deleteLabel(editingLabel!!)
+                    editingLabel = null
+                }
+            } else null
         )
     }
 }
@@ -374,7 +316,14 @@ private fun LabelChip(
                     imageVector = CategoryIcons.getIcon(label.iconName),
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = Color(label.color)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(Color(label.color))
                 )
             }
             
@@ -428,16 +377,20 @@ private fun AddLabelChip(
 private fun LabelEditorDialog(
     labelType: LabelType,
     existingLabel: Label?,
-    existingColorsForType: Set<Int>,
     onDismiss: () -> Unit,
     onSave: (name: String, iconName: String?, color: Int) -> Unit,
     onDelete: (() -> Unit)?
 ) {
     var name by remember { mutableStateOf(existingLabel?.name ?: "") }
     var selectedIcon by remember { mutableStateOf(existingLabel?.iconName) }
-    // Auto-assign a unique color for new labels
-    val selectedColor = existingLabel?.color 
-        ?: LabelColors.getNextAvailableColor(existingColorsForType, labelType)
+    // Use a default color based on label type
+    val defaultColor = when (labelType) {
+        LabelType.NOTE -> 0xFF3B82F6.toInt()
+        LabelType.EXPENSE -> 0xFFF97316.toInt()
+        LabelType.INCOME -> 0xFF22C55E.toInt()
+        LabelType.EVENT -> 0xFF6366F1.toInt()
+    }
+    val selectedColor = existingLabel?.color ?: defaultColor
     
     val showIconPicker = labelType != LabelType.NOTE
     val isEditing = existingLabel != null
@@ -486,32 +439,17 @@ private fun LabelEditorDialog(
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
-                    val availableIcons = listOf(
-                        "restaurant", "local_cafe", "fastfood", "local_bar",
-                        "directions_bus", "directions_car", "flight", "train",
-                        "shopping_bag", "shopping_cart", "store", "local_mall",
-                        "movie", "sports_esports", "music_note", "sports_basketball",
-                        "receipt_long", "receipt", "payments", "credit_card",
-                        "savings", "wallet", "favorite", "local_hospital",
-                        "fitness_center", "spa", "school", "auto_stories",
-                        "work", "laptop", "phone_android", "home",
-                        "local_laundry_service", "pets", "child_care", "person",
-                        "beach_access", "hotel", "event", "cake",
-                        "wifi", "water_drop", "bolt", "local_gas_station",
-                        "smoking_rooms", "local_drink", "coffee", "bedtime",
-                        "alarm", "directions_run", "thermostat", "power",
-                        "card_giftcard", "category", "star", "more_horiz"
+                    val popularIcons = listOf(
+                        "restaurant", "directions_bus", "shopping_bag", "movie",
+                        "receipt_long", "favorite", "school", "work",
+                        "home", "person", "event", "card_giftcard",
+                        "payments", "wallet", "savings", "more_horiz"
                     )
                     
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(6),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(220.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(availableIcons) { iconName ->
+                        items(popularIcons) { iconName ->
                             val isSelected = selectedIcon == iconName
                             Surface(
                                 modifier = Modifier

@@ -4,7 +4,6 @@ import android.app.Application
 import com.allubie.nana.data.BackupManager
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.repository.LabelRepository
 import com.allubie.nana.notification.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,11 +25,7 @@ class NanaApplication : Application() {
     }
     
     val backupManager: BackupManager by lazy {
-        BackupManager(this, database)
-    }
-    
-    val labelRepository: LabelRepository by lazy {
-        LabelRepository(database.labelDao())
+        BackupManager(this, database, preferencesManager)
     }
     
     override fun onCreate() {
@@ -38,11 +33,6 @@ class NanaApplication : Application() {
         
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)
-        
-        // Seed preset labels if needed (do this early, on IO thread)
-        applicationScope.launch(Dispatchers.IO) {
-            labelRepository.seedPresetsIfNeeded()
-        }
         
         // Restore saved timezone
         applicationScope.launch {

@@ -23,7 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.allubie.nana.util.CurrencyFormatter
+import java.text.NumberFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,9 +35,13 @@ fun FinancesOverviewScreen(
     val overview by viewModel.overview.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
     
-    // Format currency using centralized formatter
+    // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
-        return CurrencyFormatter.formatWithSymbol(amount, currencySymbol)
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(kotlin.math.abs(amount))
+        return "$currencySymbol$formatted"
     }
     
     Scaffold(
@@ -164,11 +169,12 @@ fun FinancesOverviewScreen(
                 }
             }
             
-            items(overview.categoryBreakdown, key = { "${it.name}_${it.amount}" }) { category ->
+            items(overview.categoryBreakdown, key = { it.name }) { category ->
                 CategorySpendingItem(
                     category = category.name,
                     amount = formatCurrency(category.amount),
-                    percentage = category.percentage
+                    percentage = category.percentage,
+                    color = Color(category.color)
                 )
             }
             
@@ -183,15 +189,12 @@ fun FinancesOverviewScreen(
                     )
                 }
                 
-                items(overview.budgetComparisons, key = { "${it.category}_${it.budgeted}" }) { budget ->
-                    val progress = if (budget.budgeted > 0) 
-                        (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f) 
-                    else 0f
+                items(overview.budgetComparisons, key = { it.category }) { budget ->
                     BudgetComparisonItem(
                         category = budget.category,
                         budgeted = formatCurrency(budget.budgeted),
                         actual = formatCurrency(budget.actual),
-                        progress = progress,
+                        progress = (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f),
                         isOverBudget = budget.actual > budget.budgeted
                     )
                 }
@@ -206,7 +209,8 @@ fun FinancesOverviewScreen(
 private fun CategorySpendingItem(
     category: String,
     amount: String,
-    percentage: Float
+    percentage: Float,
+    color: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -218,6 +222,13 @@ private fun CategorySpendingItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = category,
                 style = MaterialTheme.typography.bodyMedium,
@@ -287,6 +298,7 @@ private fun BudgetComparisonItem(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SpendingDonutChart(
     categories: List<CategorySpending>,
@@ -295,7 +307,13 @@ private fun SpendingDonutChart(
 ) {
     val chartColors = categories.map { Color(it.color) }
     
-    fun formatAmount(amount: Double) = CurrencyFormatter.formatWithSymbol(amount, currencySymbol)
+    fun formatAmount(amount: Double): String {
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(amount)
+        return "$currencySymbol$formatted"
+    }
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -356,14 +374,15 @@ private fun SpendingDonutChart(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Legend
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                maxItemsInEachRow = 3
             ) {
-                categories.take(4).forEachIndexed { index, category ->
+                categories.forEachIndexed { index, category ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Box(
                             modifier = Modifier

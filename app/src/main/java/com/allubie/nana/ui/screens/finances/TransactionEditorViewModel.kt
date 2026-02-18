@@ -29,7 +29,7 @@ data class TransactionEditorUiState(
     val title: String = "",
     val amount: String = "",
     val type: TransactionType = TransactionType.EXPENSE,
-    val category: String = "",  // Will be set from available labels
+    val category: String = "Food",
     val note: String = "",
     val date: Long = System.currentTimeMillis(),
     val isLoading: Boolean = false
@@ -119,15 +119,11 @@ class TransactionEditorViewModel(
     }
     
     fun updateType(type: TransactionType) {
-        viewModelScope.launch {
-            val labels = if (type == TransactionType.EXPENSE) expenseLabels.value else incomeLabels.value
-            val firstCategory = labels.firstOrNull()?.name ?: ""
-            _uiState.update { 
-                it.copy(
-                    type = type,
-                    category = firstCategory
-                ) 
-            }
+        _uiState.update { 
+            it.copy(
+                type = type,
+                category = if (type == TransactionType.EXPENSE) "Food" else "Allowance"
+            ) 
         }
     }
     
@@ -143,16 +139,11 @@ class TransactionEditorViewModel(
         _uiState.update { it.copy(date = date) }
     }
     
-    fun saveTransaction(): Boolean {
-        val state = _uiState.value
-        val amount = state.amount.toDoubleOrNull()
-        
-        // Validate amount is positive
-        if (amount == null || amount <= 0) {
-            return false
-        }
-        
+    fun saveTransaction() {
         viewModelScope.launch {
+            val state = _uiState.value
+            val amount = state.amount.toDoubleOrNull() ?: return@launch
+            
             val transaction = Transaction(
                 id = state.id ?: 0,
                 title = state.title,
@@ -165,7 +156,6 @@ class TransactionEditorViewModel(
             )
             transactionDao.insertTransaction(transaction)
         }
-        return true
     }
     
     fun deleteTransaction() {

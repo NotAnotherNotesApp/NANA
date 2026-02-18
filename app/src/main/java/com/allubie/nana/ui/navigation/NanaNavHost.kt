@@ -455,11 +455,7 @@ fun NanaNavHost(
                 slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
             },
             exitTransition = {
-                if (targetState.destination.route?.startsWith("settings/labels") == true) {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                } else {
-                    fadeOut(animationSpec = tween(300))
-                }
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
             },
             popEnterTransition = {
                 slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
@@ -470,72 +466,13 @@ fun NanaNavHost(
         ) {
             BudgetManagerScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                onNavigateToAddCategory = { navController.navigate(Screen.LabelsAndCategories.createRoute("expense")) }
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
         
         composable(
             route = Screen.TransactionEditor.route,
             arguments = listOf(navArgument("transactionId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                if (targetState.destination.route?.startsWith("settings/labels") == true) {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                } else {
-                    fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) { backStackEntry ->
-            val transactionId = backStackEntry.arguments?.getLong("transactionId") ?: -1
-            TransactionEditorScreen(
-                transactionId = if (transactionId == -1L) null else transactionId,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToAddCategory = { categoryType -> 
-                    navController.navigate(Screen.LabelsAndCategories.createRoute(categoryType))
-                }
-            )
-        }
-        
-        composable(
-            route = Screen.Settings.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                if (targetState.destination.route?.startsWith("settings/labels") == true) {
-                    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                } else {
-                    fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) {
-            SettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToLabels = { navController.navigate(Screen.LabelsAndCategories.createRoute()) }
-            )
-        }
-        
-        composable(
-            route = Screen.LabelsAndCategories.route,
-            arguments = listOf(navArgument("labelType") { 
-                type = NavType.StringType
-                defaultValue = "all"
-            }),
             enterTransition = {
                 slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
             },
@@ -549,13 +486,54 @@ fun NanaNavHost(
                 slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
             }
         ) { backStackEntry ->
-            val labelType = backStackEntry.arguments?.getString("labelType")
+            val transactionId = backStackEntry.arguments?.getLong("transactionId") ?: -1
+            TransactionEditorScreen(
+                transactionId = if (transactionId == -1L) null else transactionId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(
+            route = Screen.Settings.route,
+            enterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
+            },
+            exitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
+            },
+            popEnterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+            },
+            popExitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+            }
+        ) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToLabels = { navController.navigate(Screen.LabelsAndCategories.route) }
+            )
+        }
+        
+        composable(
+            route = Screen.LabelsAndCategories.route,
+            enterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
+            },
+            exitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+            },
+            popEnterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+            },
+            popExitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
+            }
+        ) {
             com.allubie.nana.ui.screens.settings.LabelsAndCategoriesScreen(
                 database = com.allubie.nana.data.NanaDatabase.getDatabase(
                     androidx.compose.ui.platform.LocalContext.current
                 ),
-                onNavigateBack = { navController.popBackStack() },
-                initialLabelType = if (labelType == "all") null else labelType
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

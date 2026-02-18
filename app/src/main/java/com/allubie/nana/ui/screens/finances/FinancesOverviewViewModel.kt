@@ -10,7 +10,6 @@ import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.dao.BudgetDao
 import com.allubie.nana.data.dao.LabelDao
 import com.allubie.nana.data.dao.TransactionDao
-import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.TransactionType
@@ -55,6 +54,29 @@ class FinancesOverviewViewModel(
     // Labels for overview
     val expenseLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EXPENSE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Standard category colors as fallbacks
+    private val standardCategoryColors = mapOf(
+        "Food" to 0xFFFF7043.toInt(),
+        "Transport" to 0xFF42A5F5.toInt(),
+        "Entertainment" to 0xFFAB47BC.toInt(),
+        "Shopping" to 0xFFEC407A.toInt(),
+        "Education" to 0xFF26A69A.toInt(),
+        "Health" to 0xFFEF5350.toInt(),
+        "Bills" to 0xFF78909C.toInt(),
+        "Other" to 0xFF8D6E63.toInt()
+    )
+
+    private val fallbackColors = listOf(
+        0xFF6750A4.toInt(), // Primary
+        0xFF03A9F4.toInt(), // Blue
+        0xFF8BC34A.toInt(), // Light Green
+        0xFFFFC107.toInt(), // Amber
+        0xFF9C27B0.toInt(), // Purple
+        0xFFE91E63.toInt(), // Pink
+        0xFF00BCD4.toInt(), // Cyan
+        0xFFFF5722.toInt()  // Deep Orange
+    )
     
     init {
         observeOverview()
@@ -82,11 +104,11 @@ class FinancesOverviewViewModel(
                     val endOfMonth = calendar.timeInMillis
 
                     val totalIncome = transactions
-                        .filter { it.type == TransactionType.INCOME && it.date >= startOfMonth && it.date < endOfMonth }
+                        .filter { it.type == TransactionType.INCOME && it.date in startOfMonth..endOfMonth }
                         .sumOf { it.amount }
 
                     val totalExpenses = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date >= startOfMonth && it.date < endOfMonth }
+                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth..endOfMonth }
                         .sumOf { it.amount }
                     
                     // Build label color map
@@ -94,39 +116,38 @@ class FinancesOverviewViewModel(
 
                     // Group expenses by category - include custom categories
                     val expenseTransactions = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date >= startOfMonth && it.date < endOfMonth }
+                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth..endOfMonth }
                     
                     val categoryBreakdown = expenseTransactions
                         .groupBy { it.category }
-                        .map { (category, txs) ->
+                        .entries
+                        .mapIndexed { index, (category, txs) ->
                             val amount = txs.sumOf { it.amount }
+                            val color = labelColorMap[category.lowercase()] 
+                                ?: standardCategoryColors[category]
+                                ?: fallbackColors[index % fallbackColors.size]
+                            
                             CategorySpending(
                                 name = category,
                                 amount = amount,
-                                percentage = if (totalExpenses > 0) (amount / totalExpenses).toFloat() else 0f,
-                                color = labelColorMap[category.lowercase()] ?: 0xFF78909C.toInt()
+                                percentage = if (totalExpenses > 0.0) (amount / totalExpenses).toFloat() else 0f,
+                                color = color
                             )
                         }
-                        .filter { it.amount > 0 }
+                        .filter { it.amount > 0.0 }
                         .sortedByDescending { it.amount }
 
                     val budgetComparisons = budgets.map { budget ->
-                        // Normalize budget to monthly amount based on period
-                        val monthlyBudget = when (budget.period) {
-                            BudgetPeriod.WEEKLY -> budget.amount * 4.33 // avg weeks per month
-                            BudgetPeriod.MONTHLY -> budget.amount
-                            BudgetPeriod.YEARLY -> budget.amount / 12.0
-                        }
                         val actual = if (budget.category.isEmpty()) {
                             totalExpenses
                         } else {
                             transactions
-                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date >= startOfMonth && it.date < endOfMonth }
+                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date in startOfMonth..endOfMonth }
                                 .sumOf { it.amount }
                         }
                         BudgetComparison(
                             category = budget.category,
-                            budgeted = monthlyBudget,
+                            budgeted = budget.amount,
                             actual = actual
                         )
                     }

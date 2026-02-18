@@ -11,7 +11,7 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
     
-    @Query("SELECT * FROM transactions WHERE date >= :startDate AND date < :endDate ORDER BY date DESC")
+    @Query("SELECT * FROM transactions WHERE date >= :startDate AND date <= :endDate ORDER BY date DESC")
     fun getTransactionsInRange(startDate: Long, endDate: Long): Flow<List<Transaction>>
     
     @Query("SELECT * FROM transactions WHERE type = :type ORDER BY date DESC")
@@ -26,10 +26,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY date DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int = 10): Flow<List<Transaction>>
     
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND date >= :startDate AND date < :endDate")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND date >= :startDate AND date <= :endDate")
     suspend fun getTotalByTypeInRange(type: TransactionType, startDate: Long, endDate: Long): Double?
     
-    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND category = :category AND date >= :startDate AND date < :endDate")
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND category = :category AND date >= :startDate AND date <= :endDate")
     suspend fun getTotalByCategoryInRange(type: TransactionType, category: String, startDate: Long, endDate: Long): Double?
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)

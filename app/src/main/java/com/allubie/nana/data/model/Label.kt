@@ -56,51 +56,6 @@ object LabelColors {
         0xFF06B6D4.toInt(),  // Cyan - Education
         0xFF6B7280.toInt()   // Gray - Other
     )
-    
-    // Extended palette for custom categories (distinct from preset colors)
-    val extendedCategoryColors = listOf(
-        0xFFE91E63.toInt(),  // Pink 500
-        0xFF9C27B0.toInt(),  // Purple 500
-        0xFF673AB7.toInt(),  // Deep Purple 500
-        0xFF3F51B5.toInt(),  // Indigo 500
-        0xFF2196F3.toInt(),  // Blue 500
-        0xFF00BCD4.toInt(),  // Cyan 500
-        0xFF009688.toInt(),  // Teal 500
-        0xFF4CAF50.toInt(),  // Green 500
-        0xFF8BC34A.toInt(),  // Light Green 500
-        0xFFCDDC39.toInt(),  // Lime 500
-        0xFFFFEB3B.toInt(),  // Yellow 500
-        0xFFFFC107.toInt(),  // Amber 500
-        0xFFFF9800.toInt(),  // Orange 500
-        0xFFFF5722.toInt(),  // Deep Orange 500
-        0xFF795548.toInt(),  // Brown 500
-        0xFF607D8B.toInt(),  // Blue Grey 500
-        0xFFD32F2F.toInt(),  // Red 700
-        0xFF7B1FA2.toInt(),  // Purple 700
-        0xFF1976D2.toInt(),  // Blue 700
-        0xFF388E3C.toInt()   // Green 700
-    )
-    
-    /**
-     * Gets the next available color that is not already used by existing labels.
-     * Falls back to cycling through extended colors if all are used.
-     */
-    fun getNextAvailableColor(usedColors: Set<Int>, labelType: LabelType): Int {
-        val palette = when (labelType) {
-            LabelType.NOTE -> noteColors
-            else -> extendedCategoryColors
-        }
-        
-        // Find first unused color
-        palette.forEach { color ->
-            if (color !in usedColors) {
-                return color
-            }
-        }
-        
-        // All colors used - cycle based on count (will repeat but that's okay)
-        return palette[usedColors.size % palette.size]
-    }
 }
 
 // Preset labels to be seeded on first launch

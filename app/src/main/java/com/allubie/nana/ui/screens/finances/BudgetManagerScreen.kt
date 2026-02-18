@@ -7,6 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -29,18 +33,86 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Budget
-import com.allubie.nana.data.model.Label
-import com.allubie.nana.util.CategoryIcons
-import com.allubie.nana.util.CurrencyFormatter
-import com.allubie.nana.ui.theme.*
+import com.allubie.nana.data.model.BudgetPeriod
+import com.allubie.nana.data.model.ExpenseCategories
+import java.text.NumberFormat
 import java.util.*
+import com.allubie.nana.ui.theme.*
+
+// Category colors - using theme colors
+private val CategoryColors = mapOf(
+    "Food" to CategoryFood,
+    "Transport" to CategoryTransport,
+    "Entertainment" to CategoryEntertainment,
+    "Shopping" to CategoryShopping,
+    "Education" to CategoryEducation,
+    "Health" to CategoryHealth,
+    "Bills" to CategoryBills,
+    "Other" to CategoryOther
+)
+
+// Category icons
+private val CategoryIcons = mapOf(
+    "Food" to Icons.Outlined.Restaurant,
+    "Transport" to Icons.Outlined.DirectionsCar,
+    "Entertainment" to Icons.Outlined.Movie,
+    "Shopping" to Icons.Outlined.ShoppingBag,
+    "Education" to Icons.Outlined.School,
+    "Health" to Icons.Outlined.LocalHospital,
+    "Bills" to Icons.Outlined.Receipt,
+    "Other" to Icons.Outlined.MoreHoriz
+)
+
+// Available icons for custom categories
+private val AvailableCategoryIcons = listOf(
+    "restaurant" to Icons.Outlined.Restaurant,
+    "car" to Icons.Outlined.DirectionsCar,
+    "movie" to Icons.Outlined.Movie,
+    "shopping" to Icons.Outlined.ShoppingBag,
+    "school" to Icons.Outlined.School,
+    "hospital" to Icons.Outlined.LocalHospital,
+    "receipt" to Icons.Outlined.Receipt,
+    "home" to Icons.Outlined.Home,
+    "flight" to Icons.Outlined.Flight,
+    "fitness" to Icons.Outlined.FitnessCenter,
+    "phone" to Icons.Outlined.Phone,
+    "wifi" to Icons.Outlined.Wifi,
+    "pets" to Icons.Outlined.Pets,
+    "child" to Icons.Outlined.ChildCare,
+    "coffee" to Icons.Outlined.Coffee,
+    "sports" to Icons.Outlined.SportsBasketball,
+    "music" to Icons.Outlined.MusicNote,
+    "games" to Icons.Outlined.SportsEsports,
+    "book" to Icons.Outlined.Book,
+    "gift" to Icons.Outlined.CardGiftcard,
+    "savings" to Icons.Outlined.Savings,
+    "credit" to Icons.Outlined.CreditCard,
+    "work" to Icons.Outlined.Work,
+    "tools" to Icons.Outlined.Build,
+    "smoking" to Icons.Outlined.SmokingRooms,
+    "liquor" to Icons.Outlined.Liquor,
+    "local_bar" to Icons.Outlined.LocalBar,
+    "cake" to Icons.Outlined.Cake,
+    "beach" to Icons.Outlined.BeachAccess,
+    "spa" to Icons.Outlined.Spa,
+    "laundry" to Icons.Outlined.LocalLaundryService,
+    "gas" to Icons.Outlined.LocalGasStation,
+    "parking" to Icons.Outlined.LocalParking,
+    "train" to Icons.Outlined.Train,
+    "bike" to Icons.Outlined.PedalBike,
+    "brush" to Icons.Outlined.Brush
+)
+
+// Get icon from name
+private fun getIconFromName(iconName: String): ImageVector {
+    return AvailableCategoryIcons.find { it.first == iconName }?.second ?: Icons.Outlined.Category
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetManagerScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSettings: () -> Unit = {},
-    onNavigateToAddCategory: () -> Unit = {},
     viewModel: BudgetManagerViewModel = viewModel(factory = BudgetManagerViewModel.Factory)
 ) {
     val budgets by viewModel.budgets.collectAsState()
@@ -48,50 +120,45 @@ fun BudgetManagerScreen(
     val totalBudgetLimit by viewModel.totalBudgetLimit.collectAsState()
     val totalSpent by viewModel.totalSpent.collectAsState()
     val selectedMonth by viewModel.selectedMonth.collectAsState()
-    val selectedYear by viewModel.selectedYear.collectAsState()
     val categorySpending by viewModel.categorySpending.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
-    val expenseLabels by viewModel.expenseLabels.collectAsState()
     
     var showAddBudgetDialog by remember { mutableStateOf(false) }
     var editingBudget by remember { mutableStateOf<Budget?>(null) }
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
     
     val remainingBudget = totalBudget - totalSpent
-    val isOverBudget = remainingBudget < 0
-    val remainingPercentage = if (totalBudget > 0) {
-        ((remainingBudget / totalBudget) * 100).toInt().coerceIn(-100, 100)
-    } else 0
+    val remainingPercentage = if (totalBudget > 0) ((remainingBudget / totalBudget) * 100).toInt().coerceAtLeast(0) else 0
     
-    // Format currency using centralized formatter
+    // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
-        return CurrencyFormatter.formatWithSymbol(amount, currencySymbol)
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(kotlin.math.abs(amount))
+        return "$currencySymbol$formatted"
     }
     
-    // Generate months starting from current month with year info
-    val currentCalendar = remember { Calendar.getInstance() }
-    val currentMonthIndex = currentCalendar.get(Calendar.MONTH)
-    val currentYear = currentCalendar.get(Calendar.YEAR)
+    // Generate months starting from current month
+    val currentMonthIndex = Calendar.getInstance().get(Calendar.MONTH)
     val monthNames = listOf("January", "February", "March", "April", "May", "June", 
                            "July", "August", "September", "October", "November", "December")
-    // Reorder months to start from current month, track year for each
+    // Reorder months to start from current month
     val months = (0..11).map { offset ->
         val monthIndex = (currentMonthIndex + offset) % 12
-        val year = if (currentMonthIndex + offset >= 12) currentYear + 1 else currentYear
-        Triple(monthIndex, year, monthNames[monthIndex])
+        Pair(monthIndex, monthNames[monthIndex])
     }
     
     if (showAddBudgetDialog || editingBudget != null) {
         BudgetDialog(
             budget = editingBudget,
             existingCategories = budgets.map { it.category },
-            expenseLabels = expenseLabels,
             currencySymbol = currencySymbol,
             onDismiss = { 
                 showAddBudgetDialog = false
                 editingBudget = null
             },
-            onSave = { category, amount, iconName, color ->
+            onSave = { category, amount, iconName ->
                 if (editingBudget != null) {
                     viewModel.updateBudget(editingBudget!!.copy(category = category, amount = amount, iconName = iconName))
                 } else {
@@ -103,8 +170,7 @@ fun BudgetManagerScreen(
             onDelete = { budget ->
                 viewModel.deleteBudget(budget)
                 editingBudget = null
-            },
-            onAddCategory = onNavigateToAddCategory
+            }
         )
     }
     
@@ -154,8 +220,8 @@ fun BudgetManagerScreen(
         }
     ) { paddingValues ->
         // Find index of selected month in the reordered list
-        val selectedMonthListIndex = remember(selectedMonth, selectedYear) {
-            months.indexOfFirst { it.first == selectedMonth && it.second == selectedYear }.coerceAtLeast(0)
+        val selectedMonthListIndex = remember(selectedMonth) {
+            months.indexOfFirst { it.first == selectedMonth }.coerceAtLeast(0)
         }
         
         val monthListState = rememberLazyListState()
@@ -180,15 +246,15 @@ fun BudgetManagerScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(months.size, key = { index -> "month_${months[index].first}_${months[index].second}" }) { index ->
-                        val (monthValue, year, monthName) = months[index]
-                        val isSelected = monthValue == selectedMonth && year == selectedYear
+                    items(months.size, key = { index -> "month_${months[index].first}" }) { index ->
+                        val (monthValue, monthName) = months[index]
+                        val isSelected = monthValue == selectedMonth
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary 
                                     else MaterialTheme.colorScheme.surfaceVariant,
                             shadowElevation = if (isSelected) 8.dp else 0.dp,
-                            modifier = Modifier.clickable { viewModel.selectMonth(monthValue, year) }
+                            modifier = Modifier.clickable { viewModel.selectMonth(monthValue) }
                         ) {
                             Text(
                                 text = monthName,
@@ -227,21 +293,20 @@ fun BudgetManagerScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
-                                progress = { if (isOverBudget) 1f else (remainingPercentage / 100f).coerceIn(0f, 1f) },
+                                progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
                                 modifier = Modifier.size(180.dp),
                                 strokeWidth = 16.dp,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.primary,
                                 strokeCap = StrokeCap.Round
                             )
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = if (isOverBudget) "Over" else "$remainingPercentage%",
+                                    text = "$remainingPercentage%",
                                     style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -249,21 +314,21 @@ fun BudgetManagerScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Text(
-                            text = if (isOverBudget) "Over Budget" else "Remaining Budget",
+                            text = "Remaining Budget",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isOverBudget) formatCurrency(kotlin.math.abs(remainingBudget)) else formatCurrency(remainingBudget),
+                            text = formatCurrency(remainingBudget.coerceAtLeast(0.0)),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (isOverBudget) "Spent ${formatCurrency(totalSpent)} of ${formatCurrency(totalBudget)}" else "of ${formatCurrency(totalBudget)} Total Limit",
+                            text = "of ${formatCurrency(totalBudget)} Total Limit",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -356,15 +421,15 @@ fun BudgetManagerScreen(
             items(budgets, key = { it.id }) { budget ->
                 val spent = categorySpending[budget.category] ?: 0.0
                 val progress = if (budget.amount > 0) (spent / budget.amount).toFloat() else 0f
-                val matchingLabel = expenseLabels.find { it.name == budget.category }
-                val categoryIconName = matchingLabel?.iconName ?: budget.iconName
+                val categoryColor = CategoryColors[budget.category] ?: MaterialTheme.colorScheme.primary
                 
                 BudgetCategoryItem(
                     category = budget.category,
                     budgeted = budget.amount,
                     spent = spent,
                     progress = progress,
-                    iconName = categoryIconName,
+                    color = categoryColor,
+                    iconName = budget.iconName,
                     currencySymbol = currencySymbol,
                     onClick = { editingBudget = budget }
                 )
@@ -416,17 +481,27 @@ private fun BudgetCategoryItem(
     budgeted: Double,
     spent: Double,
     progress: Float,
-    iconName: String?,
+    color: Color,
+    iconName: String,
     currencySymbol: String,
     onClick: () -> Unit
 ) {
-    // Use icon from label's iconName or fallback
-    val icon = if (!iconName.isNullOrEmpty()) {
-        CategoryIcons.getIcon(iconName)
+    // Use custom icon if set, otherwise use predefined category icon
+    val icon = if (iconName.isNotEmpty()) {
+        getIconFromName(iconName)
     } else {
-        Icons.Outlined.Category
+        CategoryIcons[category] ?: Icons.Outlined.Category
     }
     val usagePercent = (progress * 100).toInt()
+    
+    // Format currency with symbol
+    fun formatCurrency(amount: Double): String {
+        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+            minimumFractionDigits = 2
+            maximumFractionDigits = 2
+        }.format(amount)
+        return "$currencySymbol$formatted"
+    }
     
     Card(
         modifier = Modifier
@@ -455,13 +530,13 @@ private fun BudgetCategoryItem(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(color.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = color,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -482,12 +557,12 @@ private fun BudgetCategoryItem(
                 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = CurrencyFormatter.formatWithSymbol(spent, currencySymbol),
+                        text = formatCurrency(spent),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "of ${CurrencyFormatter.formatWithSymbol(budgeted, currencySymbol)}",
+                        text = "of ${formatCurrency(budgeted)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -506,7 +581,7 @@ private fun BudgetCategoryItem(
                 color = when {
                     progress > 1f -> MaterialTheme.colorScheme.error
                     progress > 0.8f -> Color(0xFFFF9800)
-                    else -> MaterialTheme.colorScheme.primary
+                    else -> color
                 },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
@@ -519,21 +594,21 @@ private fun BudgetCategoryItem(
 private fun BudgetDialog(
     budget: Budget?,
     existingCategories: List<String>,
-    expenseLabels: List<Label>,
     currencySymbol: String,
     onDismiss: () -> Unit,
-    onSave: (String, Double, String, Int) -> Unit,
-    onDelete: (Budget) -> Unit,
-    onAddCategory: () -> Unit
+    onSave: (String, Double, String) -> Unit,
+    onDelete: (Budget) -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf(budget?.category ?: "") }
+    var customCategory by remember { mutableStateOf(if (budget != null && budget.category !in ExpenseCategories.list) budget.category else "") }
     var amount by remember { mutableStateOf(budget?.amount?.toString() ?: "") }
     var showCategoryDropdown by remember { mutableStateOf(false) }
+    var useCustomCategory by remember { mutableStateOf(budget != null && budget.category !in ExpenseCategories.list) }
+    var selectedIconName by remember { mutableStateOf(budget?.iconName ?: "category") }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     
-    // Available labels not yet assigned (or current budget's label)
-    val availableLabels = expenseLabels.filter { 
-        it.name !in existingCategories || it.name == budget?.category 
+    val availableCategories = ExpenseCategories.list.filter { 
+        it !in existingCategories || it == budget?.category 
     }
     
     // Delete confirmation dialog
@@ -567,33 +642,74 @@ private fun BudgetDialog(
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.heightIn(max = 450.dp)
             ) {
                 // Category selector
                 if (budget == null) {
-                    if (availableLabels.isEmpty()) {
-                        Column(
+                    // Toggle between predefined and custom
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = !useCustomCategory,
+                            onClick = { useCustomCategory = false },
+                            label = { Text("Predefined") }
+                        )
+                        FilterChip(
+                            selected = useCustomCategory,
+                            onClick = { useCustomCategory = true },
+                            label = { Text("Custom") }
+                        )
+                    }
+                    
+                    if (useCustomCategory) {
+                        OutlinedTextField(
+                            value = customCategory,
+                            onValueChange = { customCategory = it },
+                            label = { Text("Custom Category Name") },
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            singleLine = true
+                        )
+                        
+                        // Icon selector for custom category
+                        Text(
+                            text = "Choose Icon",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(6),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = "All categories have budgets assigned.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            TextButton(
-                                onClick = {
-                                    onDismiss()
-                                    onAddCategory()
+                            items(AvailableCategoryIcons, key = { it.first }) { (iconName, icon) ->
+                                val isSelected = selectedIconName == iconName
+                                Surface(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable { selectedIconName = iconName },
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = CircleShape
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = iconName,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Add New Category")
                             }
                         }
                     } else {
@@ -609,14 +725,13 @@ private fun BudgetDialog(
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .menuAnchor()
                             )
                             ExposedDropdownMenu(
                                 expanded = showCategoryDropdown,
                                 onDismissRequest = { showCategoryDropdown = false }
                             ) {
-                                availableLabels.forEach { label ->
-                                    val labelIcon = CategoryIcons.getIcon(label.iconName)
+                                availableCategories.forEach { category ->
                                     DropdownMenuItem(
                                         text = { 
                                             Row(
@@ -624,62 +739,79 @@ private fun BudgetDialog(
                                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = labelIcon,
+                                                    imageVector = CategoryIcons[category] ?: Icons.Outlined.Category,
                                                     contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     modifier = Modifier.size(20.dp)
                                                 )
-                                                Text(label.name)
+                                                Text(category)
                                             }
                                         },
                                         onClick = {
-                                            selectedCategory = label.name
+                                            selectedCategory = category
                                             showCategoryDropdown = false
                                         }
                                     )
                                 }
-                                // Add category option at bottom
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                DropdownMenuItem(
-                                    text = { 
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Add,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                            Text(
-                                                "Add New Category",
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        showCategoryDropdown = false
-                                        onDismiss()
-                                        onAddCategory()
-                                    }
-                                )
                             }
                         }
                     }
                 } else {
-                    // Editing existing budget - show read-only category name
+                    // Editing existing budget
                     OutlinedTextField(
-                        value = budget.category,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Category") },
+                        value = if (useCustomCategory) customCategory else selectedCategory,
+                        onValueChange = { 
+                            if (useCustomCategory) customCategory = it 
+                            else selectedCategory = it 
+                        },
+                        label = { Text("Category Name") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
+                    
+                    // Icon selector for existing custom category
+                    if (budget.category !in ExpenseCategories.list || budget.iconName.isNotEmpty()) {
+                        Text(
+                            text = "Choose Icon",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(6),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(AvailableCategoryIcons, key = { it.first }) { (iconName, icon) ->
+                                val isSelected = selectedIconName == iconName
+                                Surface(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable { selectedIconName = iconName },
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = CircleShape
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = iconName,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 
-                // Amount input
+                // Amount input (optional)
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
@@ -688,11 +820,7 @@ private fun BudgetDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    placeholder = { Text("0.00") },
-                    isError = amount.isNotEmpty() && (amount.toDoubleOrNull() ?: 0.0) <= 0,
-                    supportingText = if (amount.isNotEmpty() && (amount.toDoubleOrNull() ?: 0.0) <= 0) {
-                        { Text("Amount must be greater than 0") }
-                    } else null
+                    placeholder = { Text("0.00") }
                 )
             }
         },
@@ -700,18 +828,25 @@ private fun BudgetDialog(
             TextButton(
                 onClick = {
                     val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    val finalCategory = budget?.category ?: selectedCategory
-                    val selectedLabel = expenseLabels.find { it.name == finalCategory }
-                    val finalIconName = selectedLabel?.iconName ?: ""
-                    val finalColor = selectedLabel?.color ?: 0
-                    if (finalCategory.isNotBlank() && amountValue > 0) {
-                        onSave(finalCategory, amountValue, finalIconName, finalColor)
+                    val finalCategory = if (budget != null) {
+                        if (useCustomCategory) customCategory else selectedCategory
+                    } else {
+                        if (useCustomCategory) customCategory else selectedCategory
+                    }
+                    val finalIconName = if (useCustomCategory || (budget != null && budget.category !in ExpenseCategories.list)) {
+                        selectedIconName
+                    } else ""
+                    if (finalCategory.isNotBlank()) {
+                        onSave(finalCategory, amountValue, finalIconName)
                     }
                 },
                 enabled = run {
-                    val finalCategory = budget?.category ?: selectedCategory
-                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    finalCategory.isNotBlank() && amountValue > 0
+                    val finalCategory = if (budget != null) {
+                        if (useCustomCategory) customCategory else selectedCategory
+                    } else {
+                        if (useCustomCategory) customCategory else selectedCategory
+                    }
+                    finalCategory.isNotBlank()
                 }
             ) {
                 Text("Save")

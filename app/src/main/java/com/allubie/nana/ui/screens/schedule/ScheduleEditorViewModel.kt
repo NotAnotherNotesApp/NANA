@@ -9,10 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.dao.EventDao
-import com.allubie.nana.data.dao.LabelDao
 import com.allubie.nana.data.model.Event
-import com.allubie.nana.data.model.Label
-import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.notification.ReminderScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,16 +36,12 @@ data class ScheduleEditorUiState(
 
 class ScheduleEditorViewModel(
     private val eventDao: EventDao,
-    private val labelDao: LabelDao,
     private val applicationContext: Context,
     preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     val use24HourFormat: StateFlow<Boolean> = preferencesManager.use24HourFormat
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    
-    val eventLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EVENT)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     private val _uiState = MutableStateFlow(ScheduleEditorUiState())
     val uiState: StateFlow<ScheduleEditorUiState> = _uiState.asStateFlow()
@@ -157,7 +150,6 @@ class ScheduleEditorViewModel(
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
                 ScheduleEditorViewModel(
                     application.database.eventDao(),
-                    application.database.labelDao(),
                     application.applicationContext,
                     application.preferencesManager
                 )

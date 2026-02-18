@@ -41,7 +41,6 @@ import java.util.*
 fun TransactionEditorScreen(
     transactionId: Long?,
     onNavigateBack: () -> Unit,
-    onNavigateToAddCategory: (String) -> Unit = {},
     viewModel: TransactionEditorViewModel = viewModel(factory = TransactionEditorViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -80,13 +79,6 @@ fun TransactionEditorScreen(
     val currentLabels = if (uiState.type == TransactionType.EXPENSE) expenseLabels else incomeLabels
     val currentLabel = currentLabels.find { it.name == uiState.category } ?: currentLabels.firstOrNull()
     
-    // Set initial category from available labels when they load (only for new transactions)
-    LaunchedEffect(currentLabels, transactionId) {
-        if (transactionId == null && uiState.category.isEmpty() && currentLabels.isNotEmpty()) {
-            viewModel.updateCategory(currentLabels.first().name)
-        }
-    }
-    
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -115,9 +107,8 @@ fun TransactionEditorScreen(
                             .padding(end = 8.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .clickable {
-                                if (viewModel.saveTransaction()) {
-                                    onNavigateBack()
-                                }
+                                viewModel.saveTransaction()
+                                onNavigateBack()
                             },
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(20.dp)
@@ -319,17 +310,18 @@ fun TransactionEditorScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val labelColor = currentLabel?.let { Color(it.color) } ?: MaterialTheme.colorScheme.primary
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                        .background(labelColor.copy(alpha = 0.2f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = CategoryIcons.getIcon(currentLabel?.iconName),
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = labelColor,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -487,6 +479,7 @@ fun TransactionEditorScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     currentLabels.forEach { label ->
+                        val color = Color(label.color)
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -497,7 +490,7 @@ fun TransactionEditorScreen(
                                 },
                             shape = RoundedCornerShape(12.dp),
                             color = if (uiState.category == label.name)
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                color.copy(alpha = 0.2f)
                             else
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ) {
@@ -508,50 +501,25 @@ fun TransactionEditorScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = CategoryIcons.getIcon(label.iconName),
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(color.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = CategoryIcons.getIcon(label.iconName),
+                                        contentDescription = null,
+                                        tint = color,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                                 Text(
                                     text = label.name,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
-                        }
-                    }
-                    // Add new category option
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                showCategoryPicker = false
-                                val categoryType = if (uiState.type == TransactionType.EXPENSE) "expense" else "income"
-                                onNavigateToAddCategory(categoryType)
-                            },
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.Transparent
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Add,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = "Add New Category",
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
                         }
                     }
                 }

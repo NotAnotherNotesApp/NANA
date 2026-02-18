@@ -40,7 +40,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.model.RoutineCompletion
 import com.allubie.nana.data.model.RoutineType
-import com.allubie.nana.util.DateUtils.isSameDay
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -1020,4 +1019,9 @@ private fun RoutineCard(
     }
 }
 
-
+private fun isSameDay(date1: Date, date2: Date): Boolean {
+    val cal1 = Calendar.getInstance().apply { time = date1 }
+    val cal2 = Calendar.getInstance().apply { time = date2 }
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+}

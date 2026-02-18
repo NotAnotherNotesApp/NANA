@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,13 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.allubie.nana.util.CategoryIcons
 import java.text.SimpleDateFormat
 import java.util.*
+
+data class EventCategory(
+    val name: String,
+    val icon: ImageVector
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +41,6 @@ fun ScheduleEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val use24HourFormat by viewModel.use24HourFormat.collectAsState()
-    val eventLabels by viewModel.eventLabels.collectAsState()
     
     // Picker states
     var showStartDatePicker by remember { mutableStateOf(false) }
@@ -94,6 +100,14 @@ fun ScheduleEditorScreen(
     val timeFormat = remember(use24HourFormat) {
         SimpleDateFormat(if (use24HourFormat) "HH:mm" else "h:mm a", Locale.getDefault())
     }
+    
+    val categories = listOf(
+        EventCategory("Class", Icons.Outlined.School),
+        EventCategory("Study", Icons.AutoMirrored.Outlined.MenuBook),
+        EventCategory("Exam", Icons.AutoMirrored.Outlined.Assignment),
+        EventCategory("Gym", Icons.Outlined.FitnessCenter),
+        EventCategory("Social", Icons.Outlined.Celebration)
+    )
     
     Scaffold(
         topBar = {
@@ -177,14 +191,14 @@ fun ScheduleEditorScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    eventLabels.forEach { label ->
+                    categories.forEach { category ->
                         FilterChip(
-                            selected = uiState.category == label.name,
-                            onClick = { viewModel.updateCategory(label.name) },
-                            label = { Text(label.name) },
+                            selected = uiState.category == category.name,
+                            onClick = { viewModel.updateCategory(category.name) },
+                            label = { Text(category.name) },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = CategoryIcons.getIcon(label.iconName),
+                                    imageVector = category.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -265,6 +279,7 @@ fun ScheduleEditorScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { showStartDatePicker = true }
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -273,40 +288,30 @@ fun ScheduleEditorScreen(
                             text = "Starts",
                             fontWeight = FontWeight.Medium
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            // Date chip - clickable to change date
-                            Surface(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .clickable { showStartDatePicker = true },
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = dateFormat.format(Date(uiState.startTime)),
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                    fontSize = 14.sp
                                 )
-                            }
-                            if (!uiState.isAllDay) {
-                                // Time chip - clickable to change time directly
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .clickable { showStartTimePicker = true },
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant
-                                ) {
+                                if (!uiState.isAllDay) {
+                                    Text(
+                                        text = "|",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    )
                                     Text(
                                         text = timeFormat.format(Date(uiState.startTime)),
                                         fontWeight = FontWeight.Medium,
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        fontSize = 14.sp
                                     )
                                 }
                             }
@@ -319,6 +324,7 @@ fun ScheduleEditorScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { showEndDatePicker = true }
                             .padding(horizontal = 20.dp, vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -327,39 +333,29 @@ fun ScheduleEditorScreen(
                             text = "Ends",
                             fontWeight = FontWeight.Medium
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
-                            // Date chip - clickable to change date
-                            Surface(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .clickable { showEndDatePicker = true },
-                                shape = RoundedCornerShape(20.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = dateFormat.format(Date(uiState.endTime ?: (uiState.startTime + 3600000))),
                                     fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                    fontSize = 14.sp
                                 )
-                            }
-                            if (!uiState.isAllDay) {
-                                // Time chip - clickable to change time directly
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .clickable { showEndTimePicker = true },
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant
-                                ) {
+                                if (!uiState.isAllDay) {
+                                    Text(
+                                        text = "|",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    )
                                     Text(
                                         text = timeFormat.format(Date(uiState.endTime ?: (uiState.startTime + 3600000))),
                                         fontWeight = FontWeight.Medium,
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        fontSize = 14.sp
                                     )
                                 }
                             }
@@ -520,9 +516,10 @@ fun ScheduleEditorScreen(
                             viewModel.updateStartTime(newCalendar.timeInMillis)
                         }
                         showStartDatePicker = false
+                        showStartTimePicker = true
                     }
                 ) {
-                    Text("OK")
+                    Text("Next")
                 }
             },
             dismissButton = {
@@ -586,9 +583,10 @@ fun ScheduleEditorScreen(
                             viewModel.updateEndTime(newCalendar.timeInMillis)
                         }
                         showEndDatePicker = false
+                        showEndTimePicker = true
                     }
                 ) {
-                    Text("OK")
+                    Text("Next")
                 }
             },
             dismissButton = {

@@ -58,14 +58,15 @@ class FinancesViewModel(
      .onEach { _isLoading.value = false }
      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    // Make totals reactive - derived from filteredTransactions
-    val totalIncome: StateFlow<Double> = filteredTransactions.map { transactions ->
-        transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    private val _totalIncome = MutableStateFlow(0.0)
+    val totalIncome: StateFlow<Double> = _totalIncome.asStateFlow()
     
-    val totalExpenses: StateFlow<Double> = filteredTransactions.map { transactions ->
-        transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    private val _totalExpenses = MutableStateFlow(0.0)
+    val totalExpenses: StateFlow<Double> = _totalExpenses.asStateFlow()
+    
+    init {
+        loadTotals()
+    }
     
     fun setSelectedMonth(year: Int, month: Int) {
         val calendar = Calendar.getInstance().apply {
@@ -74,6 +75,7 @@ class FinancesViewModel(
             set(Calendar.DAY_OF_MONTH, 1)
         }
         _selectedMonth.value = calendar
+        loadTotals()
     }
     
     private fun getMonthRange(calendar: Calendar): Pair<Long, Long> {
@@ -91,9 +93,24 @@ class FinancesViewModel(
         return startOfMonth to endOfMonth
     }
     
+    private fun loadTotals() {
+        viewModelScope.launch {
+            val (startOfMonth, endOfMonth) = getMonthRange(_selectedMonth.value)
+            
+            _totalIncome.value = transactionDao.getTotalByTypeInRange(
+                TransactionType.INCOME, startOfMonth, endOfMonth
+            ) ?: 0.0
+            
+            _totalExpenses.value = transactionDao.getTotalByTypeInRange(
+                TransactionType.EXPENSE, startOfMonth, endOfMonth
+            ) ?: 0.0
+        }
+    }
+    
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             transactionDao.deleteTransaction(transaction)
+            loadTotals()
         }
     }
     

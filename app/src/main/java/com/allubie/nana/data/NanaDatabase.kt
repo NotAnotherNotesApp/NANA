@@ -117,8 +117,6 @@ abstract class NanaDatabase : RoomDatabase() {
                     "nana_database"
                 )
                     .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
-                    // Keep fallback for development - remove for production
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

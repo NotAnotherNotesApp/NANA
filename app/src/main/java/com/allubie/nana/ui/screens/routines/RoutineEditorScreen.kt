@@ -32,35 +32,10 @@ fun RoutineEditorScreen(
     viewModel: RoutineEditorViewModel = viewModel(factory = RoutineEditorViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
-    // Initialize reminderEnabled based on whether a reminder time is set (only on initial load)
-    var reminderEnabled by remember { mutableStateOf(false) }
-    
-    // Set initial reminderEnabled state when routine is loaded
-    LaunchedEffect(uiState.id) {
-        reminderEnabled = uiState.reminderTime != null
-    }
-    
-    // Parse initial time from uiState or use defaults
-    val initialTimeValues = remember(uiState.reminderTime) {
-        uiState.reminderTime?.let { timeStr ->
-            val parts = timeStr.split(":")
-            if (parts.size == 2) {
-                val h = parts[0].toIntOrNull() ?: 7
-                val m = parts[1].toIntOrNull() ?: 30
-                val hour12 = when {
-                    h == 0 -> 12
-                    h > 12 -> h - 12
-                    else -> if (h == 0) 12 else h
-                }
-                Triple(if (hour12 == 0) 12 else hour12, m, h < 12)
-            } else Triple(7, 30, true)
-        } ?: Triple(7, 30, true)
-    }
-    
-    var selectedHour by remember(initialTimeValues) { mutableIntStateOf(initialTimeValues.first) }
-    var selectedMinute by remember(initialTimeValues) { mutableIntStateOf(initialTimeValues.second) }
-    var isAm by remember(initialTimeValues) { mutableStateOf(initialTimeValues.third) }
+    var reminderEnabled by remember { mutableStateOf(true) }
+    var selectedHour by remember { mutableIntStateOf(7) }
+    var selectedMinute by remember { mutableIntStateOf(30) }
+    var isAm by remember { mutableStateOf(true) }
     var showIconPicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     
@@ -84,19 +59,29 @@ fun RoutineEditorScreen(
     val currentIcon = iconOptions.find { it.first == uiState.iconName }?.second?.first 
         ?: Icons.Outlined.CheckCircle
     
-    // Compute 24-hour format for time picker
-    val initialHour24 = remember(selectedHour, isAm) {
-        if (isAm) {
-            if (selectedHour == 12) 0 else selectedHour
-        } else {
-            if (selectedHour == 12) 12 else selectedHour + 12
-        }
-    }
-    
     val timePickerState = rememberTimePickerState(
-        initialHour = initialHour24,
+        initialHour = selectedHour + if (!isAm && selectedHour != 12) 12 else if (isAm && selectedHour == 12) 0 else 0,
         initialMinute = selectedMinute
     )
+    
+    // Initialize selected hour/minute from ViewModel when routine is loaded
+    LaunchedEffect(uiState.reminderTime) {
+        uiState.reminderTime?.let { timeStr ->
+            val parts = timeStr.split(":")
+            if (parts.size == 2) {
+                val h = parts[0].toIntOrNull() ?: 0
+                val m = parts[1].toIntOrNull() ?: 0
+                val hour12 = when {
+                    h == 0 -> 12
+                    h > 12 -> h - 12
+                    else -> h
+                }
+                selectedHour = if (hour12 == 0) 12 else hour12
+                selectedMinute = m
+                isAm = h < 12
+            }
+        }
+    }
 
     // When opening time picker, set the TimePickerState to current reminder time
     LaunchedEffect(showTimePicker) {
@@ -643,22 +628,7 @@ fun RoutineEditorScreen(
                         }
                         Switch(
                             checked = reminderEnabled,
-                            onCheckedChange = { enabled ->
-                                reminderEnabled = enabled
-                                if (!enabled) {
-                                    // Clear the reminder time when disabled
-                                    viewModel.updateReminderTime(null)
-                                } else {
-                                    // Set a default reminder time when enabled
-                                    val h24 = if (isAm) {
-                                        if (selectedHour == 12) 0 else selectedHour
-                                    } else {
-                                        if (selectedHour == 12) 12 else selectedHour + 12
-                                    }
-                                    val formatted = String.format("%02d:%02d", h24, selectedMinute)
-                                    viewModel.updateReminderTime(formatted)
-                                }
-                            }
+                            onCheckedChange = { reminderEnabled = it }
                         )
                     }
                     

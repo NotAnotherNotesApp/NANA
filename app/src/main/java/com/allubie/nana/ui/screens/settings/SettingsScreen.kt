@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.ui.theme.ThemeMode
@@ -36,6 +37,7 @@ fun SettingsScreen(
     val use24HourFormat by viewModel.use24HourFormat.collectAsState()
     val backupState by viewModel.backupState.collectAsState()
     LocalContext.current
+    val uriHandler = LocalUriHandler.current
     
     var showThemeDialog by remember { mutableStateOf(false) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
@@ -460,7 +462,14 @@ fun SettingsScreen(
                         icon = Icons.Outlined.Person,
                         title = "Developer",
                         subtitle = "allubie",
-                        onClick = { }
+                        onClick = { uriHandler.openUri("https://github.com/allubie/NANA") }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    SettingsItem(
+                        icon = Icons.Outlined.NewReleases,
+                        title = "Latest Release",
+                        subtitle = "Check for updates",
+                        onClick = { uriHandler.openUri("https://github.com/allubie/NANA/releases") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(

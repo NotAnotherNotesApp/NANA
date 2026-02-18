@@ -1,7 +1,6 @@
 package com.allubie.nana.util
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,25 +59,15 @@ object CurrencyFormatter {
     }
     
     /**
-     * Format with explicit symbol prefix - the standard format used across finance screens.
-     * @param amount The amount to format
-     * @param symbol The currency symbol (e.g., "$", "EUR")
-     * @param forceSign If true, positive amounts show "+" prefix
-     * @return Formatted string like "$1,234.56" or "-$50.00" or "+$100.00"
+     * Format with explicit symbol prefix.
      */
-    fun formatWithSymbol(amount: Double, symbol: String, forceSign: Boolean = false): String {
-        val absAmount = kotlin.math.abs(amount)
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(absAmount)
-        
-        val sign = when {
-            forceSign && amount > 0 -> "+"
-            amount < 0 -> "-"
-            else -> ""
+    fun formatWithSymbol(amount: Double, symbol: String): String {
+        val formatted = if (amount == amount.toLong().toDouble()) {
+            NumberFormat.getNumberInstance().format(amount.toLong())
+        } else {
+            String.format("%,.2f", amount)
         }
-        return "$sign$symbol$formatted"
+        return "$symbol$formatted"
     }
 }
 
@@ -105,7 +94,7 @@ object CategoryIcons {
         "train" to Icons.Outlined.Train,
         "local_taxi" to Icons.Outlined.LocalTaxi,
         "two_wheeler" to Icons.Outlined.TwoWheeler,
-        "directions_bike" to Icons.AutoMirrored.Outlined.DirectionsBike,
+        "directions_bike" to Icons.Outlined.DirectionsBike,
         
         // Shopping
         "shopping_bag" to Icons.Outlined.ShoppingBag,
@@ -124,7 +113,7 @@ object CategoryIcons {
         "nightlife" to Icons.Outlined.Nightlife,
         
         // Bills & Finance
-        "receipt_long" to Icons.AutoMirrored.Outlined.ReceiptLong,
+        "receipt_long" to Icons.Outlined.ReceiptLong,
         "receipt" to Icons.Outlined.Receipt,
         "payments" to Icons.Outlined.Payments,
         "account_balance" to Icons.Outlined.AccountBalance,
@@ -143,7 +132,7 @@ object CategoryIcons {
         
         // Education
         "school" to Icons.Outlined.School,
-        "menu_book" to Icons.AutoMirrored.Outlined.MenuBook,
+        "menu_book" to Icons.Outlined.MenuBook,
         "auto_stories" to Icons.Outlined.AutoStories,
         "science" to Icons.Outlined.Science,
         
@@ -160,22 +149,6 @@ object CategoryIcons {
         "lightbulb" to Icons.Outlined.Lightbulb,
         "local_laundry_service" to Icons.Outlined.LocalLaundryService,
         "cleaning_services" to Icons.Outlined.CleaningServices,
-        
-        // Utilities
-        "wifi" to Icons.Outlined.Wifi,
-        "water_drop" to Icons.Outlined.WaterDrop,
-        "bolt" to Icons.Outlined.Bolt,
-        "local_gas_station" to Icons.Outlined.LocalGasStation,
-        "thermostat" to Icons.Outlined.Thermostat,
-        "power" to Icons.Outlined.Power,
-        
-        // Habits
-        "smoking_rooms" to Icons.Outlined.SmokingRooms,
-        "local_drink" to Icons.Outlined.LocalDrink,
-        "coffee" to Icons.Outlined.Coffee,
-        "bedtime" to Icons.Outlined.Bedtime,
-        "alarm" to Icons.Outlined.Alarm,
-        "directions_run" to Icons.AutoMirrored.Outlined.DirectionsRun,
         
         // People & Social
         "person" to Icons.Outlined.Person,
@@ -201,7 +174,7 @@ object CategoryIcons {
         
         // Communication
         "mail" to Icons.Outlined.Mail,
-        "chat" to Icons.AutoMirrored.Outlined.Chat,
+        "chat" to Icons.Outlined.Chat,
         "call" to Icons.Outlined.Call,
         "notifications" to Icons.Outlined.Notifications,
         
@@ -212,7 +185,7 @@ object CategoryIcons {
         "redeem" to Icons.Outlined.Redeem,
         "more_horiz" to Icons.Outlined.MoreHoriz,
         "category" to Icons.Outlined.Category,
-        "label" to Icons.AutoMirrored.Outlined.Label,
+        "label" to Icons.Outlined.Label,
         "bookmark" to Icons.Outlined.Bookmark,
         "star" to Icons.Outlined.Star,
         "check_circle" to Icons.Outlined.CheckCircle

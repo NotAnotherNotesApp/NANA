@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -456,17 +455,11 @@ fun NoteEditorScreen(
                             description = "Highlight",
                             isActive = isHighlight,
                             onClick = { 
-                                // Use addSpanStyle for highlight as it works better with selection
                                 if (isHighlight) {
                                     richTextState.removeSpanStyle(SpanStyle(background = Color.Yellow.copy(alpha = 0.4f)))
                                 } else {
                                     richTextState.addSpanStyle(SpanStyle(background = Color.Yellow.copy(alpha = 0.4f)))
                                 }
-                                // Insert and delete a zero-width space to force UI refresh
-                                val currentSelection = richTextState.selection
-                                richTextState.addTextAfterSelection("\u200B")
-                                richTextState.selection = currentSelection
-                                richTextState.removeTextRange(TextRange(currentSelection.max, currentSelection.max + 1))
                             }
                         )
                         FormattingButton(
@@ -597,17 +590,12 @@ private fun LabelPickerDialog(
     onAddLabel: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val unselectedLabels = availableLabels.filter { !currentLabels.contains(it.name) }
-    
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Labels", fontWeight = FontWeight.Bold) },
+        title = { Text("Add Label", fontWeight = FontWeight.Bold) },
         text = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 80.dp),
-                contentAlignment = Alignment.Center
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (availableLabels.isEmpty()) {
                     Text(
@@ -615,25 +603,27 @@ private fun LabelPickerDialog(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else if (unselectedLabels.isEmpty()) {
+                } else {
                     Text(
-                        text = "All labels have been added.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Select Labels",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
+                    
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         maxItemsInEachRow = Int.MAX_VALUE
                     ) {
-                        unselectedLabels.forEach { label ->
-                            CompactLabelChip(
-                                label = label,
-                                onClick = { onAddLabel(label.name) }
-                            )
-                        }
+                        availableLabels
+                            .filter { !currentLabels.contains(it.name) }
+                            .forEach { label ->
+                                CompactLabelChip(
+                                    label = label,
+                                    onClick = { onAddLabel(label.name) }
+                                )
+                            }
                     }
                 }
             }
