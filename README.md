@@ -19,7 +19,7 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png?raw=true" width="19.2%" alt="finance-overview" />
     <br/>
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/6.png?raw=true" width="19.2%" alt="finance-budget" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7.pngraw=true" width="19.2%" alt="schedule-add" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7.png?raw=true" width="19.2%" alt="schedule-add" />
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/8.png?raw=true" width="19.2%" alt="notes-editor" />
     <br/>
     <br/>
