@@ -1,5 +1,10 @@
+<div align="center">
+
+<img width="" src="fastlane/metadata/android/en-US/images/icon.png"  width=160 height=160  align="center">
+
 # Nana
 
+</div>
 A beautiful, all-in-one personal productivity app for Android built with Jetpack Compose and Material Design 3.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-green?logo=android)
