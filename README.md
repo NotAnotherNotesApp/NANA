@@ -12,15 +12,15 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 ## Screenshots
 
 <div align="center">
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0931.png?raw=true" width="19.2%" alt="notes" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0934.png?raw=true" width="19.2%" alt="schedule" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/0938.png?raw=true" width="19.2%" alt="routine" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1003.png?raw=true" width="19.2%" alt="finance" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1010.png?raw=true" width="19.2%" alt="finance-overview" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png?raw=true" width="19.2%" alt="notes" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png?raw=true" width="19.2%" alt="schedule" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png?raw=true" width="19.2%" alt="routine" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png?raw=true" width="19.2%" alt="finance" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png?raw=true" width="19.2%" alt="finance-overview" />
     <br/>
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1243.png?raw=true" width="19.2%" alt="finance-budget" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1249.png?raw=true" width="19.2%" alt="schedule-add" />
-    <img src="https://github.com/allubie/NANA/blob/main/Screenshots/1259.png?raw=true" width="19.2%" alt="notes-editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/6.png?raw=true" width="19.2%" alt="finance-budget" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7.pngraw=true" width="19.2%" alt="schedule-add" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/8.png?raw=true" width="19.2%" alt="notes-editor" />
     <br/>
     <br/>
 </div>
