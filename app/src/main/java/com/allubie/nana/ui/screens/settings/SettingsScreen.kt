@@ -468,7 +468,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Outlined.Person,
                         title = "Developer",
-                        subtitle = "allubie",
+                        subtitle = "Visit the github repo",
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
