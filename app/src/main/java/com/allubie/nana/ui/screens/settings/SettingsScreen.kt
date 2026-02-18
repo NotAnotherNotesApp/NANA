@@ -36,8 +36,15 @@ fun SettingsScreen(
     val timezone by viewModel.timezone.collectAsState()
     val use24HourFormat by viewModel.use24HourFormat.collectAsState()
     val backupState by viewModel.backupState.collectAsState()
-    LocalContext.current
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val appVersion = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
+        } catch (_: Exception) {
+            "unknown"
+        }
+    }
     
     var showThemeDialog by remember { mutableStateOf(false) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
@@ -454,7 +461,7 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Outlined.Info,
                         title = "Version",
-                        subtitle = "0.8.1",
+                        subtitle = appVersion,
                         onClick = { }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
