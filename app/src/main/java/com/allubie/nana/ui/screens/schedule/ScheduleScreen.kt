@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Event
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -349,25 +350,17 @@ private fun TimelineEventCard(
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Event") },
-            text = { Text("Are you sure you want to delete \"${event.title}\"? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteConfirmation = false
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                onDelete()
+                showDeleteConfirmation = false
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete Event",
+            message = "Are you sure you want to delete \"${event.title}\"? This action cannot be undone.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     

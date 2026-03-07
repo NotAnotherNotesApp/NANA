@@ -135,6 +135,10 @@ class SettingsViewModel(
     fun emptyTrash() {
         viewModelScope.launch {
             noteDao.emptyTrash()
+            _backupState.value = BackupState(
+                message = "Trash emptied successfully",
+                isSuccess = true
+            )
         }
     }
     

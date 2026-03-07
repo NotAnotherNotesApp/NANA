@@ -11,6 +11,7 @@ import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.dao.LabelDao
 import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.dao.NoteImageDao
+import com.allubie.nana.widget.updateNotesWidgets
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Note
@@ -42,7 +43,8 @@ data class NoteEditorUiState(
 class NoteEditorViewModel(
     private val noteDao: NoteDao,
     private val noteImageDao: NoteImageDao,
-    private val labelDao: LabelDao
+    private val labelDao: LabelDao,
+    private val application: NanaApplication
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(NoteEditorUiState())
@@ -127,6 +129,7 @@ class NoteEditorViewModel(
                     noteImageDao.insertImage(image.copy(noteId = noteId))
                 }
             }
+            updateNotesWidgets(application)
         }
     }
     
@@ -189,6 +192,7 @@ class NoteEditorViewModel(
             val noteId = _uiState.value.id
             if (noteId != null) {
                 noteDao.updateArchiveStatus(noteId, true)
+                updateNotesWidgets(application)
                 onComplete()
             }
         }
@@ -199,6 +203,7 @@ class NoteEditorViewModel(
             val noteId = _uiState.value.id
             if (noteId != null) {
                 noteDao.updateArchiveStatus(noteId, false)
+                updateNotesWidgets(application)
                 onComplete()
             }
         }
@@ -209,6 +214,7 @@ class NoteEditorViewModel(
             val noteId = _uiState.value.id
             if (noteId != null) {
                 noteDao.updateDeleteStatus(noteId, true)
+                updateNotesWidgets(application)
                 onComplete()
             }
         }
@@ -221,6 +227,7 @@ class NoteEditorViewModel(
             if (noteId != null) {
                 noteDao.updatePinStatus(noteId, newPinState)
                 _uiState.update { it.copy(isPinned = newPinState) }
+                updateNotesWidgets(application)
             }
         }
     }
@@ -232,7 +239,8 @@ class NoteEditorViewModel(
                 NoteEditorViewModel(
                     application.database.noteDao(),
                     application.database.noteImageDao(),
-                    application.database.labelDao()
+                    application.database.labelDao(),
+                    application
                 )
             }
         }

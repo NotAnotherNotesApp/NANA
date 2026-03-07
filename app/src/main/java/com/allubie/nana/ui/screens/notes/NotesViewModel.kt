@@ -8,11 +8,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.widget.updateNotesWidgets
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class NotesViewModel(private val noteDao: NoteDao) : ViewModel() {
+class NotesViewModel(private val noteDao: NoteDao, private val application: NanaApplication) : ViewModel() {
     
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -38,18 +39,21 @@ class NotesViewModel(private val noteDao: NoteDao) : ViewModel() {
     fun togglePin(note: Note) {
         viewModelScope.launch {
             noteDao.updatePinStatus(note.id, !note.isPinned)
+            updateNotesWidgets(application)
         }
     }
     
     fun archiveNote(note: Note) {
         viewModelScope.launch {
             noteDao.updateArchiveStatus(note.id, true)
+            updateNotesWidgets(application)
         }
     }
     
     fun deleteNote(note: Note) {
         viewModelScope.launch {
             noteDao.updateDeleteStatus(note.id, true)
+            updateNotesWidgets(application)
         }
     }
     
@@ -57,7 +61,7 @@ class NotesViewModel(private val noteDao: NoteDao) : ViewModel() {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                NotesViewModel(application.database.noteDao())
+                NotesViewModel(application.database.noteDao(), application)
             }
         }
     }

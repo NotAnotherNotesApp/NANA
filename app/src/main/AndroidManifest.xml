@@ -50,6 +50,58 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <!-- Widget: Quick Actions -->
+        <receiver
+            android:name=".widget.QuickActionsWidgetReceiver"
+            android:exported="true"
+            android:label="Quick Actions">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_actions_info" />
+        </receiver>
+
+        <!-- Widget: Budget Status -->
+        <receiver
+            android:name=".widget.BudgetStatusWidgetReceiver"
+            android:exported="true"
+            android:label="Budget Status">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_budget_status_info" />
+        </receiver>
+
+        <!-- Widget: Recent Notes -->
+        <receiver
+            android:name=".widget.RecentNotesWidgetReceiver"
+            android:exported="true"
+            android:label="Recent Notes">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recent_notes_info" />
+        </receiver>
+
+        <!-- Widget: Checklist -->
+        <receiver
+            android:name=".widget.ChecklistWidgetReceiver"
+            android:exported="true"
+            android:label="Checklist">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_checklist_info" />
+        </receiver>
     </application>
 
 </manifest>

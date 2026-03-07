@@ -4,10 +4,26 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
+import com.allubie.nana.R
 
-// Using default font family - replace with Manrope when fonts are added
-val Manrope = FontFamily.Default
+private val fontProvider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+
+private val manropeFont = GoogleFont("Manrope")
+
+val Manrope = FontFamily(
+    Font(googleFont = manropeFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = manropeFont, fontProvider = fontProvider, weight = FontWeight.Medium),
+    Font(googleFont = manropeFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = manropeFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+    Font(googleFont = manropeFont, fontProvider = fontProvider, weight = FontWeight.ExtraBold),
+)
 
 val Typography = Typography(
     displayLarge = TextStyle(

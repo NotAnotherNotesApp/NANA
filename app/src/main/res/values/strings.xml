@@ -303,4 +303,10 @@
     <string name="day_sat">Sat</string>
     <string name="day_sun">Sun</string>
 
+    <!-- Widget descriptions -->
+    <string name="widget_quick_actions_description">Quick access to create notes and log expenses</string>
+    <string name="widget_budget_status_description">View this month\'s spending and budget progress</string>
+    <string name="widget_recent_notes_description">See your most recent notes at a glance</string>
+    <string name="widget_checklist_description">View and track your checklist progress</string>
+
 </resources>

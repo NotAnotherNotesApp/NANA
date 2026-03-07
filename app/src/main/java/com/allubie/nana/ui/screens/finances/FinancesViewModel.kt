@@ -14,6 +14,7 @@ import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
+import com.allubie.nana.widget.updateBudgetWidget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,7 +25,8 @@ class FinancesViewModel(
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
     private val labelDao: LabelDao,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val application: NanaApplication
 ) : ViewModel() {
     
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance())
@@ -33,13 +35,21 @@ class FinancesViewModel(
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     
-    val hasBudget: StateFlow<Boolean> = budgetDao.getAllBudgets()
-        .map { it.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    // Budget: prefer user-set total limit from preferences, fallback to sum of category allocations
+    private val totalBudgetLimit: StateFlow<Double> = preferencesManager.totalBudget
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
     
-    val totalBudget: StateFlow<Double> = budgetDao.getAllBudgets()
+    private val totalAllocated: StateFlow<Double> = budgetDao.getAllBudgets()
         .map { budgets -> budgets.sumOf { it.amount } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    
+    val totalBudget: StateFlow<Double> = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
+        if (limit > 0) limit else allocated
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    
+    val hasBudget: StateFlow<Boolean> = totalBudget
+        .map { it > 0 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     
     val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
@@ -58,15 +68,18 @@ class FinancesViewModel(
      .onEach { _isLoading.value = false }
      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    private val _totalIncome = MutableStateFlow(0.0)
-    val totalIncome: StateFlow<Double> = _totalIncome.asStateFlow()
+    // Reactively derived from filtered transactions — updates instantly when transactions change
+    val totalIncome: StateFlow<Double> = filteredTransactions
+        .map { transactions ->
+            transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
     
-    private val _totalExpenses = MutableStateFlow(0.0)
-    val totalExpenses: StateFlow<Double> = _totalExpenses.asStateFlow()
-    
-    init {
-        loadTotals()
-    }
+    val totalExpenses: StateFlow<Double> = filteredTransactions
+        .map { transactions ->
+            transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
     
     fun setSelectedMonth(year: Int, month: Int) {
         val calendar = Calendar.getInstance().apply {
@@ -75,7 +88,6 @@ class FinancesViewModel(
             set(Calendar.DAY_OF_MONTH, 1)
         }
         _selectedMonth.value = calendar
-        loadTotals()
     }
     
     private fun getMonthRange(calendar: Calendar): Pair<Long, Long> {
@@ -93,24 +105,10 @@ class FinancesViewModel(
         return startOfMonth to endOfMonth
     }
     
-    private fun loadTotals() {
-        viewModelScope.launch {
-            val (startOfMonth, endOfMonth) = getMonthRange(_selectedMonth.value)
-            
-            _totalIncome.value = transactionDao.getTotalByTypeInRange(
-                TransactionType.INCOME, startOfMonth, endOfMonth
-            ) ?: 0.0
-            
-            _totalExpenses.value = transactionDao.getTotalByTypeInRange(
-                TransactionType.EXPENSE, startOfMonth, endOfMonth
-            ) ?: 0.0
-        }
-    }
-    
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             transactionDao.deleteTransaction(transaction)
-            loadTotals()
+            updateBudgetWidget(application)
         }
     }
     
@@ -122,7 +120,8 @@ class FinancesViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),
                     application.database.labelDao(),
-                    application.preferencesManager
+                    application.preferencesManager,
+                    application
                 )
             }
         }

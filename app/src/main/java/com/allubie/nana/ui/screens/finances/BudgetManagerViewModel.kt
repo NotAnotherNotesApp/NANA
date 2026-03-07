@@ -13,6 +13,7 @@ import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.TransactionType
+import com.allubie.nana.widget.updateBudgetWidget
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -20,7 +21,8 @@ import java.util.*
 class BudgetManagerViewModel(
     private val budgetDao: BudgetDao,
     private val transactionDao: TransactionDao,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val application: NanaApplication
 ) : ViewModel() {
     
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance().get(Calendar.MONTH))
@@ -106,24 +108,28 @@ class BudgetManagerViewModel(
                 iconName = iconName
             )
             budgetDao.insertBudget(budget)
+            updateBudgetWidget(application)
         }
     }
     
     fun updateBudget(budget: Budget) {
         viewModelScope.launch {
             budgetDao.updateBudget(budget)
+            updateBudgetWidget(application)
         }
     }
     
     fun deleteBudget(budget: Budget) {
         viewModelScope.launch {
             budgetDao.deleteBudget(budget)
+            updateBudgetWidget(application)
         }
     }
     
     fun setTotalBudgetLimit(amount: Double) {
         viewModelScope.launch {
             preferencesManager.setTotalBudget(amount)
+            updateBudgetWidget(application)
         }
     }
     
@@ -135,7 +141,8 @@ class BudgetManagerViewModel(
                 BudgetManagerViewModel(
                     budgetDao = database.budgetDao(),
                     transactionDao = database.transactionDao(),
-                    preferencesManager = application.preferencesManager
+                    preferencesManager = application.preferencesManager,
+                    application = application
                 )
             }
         }

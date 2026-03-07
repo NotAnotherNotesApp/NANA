@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.allubie.nana.data.model.NoteImage
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
@@ -397,44 +398,22 @@ fun NoteViewerScreen(
     
     // Delete confirmation dialog
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            },
-            title = { Text("Delete this note?") },
-            text = { 
-                Text(
-                    if (uiState.title.isNotEmpty()) 
-                        "\"${uiState.title}\" will be moved to trash."
-                    else 
-                        "This note will be moved to trash."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteDialog = false
-                        viewModel.deleteNote {
-                            onNavigateBack()
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deleteNote {
+                    onNavigateBack()
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete this note?",
+            message = if (uiState.title.isNotEmpty())
+                "\"${uiState.title}\" will be moved to trash."
+            else
+                "This note will be moved to trash.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     

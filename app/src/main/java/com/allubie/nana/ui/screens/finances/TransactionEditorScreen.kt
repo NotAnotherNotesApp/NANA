@@ -30,9 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Label
+import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.ui.theme.*
 import com.allubie.nana.util.CategoryIcons
+import com.allubie.nana.util.ColorUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -55,6 +57,13 @@ fun TransactionEditorScreen(
     LaunchedEffect(transactionId) {
         if (transactionId != null) {
             viewModel.loadTransaction(transactionId)
+        }
+    }
+    
+    // Navigate back after save completes
+    LaunchedEffect(Unit) {
+        viewModel.saveComplete.collect {
+            onNavigateBack()
         }
     }
     
@@ -108,7 +117,6 @@ fun TransactionEditorScreen(
                             .clip(RoundedCornerShape(20.dp))
                             .clickable {
                                 viewModel.saveTransaction()
-                                onNavigateBack()
                             },
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(20.dp)
@@ -465,34 +473,81 @@ fun TransactionEditorScreen(
     
     // Category Picker Dialog
     if (showCategoryPicker) {
-        AlertDialog(
-            onDismissRequest = { showCategoryPicker = false },
-            title = {
-                Text(
-                    text = "Select Category",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    currentLabels.forEach { label ->
-                        val color = Color(label.color)
+        var showAddCategory by remember { mutableStateOf(false) }
+        var newCategoryName by remember { mutableStateOf("") }
+        var newCategoryIcon by remember { mutableStateOf<String?>("restaurant") }
+        val defaultColor = if (uiState.type == TransactionType.EXPENSE) 0xFFF97316.toInt() else 0xFF22C55E.toInt()
+        
+        if (!showAddCategory) {
+            AlertDialog(
+                onDismissRequest = { showCategoryPicker = false },
+                title = {
+                    Text(
+                        text = "Select Category",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentLabels.forEach { label ->
+                            val color = Color(label.color)
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        viewModel.updateCategory(label.name)
+                                        showCategoryPicker = false
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (uiState.category == label.name)
+                                    color.copy(alpha = 0.2f)
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(color.copy(alpha = 0.2f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = CategoryIcons.getIcon(label.iconName),
+                                            contentDescription = null,
+                                            tint = color,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = label.name,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Add Category button
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    viewModel.updateCategory(label.name)
-                                    showCategoryPicker = false
-                                },
+                                .clickable { showAddCategory = true },
                             shape = RoundedCornerShape(12.dp),
-                            color = if (uiState.category == label.name)
-                                color.copy(alpha = 0.2f)
-                            else
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            color = Color.Transparent
                         ) {
                             Row(
                                 modifier = Modifier
@@ -505,31 +560,133 @@ fun TransactionEditorScreen(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(color.copy(alpha = 0.2f)),
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = CategoryIcons.getIcon(label.iconName),
+                                        imageVector = Icons.Outlined.Add,
                                         contentDescription = null,
-                                        tint = color,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
                                 Text(
-                                    text = label.name,
-                                    fontWeight = FontWeight.Medium
+                                    text = "Add Category",
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showCategoryPicker = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCategoryPicker = false }) {
-                    Text("Cancel")
+            )
+        } else {
+            // Inline Add Category form
+            AlertDialog(
+                onDismissRequest = { showAddCategory = false },
+                title = {
+                    Text(
+                        text = "Add Category",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = newCategoryName,
+                            onValueChange = { newCategoryName = it },
+                            label = { Text("Name") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        
+                        Text(
+                            text = "Icon",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        val iconsByGroup = CategoryIcons.getIconsByGroup()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 250.dp)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            iconsByGroup.forEach { (groupName, icons) ->
+                                Text(
+                                    text = groupName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                                )
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    icons.forEach { (iconName, icon) ->
+                                            val isSelected = newCategoryIcon == iconName
+                                            Surface(
+                                                modifier = Modifier
+                                                    .size(38.dp)
+                                                    .clickable { newCategoryIcon = iconName },
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = if (isSelected)
+                                                    MaterialTheme.colorScheme.primaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.surfaceVariant,
+                                                border = if (isSelected) {
+                                                    androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                                                } else null
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = icon,
+                                                        contentDescription = null,
+                                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddCategory = false }) {
+                        Text("Back")
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newCategoryName.isNotBlank()) {
+                                viewModel.createLabel(newCategoryName.trim(), newCategoryIcon, defaultColor)
+                                viewModel.updateCategory(newCategoryName.trim())
+                                showAddCategory = false
+                                showCategoryPicker = false
+                            }
+                        },
+                        enabled = newCategoryName.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Save")
+                    }
                 }
-            }
-        )
+            )
+        }
     }
     
     // Date Picker Dialog

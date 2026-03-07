@@ -4,24 +4,28 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.allubie.nana.BuildConfig
+import com.allubie.nana.ui.components.NanaConfirmationDialog
+import com.allubie.nana.ui.components.NanaSearchableListDialog
+import com.allubie.nana.ui.components.NanaSelectionDialog
+import com.allubie.nana.ui.components.SectionHeader
+import com.allubie.nana.ui.components.SettingsCard
+import com.allubie.nana.ui.components.SettingsItem
+import com.allubie.nana.ui.components.SettingsItemWithSwitch
 import com.allubie.nana.ui.theme.ThemeMode
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,19 +42,15 @@ fun SettingsScreen(
     val backupState by viewModel.backupState.collectAsState()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val appVersion = remember {
-        try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
-        } catch (_: Exception) {
-            "unknown"
-        }
-    }
+    val appVersion = BuildConfig.VERSION_NAME
     
     var showThemeDialog by remember { mutableStateOf(false) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
     var showTimezoneDialog by remember { mutableStateOf(false) }
     var showLicensesDialog by remember { mutableStateOf(false) }
     var showEmptyTrashDialog by remember { mutableStateOf(false) }
+    var currencySearch by remember { mutableStateOf("") }
+    var timezoneSearch by remember { mutableStateOf("") }
     
     // File picker for restore
     val filePicker = rememberLauncherForActivityResult(
@@ -78,39 +78,22 @@ fun SettingsScreen(
     }
     
     if (showThemeDialog) {
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = { Text("Choose Theme") },
-            text = {
-                Column {
-                    ThemeMode.entries.forEach { mode ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = themeMode == mode,
-                                onClick = {
-                                    viewModel.setThemeMode(mode)
-                                    showThemeDialog = false
-                                }
-                            )
-                            Text(
-                                text = when (mode) {
-                                    ThemeMode.LIGHT -> "Light"
-                                    ThemeMode.DARK -> "Dark"
-                                    ThemeMode.AMOLED -> "AMOLED"
-                                    ThemeMode.SYSTEM -> "System default"
-                                }
-                            )
-                        }
-                    }
+        NanaSelectionDialog(
+            onDismiss = { showThemeDialog = false },
+            title = "Choose Theme",
+            options = ThemeMode.entries.toList(),
+            selectedOption = themeMode,
+            optionLabel = { mode ->
+                when (mode) {
+                    ThemeMode.LIGHT -> "Light"
+                    ThemeMode.DARK -> "Dark"
+                    ThemeMode.AMOLED -> "AMOLED"
+                    ThemeMode.SYSTEM -> "System default"
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Cancel")
-                }
+            onSelect = { mode ->
+                viewModel.setThemeMode(mode)
+                showThemeDialog = false
             }
         )
     }
@@ -126,47 +109,61 @@ fun SettingsScreen(
             Triple("CNY", "¥", "Chinese Yuan"),
             Triple("KRW", "₩", "Korean Won"),
             Triple("AUD", "A$", "Australian Dollar"),
-            Triple("CAD", "C$", "Canadian Dollar")
+            Triple("CAD", "C$", "Canadian Dollar"),
+            Triple("CHF", "Fr", "Swiss Franc"),
+            Triple("SEK", "kr", "Swedish Krona"),
+            Triple("NOK", "kr", "Norwegian Krone"),
+            Triple("DKK", "kr", "Danish Krone"),
+            Triple("PLN", "zł", "Polish Zloty"),
+            Triple("CZK", "Kč", "Czech Koruna"),
+            Triple("HUF", "Ft", "Hungarian Forint"),
+            Triple("TRY", "₺", "Turkish Lira"),
+            Triple("RUB", "₽", "Russian Ruble"),
+            Triple("BRL", "R$", "Brazilian Real"),
+            Triple("MXN", "$", "Mexican Peso"),
+            Triple("ARS", "$", "Argentine Peso"),
+            Triple("COP", "$", "Colombian Peso"),
+            Triple("CLP", "$", "Chilean Peso"),
+            Triple("ZAR", "R", "South African Rand"),
+            Triple("NGN", "₦", "Nigerian Naira"),
+            Triple("EGP", "E£", "Egyptian Pound"),
+            Triple("KES", "KSh", "Kenyan Shilling"),
+            Triple("GHS", "₵", "Ghanaian Cedi"),
+            Triple("AED", "د.إ", "UAE Dirham"),
+            Triple("SAR", "﷼", "Saudi Riyal"),
+            Triple("QAR", "﷼", "Qatari Riyal"),
+            Triple("KWD", "د.ك", "Kuwaiti Dinar"),
+            Triple("THB", "฿", "Thai Baht"),
+            Triple("MYR", "RM", "Malaysian Ringgit"),
+            Triple("SGD", "S$", "Singapore Dollar"),
+            Triple("IDR", "Rp", "Indonesian Rupiah"),
+            Triple("PHP", "₱", "Philippine Peso"),
+            Triple("VND", "₫", "Vietnamese Dong"),
+            Triple("PKR", "₨", "Pakistani Rupee"),
+            Triple("LKR", "₨", "Sri Lankan Rupee"),
+            Triple("TWD", "NT$", "Taiwan Dollar"),
+            Triple("HKD", "HK$", "Hong Kong Dollar"),
+            Triple("NZD", "NZ$", "New Zealand Dollar")
         )
-        
-        AlertDialog(
-            onDismissRequest = { showCurrencyDialog = false },
-            title = { Text("Choose Currency") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    currencies.forEach { (code, symbol, name) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setCurrency(code, symbol)
-                                    showCurrencyDialog = false
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = currencyCode == code,
-                                onClick = {
-                                    viewModel.setCurrency(code, symbol)
-                                    showCurrencyDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("$code ($symbol) - $name")
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCurrencyDialog = false }) {
-                    Text("Cancel")
-                }
+        val filteredCurrencies = if (currencySearch.isBlank()) currencies
+            else currencies.filter {
+                it.first.contains(currencySearch, ignoreCase = true) ||
+                it.third.contains(currencySearch, ignoreCase = true)
+            }
+
+        NanaSearchableListDialog(
+            onDismiss = { showCurrencyDialog = false; currencySearch = "" },
+            title = "Choose Currency",
+            searchQuery = currencySearch,
+            onSearchQueryChange = { currencySearch = it },
+            searchPlaceholder = "Search currencies...",
+            items = filteredCurrencies,
+            isSelected = { it.first == currencyCode },
+            itemLabel = { (code, symbol, name) -> "$code ($symbol) - $name" },
+            onSelect = { (code, symbol, _) ->
+                viewModel.setCurrency(code, symbol)
+                showCurrencyDialog = false
+                currencySearch = ""
             }
         )
     }
@@ -178,54 +175,80 @@ fun SettingsScreen(
             "America/Chicago" to "Central Time (US)",
             "America/Denver" to "Mountain Time (US)",
             "America/Los_Angeles" to "Pacific Time (US)",
+            "America/Anchorage" to "Alaska Time (US)",
+            "Pacific/Honolulu" to "Hawaii Time (US)",
+            "America/Toronto" to "Toronto (EST)",
+            "America/Vancouver" to "Vancouver (PST)",
+            "America/Mexico_City" to "Mexico City (CST)",
+            "America/Sao_Paulo" to "São Paulo (BRT)",
+            "America/Argentina/Buenos_Aires" to "Buenos Aires (ART)",
+            "America/Bogota" to "Bogotá (COT)",
+            "America/Santiago" to "Santiago (CLT)",
             "Europe/London" to "London (GMT)",
             "Europe/Paris" to "Paris (CET)",
-            "Asia/Tokyo" to "Tokyo (JST)",
-            "Asia/Shanghai" to "Shanghai (CST)",
-            "Asia/Singapore" to "Singapore (SGT)",
-            "Asia/Dhaka" to "Dhaka (BST)",
+            "Europe/Berlin" to "Berlin (CET)",
+            "Europe/Madrid" to "Madrid (CET)",
+            "Europe/Rome" to "Rome (CET)",
+            "Europe/Amsterdam" to "Amsterdam (CET)",
+            "Europe/Stockholm" to "Stockholm (CET)",
+            "Europe/Warsaw" to "Warsaw (CET)",
+            "Europe/Moscow" to "Moscow (MSK)",
+            "Europe/Istanbul" to "Istanbul (TRT)",
+            "Europe/Athens" to "Athens (EET)",
+            "Africa/Cairo" to "Cairo (EET)",
+            "Africa/Johannesburg" to "Johannesburg (SAST)",
+            "Africa/Lagos" to "Lagos (WAT)",
+            "Africa/Nairobi" to "Nairobi (EAT)",
+            "Asia/Dubai" to "Dubai (GST)",
+            "Asia/Riyadh" to "Riyadh (AST)",
+            "Asia/Karachi" to "Karachi (PKT)",
             "Asia/Kolkata" to "India (IST)",
-            "Australia/Sydney" to "Sydney (AEST)"
+            "Asia/Dhaka" to "Dhaka (BST)",
+            "Asia/Bangkok" to "Bangkok (ICT)",
+            "Asia/Jakarta" to "Jakarta (WIB)",
+            "Asia/Singapore" to "Singapore (SGT)",
+            "Asia/Kuala_Lumpur" to "Kuala Lumpur (MYT)",
+            "Asia/Manila" to "Manila (PHT)",
+            "Asia/Ho_Chi_Minh" to "Ho Chi Minh (ICT)",
+            "Asia/Shanghai" to "Shanghai (CST)",
+            "Asia/Hong_Kong" to "Hong Kong (HKT)",
+            "Asia/Taipei" to "Taipei (CST)",
+            "Asia/Tokyo" to "Tokyo (JST)",
+            "Asia/Seoul" to "Seoul (KST)",
+            "Australia/Sydney" to "Sydney (AEST)",
+            "Australia/Melbourne" to "Melbourne (AEST)",
+            "Australia/Perth" to "Perth (AWST)",
+            "Pacific/Auckland" to "Auckland (NZST)"
         )
-        AlertDialog(
-            onDismissRequest = { showTimezoneDialog = false },
-            title = { Text("Select Timezone") },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    commonTimezones.forEach { (id, name) ->
-                        val isSelected = timezone == id
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.setTimezone(id)
-                                    showTimezoneDialog = false
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = isSelected,
-                                onClick = {
-                                    viewModel.setTimezone(id)
-                                    showTimezoneDialog = false
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = name)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showTimezoneDialog = false }) {
-                    Text("Cancel")
-                }
+        fun formatUtcOffset(timezoneId: String): String {
+            val tz = TimeZone.getTimeZone(timezoneId)
+            val offsetMs = tz.getOffset(System.currentTimeMillis())
+            val hours = offsetMs / 3600000
+            val minutes = Math.abs(offsetMs % 3600000) / 60000
+            return if (minutes == 0) "UTC${if (hours >= 0) "+" else ""}$hours"
+                   else "UTC${if (hours >= 0) "+" else ""}$hours:${String.format("%02d", minutes)}"
+        }
+        val filteredTimezones = if (timezoneSearch.isBlank()) commonTimezones
+            else commonTimezones.filter {
+                val offset = formatUtcOffset(it.first)
+                it.first.contains(timezoneSearch, ignoreCase = true) ||
+                it.second.contains(timezoneSearch, ignoreCase = true) ||
+                offset.contains(timezoneSearch, ignoreCase = true)
+            }
+
+        NanaSearchableListDialog(
+            onDismiss = { showTimezoneDialog = false; timezoneSearch = "" },
+            title = "Select Timezone",
+            searchQuery = timezoneSearch,
+            onSearchQueryChange = { timezoneSearch = it },
+            searchPlaceholder = "Search timezones...",
+            items = filteredTimezones,
+            isSelected = { it.first == timezone },
+            itemLabel = { (id, name) -> "$name  ${formatUtcOffset(id)}" },
+            onSelect = { (id, _) ->
+                viewModel.setTimezone(id)
+                showTimezoneDialog = false
+                timezoneSearch = ""
             }
         )
     }
@@ -248,7 +271,16 @@ fun SettingsScreen(
                         "Material Design 3" to "Apache 2.0",
                         "Room Database" to "Apache 2.0",
                         "Kotlin Coroutines" to "Apache 2.0",
-                        "AndroidX Libraries" to "Apache 2.0"
+                        "AndroidX Core KTX" to "Apache 2.0",
+                        "AndroidX Lifecycle" to "Apache 2.0",
+                        "AndroidX Navigation" to "Apache 2.0",
+                        "AndroidX DataStore" to "Apache 2.0",
+                        "AndroidX Glance" to "Apache 2.0",
+                        "Vico Charts" to "Apache 2.0",
+                        "RichEditor Compose" to "Apache 2.0",
+                        "Coil Image Loading" to "Apache 2.0",
+                        "Gson" to "Apache 2.0",
+                        "Google Fonts" to "Apache 2.0"
                     ).forEach { (lib, license) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -273,25 +305,16 @@ fun SettingsScreen(
     }
 
     if (showEmptyTrashDialog) {
-        AlertDialog(
-            onDismissRequest = { showEmptyTrashDialog = false },
-            title = { Text("Empty Trash") },
-            text = { Text("This will permanently delete all notes in trash. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.emptyTrash()
-                        showEmptyTrashDialog = false
-                    }
-                ) {
-                    Text("Delete All", color = MaterialTheme.colorScheme.error)
-                }
+        NanaConfirmationDialog(
+            onDismiss = { showEmptyTrashDialog = false },
+            onConfirm = {
+                viewModel.emptyTrash()
+                showEmptyTrashDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showEmptyTrashDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Empty Trash",
+            message = "This will permanently delete all notes in trash. This action cannot be undone.",
+            confirmText = "Delete All",
+            isDestructive = true
         )
     }
     
@@ -323,12 +346,7 @@ fun SettingsScreen(
         ) {
             // General Section
             item {
-                Text(
-                    text = "GENERAL",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                )
+                SectionHeader(title = "GENERAL", isFirst = true)
             }
             
             item {
@@ -359,12 +377,7 @@ fun SettingsScreen(
             
             // Labels & Categories Section
             item {
-                Text(
-                    text = "LABELS & CATEGORIES",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                )
+                SectionHeader(title = "LABELS & CATEGORIES")
             }
             
             item {
@@ -380,12 +393,7 @@ fun SettingsScreen(
             
             // Appearance Section
             item {
-                Text(
-                    text = "APPEARANCE",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                )
+                SectionHeader(title = "APPEARANCE")
             }
             
             item {
@@ -406,12 +414,7 @@ fun SettingsScreen(
             
             // Data Management Section
             item {
-                Text(
-                    text = "DATA MANAGEMENT",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                )
+                SectionHeader(title = "DATA MANAGEMENT")
             }
             
             item {
@@ -448,12 +451,7 @@ fun SettingsScreen(
             
             // About Section
             item {
-                Text(
-                    text = "ABOUT",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
-                )
+                SectionHeader(title = "ABOUT")
             }
             
             item {
@@ -467,8 +465,8 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.Person,
-                        title = "Developer",
-                        subtitle = "Visit the github repo",
+                        title = "About the app",
+                        subtitle = "Visit the github page",
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -493,97 +491,4 @@ fun SettingsScreen(
     }
 }
 
-@Composable
-private fun SettingsCard(
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(content = content)
-    }
-}
 
-@Composable
-private fun SettingsItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false
-) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                color = if (isDestructive) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isDestructive) MaterialTheme.colorScheme.error
-                       else MaterialTheme.colorScheme.primary
-            )
-        },
-        trailingContent = {
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    )
-}
-
-@Composable
-private fun SettingsItemWithSwitch(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        supportingContent = {
-            Text(
-                text = subtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        leadingContent = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange
-            )
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-    )
-}

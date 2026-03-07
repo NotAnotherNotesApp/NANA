@@ -13,8 +13,8 @@ android {
         applicationId = "com.allubie.nana"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.8.5"
+        versionCode = 3
+        versionName = "0.8.7"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -40,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -83,6 +84,13 @@ dependencies {
     
     // JSON serialization for backup
     implementation(libs.gson)
+    
+    // Glance App Widgets
+    implementation(libs.glance.appwidget)
+    implementation(libs.glance.material3)
+    
+    // Google Fonts
+    implementation(libs.androidx.ui.text.google.fonts)
     
     debugImplementation(libs.androidx.ui.tooling)
 }

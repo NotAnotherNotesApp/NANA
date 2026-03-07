@@ -16,9 +16,13 @@ import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
+import com.allubie.nana.widget.updateBudgetWidget
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -39,11 +43,15 @@ class TransactionEditorViewModel(
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
     private val labelDao: LabelDao,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val application: NanaApplication
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(TransactionEditorUiState())
     val uiState: StateFlow<TransactionEditorUiState> = _uiState.asStateFlow()
+    
+    private val _saveComplete = MutableSharedFlow<Boolean>()
+    val saveComplete: SharedFlow<Boolean> = _saveComplete.asSharedFlow()
     
     private val _customBudgets = MutableStateFlow<List<Budget>>(emptyList())
     val customBudgets: StateFlow<List<Budget>> = _customBudgets.asStateFlow()
@@ -139,6 +147,13 @@ class TransactionEditorViewModel(
         _uiState.update { it.copy(date = date) }
     }
     
+    fun createLabel(name: String, iconName: String?, color: Int) {
+        val type = if (_uiState.value.type == TransactionType.EXPENSE) LabelType.EXPENSE else LabelType.INCOME
+        viewModelScope.launch {
+            labelRepository.createLabel(name, type, iconName, color)
+        }
+    }
+    
     fun saveTransaction() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -155,6 +170,8 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
+            _saveComplete.emit(true)
+            viewModelScope.launch { updateBudgetWidget(application) }
         }
     }
     
@@ -162,6 +179,7 @@ class TransactionEditorViewModel(
         viewModelScope.launch {
             _uiState.value.id?.let { id ->
                 transactionDao.deleteTransactionById(id)
+                updateBudgetWidget(application)
             }
         }
     }
@@ -174,7 +192,8 @@ class TransactionEditorViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),
                     application.database.labelDao(),
-                    application.preferencesManager
+                    application.preferencesManager,
+                    application
                 )
             }
         }

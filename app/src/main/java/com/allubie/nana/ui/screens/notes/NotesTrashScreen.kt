@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,66 +32,49 @@ fun NotesTrashScreen(
     viewModel: NotesTrashViewModel = viewModel(factory = NotesTrashViewModel.Factory)
 ) {
     val notes by viewModel.deletedNotes.collectAsState(initial = emptyList())
+    val message by viewModel.message.collectAsState()
     var showEmptyDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
     
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
+        }
+    }
+    
     if (showEmptyDialog) {
-        AlertDialog(
-            onDismissRequest = { showEmptyDialog = false },
-            title = { Text("Empty Trash") },
-            text = { Text("This will permanently delete all notes in trash. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.emptyTrash()
-                        showEmptyDialog = false
-                    }
-                ) {
-                    Text("Delete All", color = MaterialTheme.colorScheme.error)
-                }
+        NanaConfirmationDialog(
+            onDismiss = { showEmptyDialog = false },
+            onConfirm = {
+                viewModel.emptyTrash()
+                showEmptyDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showEmptyDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Empty Trash",
+            message = "This will permanently delete all notes in trash. This action cannot be undone.",
+            confirmText = "Delete All",
+            isDestructive = true
         )
     }
     
     noteToDelete?.let { note ->
-        AlertDialog(
-            onDismissRequest = { noteToDelete = null },
-            title = { Text("Delete Note") },
-            text = { 
-                Column {
-                    Text("Permanently delete \"${note.title.ifEmpty { "Untitled" }}\"?")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "This action cannot be undone.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+        NanaConfirmationDialog(
+            onDismiss = { noteToDelete = null },
+            onConfirm = {
+                viewModel.permanentlyDeleteNote(note)
+                noteToDelete = null
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.permanentlyDeleteNote(note)
-                        noteToDelete = null
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { noteToDelete = null }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete Note",
+            message = "Permanently delete \"${note.title.ifEmpty { "Untitled" }}\"? This action cannot be undone.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { 

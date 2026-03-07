@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.model.RoutineCompletion
 import com.allubie.nana.data.model.RoutineType
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -694,35 +695,17 @@ private fun RoutineCard(
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                onDelete()
+                showDeleteConfirmation = false
             },
-            title = { Text("Delete this routine?") },
-            text = { Text("\"${routine.title}\" will be permanently deleted. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteConfirmation = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete this routine?",
+            message = "\"${routine.title}\" will be permanently deleted. This action cannot be undone.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     

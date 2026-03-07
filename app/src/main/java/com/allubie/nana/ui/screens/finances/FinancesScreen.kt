@@ -35,6 +35,7 @@ import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.ui.theme.Expense
 import com.allubie.nana.ui.theme.Income
 import com.allubie.nana.util.CategoryIcons
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -357,7 +358,7 @@ fun FinancesScreen(
                     )
                     TextButton(onClick = onNavigateToOverview) {
                         Text(
-                            text = "View All",
+                            text = "Budget Overview",
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -537,42 +538,20 @@ private fun TransactionItem(
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                onDelete()
+                showDeleteConfirmation = false
             },
-            title = { Text("Delete this transaction?") },
-            text = { 
-                Text(
-                    if (transaction.title.isNotEmpty()) 
-                        "\"${transaction.title}\" will be permanently deleted."
-                    else 
-                        "This transaction will be permanently deleted."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteConfirmation = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete this transaction?",
+            message = if (transaction.title.isNotEmpty())
+                "\"${transaction.title}\" will be permanently deleted."
+            else
+                "This transaction will be permanently deleted.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     

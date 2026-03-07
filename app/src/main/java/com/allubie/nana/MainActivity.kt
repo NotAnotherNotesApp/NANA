@@ -30,11 +30,18 @@ import com.allubie.nana.ui.theme.NanaTheme
 import com.allubie.nana.ui.theme.ThemeMode
 
 class MainActivity : ComponentActivity() {
+    // Mutable state to propagate widget navigation from onNewIntent
+    private val _widgetRoute = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
         val preferencesManager = (application as NanaApplication).preferencesManager
+        // Only read widget route on fresh launch, not on config change
+        if (savedInstanceState == null) {
+            _widgetRoute.value = intent?.getStringExtra("navigate_to")
+        }
         
         setContent {
             val themeMode by preferencesManager.themeMode.collectAsStateWithLifecycle(
@@ -50,17 +57,47 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 
-                NanaApp()
+                val widgetNavigateTo by _widgetRoute
+                NanaApp(
+                    widgetNavigateTo = widgetNavigateTo,
+                    onWidgetNavigated = { _widgetRoute.value = null }
+                )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra("navigate_to")?.let {
+            _widgetRoute.value = it
         }
     }
 }
 
 @Composable
-fun NanaApp() {
+fun NanaApp(widgetNavigateTo: String? = null, onWidgetNavigated: () -> Unit = {}) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    
+    // Handle widget navigation
+    LaunchedEffect(widgetNavigateTo) {
+        widgetNavigateTo?.let { route ->
+            // For top-level destinations, navigate like the bottom bar
+            val isTopLevel = bottomNavItems.any { it.route == route }
+            navController.navigate(route) {
+                if (isTopLevel) {
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    restoreState = true
+                }
+                launchSingleTop = true
+            }
+            onWidgetNavigated()
+        }
+    }
     
     // Determine if bottom bar should be shown
     val showBottomBar = bottomNavItems.any { screen ->

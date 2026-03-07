@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import com.allubie.nana.data.model.*
+import com.allubie.nana.widget.updateAllWidgets
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
@@ -177,6 +178,8 @@ class BackupManager(
                 prefs.timezone?.let { preferencesManager.setTimezone(it) }
                 prefs.use24HourFormat?.let { preferencesManager.setUse24HourFormat(it) }
             }
+            
+            updateAllWidgets(context)
             
             Result.success(Unit)
         } catch (e: Exception) {

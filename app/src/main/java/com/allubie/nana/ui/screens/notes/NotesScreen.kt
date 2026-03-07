@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -391,35 +392,17 @@ private fun PinnedNoteCard(
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                onDelete()
+                showDeleteConfirmation = false
             },
-            title = { Text("Delete this note?") },
-            text = { Text("\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteConfirmation = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete this note?",
+            message = "\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     
@@ -627,35 +610,17 @@ fun NoteCard(
     
     // Delete confirmation dialog
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
+        NanaConfirmationDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = {
+                onDelete()
+                showDeleteConfirmation = false
             },
-            title = { Text("Delete this note?") },
-            text = { Text("\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteConfirmation = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete this note?",
+            message = "\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.",
+            confirmText = "Delete",
+            isDestructive = true,
+            icon = Icons.Outlined.Delete
         )
     }
     

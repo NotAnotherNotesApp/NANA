@@ -86,6 +86,10 @@ object CategoryIcons {
         "local_pizza" to Icons.Outlined.LocalPizza,
         "icecream" to Icons.Outlined.Icecream,
         "bakery_dining" to Icons.Outlined.BakeryDining,
+        "local_drink" to Icons.Outlined.LocalDrink,
+        "local_grocery_store" to Icons.Outlined.LocalGroceryStore,
+        "dinner_dining" to Icons.Outlined.DinnerDining,
+        "emoji_food_beverage" to Icons.Outlined.EmojiFoodBeverage,
         
         // Transport
         "directions_bus" to Icons.Outlined.DirectionsBus,
@@ -95,12 +99,17 @@ object CategoryIcons {
         "local_taxi" to Icons.Outlined.LocalTaxi,
         "two_wheeler" to Icons.Outlined.TwoWheeler,
         "directions_bike" to Icons.Outlined.DirectionsBike,
+        "local_gas_station" to Icons.Outlined.LocalGasStation,
+        "commute" to Icons.Outlined.Commute,
+        "directions_walk" to Icons.Outlined.DirectionsWalk,
         
         // Shopping
         "shopping_bag" to Icons.Outlined.ShoppingBag,
         "shopping_cart" to Icons.Outlined.ShoppingCart,
         "store" to Icons.Outlined.Store,
         "local_mall" to Icons.Outlined.LocalMall,
+        "storefront" to Icons.Outlined.Storefront,
+        "local_offer" to Icons.Outlined.LocalOffer,
         
         // Entertainment
         "movie" to Icons.Outlined.Movie,
@@ -111,8 +120,11 @@ object CategoryIcons {
         "sports_basketball" to Icons.Outlined.SportsBasketball,
         "casino" to Icons.Outlined.Casino,
         "nightlife" to Icons.Outlined.Nightlife,
+        "headphones" to Icons.Outlined.Headphones,
+        "photo_camera" to Icons.Outlined.PhotoCamera,
+        "palette" to Icons.Outlined.Palette,
         
-        // Bills & Finance
+        // Bills & Utilities
         "receipt_long" to Icons.Outlined.ReceiptLong,
         "receipt" to Icons.Outlined.Receipt,
         "payments" to Icons.Outlined.Payments,
@@ -121,26 +133,50 @@ object CategoryIcons {
         "savings" to Icons.Outlined.Savings,
         "wallet" to Icons.Outlined.Wallet,
         "attach_money" to Icons.Outlined.AttachMoney,
+        "monetization_on" to Icons.Outlined.MonetizationOn,
+        "electric_bolt" to Icons.Outlined.ElectricBolt,
+        "water_drop" to Icons.Outlined.WaterDrop,
+        "wifi" to Icons.Outlined.Wifi,
+        "subscriptions" to Icons.Outlined.Subscriptions,
         
-        // Health
+        // Health & Wellness
         "favorite" to Icons.Outlined.Favorite,
         "local_hospital" to Icons.Outlined.LocalHospital,
         "medication" to Icons.Outlined.Medication,
         "fitness_center" to Icons.Outlined.FitnessCenter,
         "spa" to Icons.Outlined.Spa,
         "self_improvement" to Icons.Outlined.SelfImprovement,
+        "local_pharmacy" to Icons.Outlined.LocalPharmacy,
+        "health_and_safety" to Icons.Outlined.HealthAndSafety,
+        "monitor_heart" to Icons.Outlined.MonitorHeart,
+        
+        // Daily Habits
+        "smoking_rooms" to Icons.Outlined.SmokingRooms,
+        "directions_run" to Icons.Outlined.DirectionsRun,
+        "pool" to Icons.Outlined.Pool,
+        "shower" to Icons.Outlined.Shower,
+        "alarm" to Icons.Outlined.Alarm,
+        "wb_sunny" to Icons.Outlined.WbSunny,
+        "nights_stay" to Icons.Outlined.NightsStay,
+        "timer" to Icons.Outlined.Timer,
+        "recycling" to Icons.Outlined.Recycling,
+        "local_florist" to Icons.Outlined.LocalFlorist,
         
         // Education
         "school" to Icons.Outlined.School,
         "menu_book" to Icons.Outlined.MenuBook,
         "auto_stories" to Icons.Outlined.AutoStories,
         "science" to Icons.Outlined.Science,
+        "local_library" to Icons.Outlined.LocalLibrary,
         
         // Work & Business
         "work" to Icons.Outlined.Work,
         "business_center" to Icons.Outlined.BusinessCenter,
         "laptop" to Icons.Outlined.Laptop,
         "phone_android" to Icons.Outlined.PhoneAndroid,
+        "build" to Icons.Outlined.Build,
+        "handyman" to Icons.Outlined.Handyman,
+        "construction" to Icons.Outlined.Construction,
         
         // Home & Living
         "home" to Icons.Outlined.Home,
@@ -149,6 +185,7 @@ object CategoryIcons {
         "lightbulb" to Icons.Outlined.Lightbulb,
         "local_laundry_service" to Icons.Outlined.LocalLaundryService,
         "cleaning_services" to Icons.Outlined.CleaningServices,
+        "kitchen" to Icons.Outlined.Kitchen,
         
         // People & Social
         "person" to Icons.Outlined.Person,
@@ -212,44 +249,57 @@ object CategoryIcons {
         return mapOf(
             "Food" to listOf(
                 "restaurant", "lunch_dining", "local_cafe", "fastfood", 
-                "local_bar", "local_pizza", "icecream", "bakery_dining"
+                "local_bar", "local_pizza", "icecream", "bakery_dining",
+                "local_drink", "local_grocery_store", "dinner_dining", "emoji_food_beverage"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Transport" to listOf(
                 "directions_bus", "directions_car", "flight", "train",
-                "local_taxi", "two_wheeler", "directions_bike"
+                "local_taxi", "two_wheeler", "directions_bike",
+                "local_gas_station", "commute", "directions_walk"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Shopping" to listOf(
-                "shopping_bag", "shopping_cart", "store", "local_mall"
+                "shopping_bag", "shopping_cart", "store", "local_mall",
+                "storefront", "local_offer"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Entertainment" to listOf(
                 "movie", "sports_esports", "music_note", "theater_comedy",
-                "sports_soccer", "sports_basketball", "casino", "nightlife"
+                "sports_soccer", "sports_basketball", "casino", "nightlife",
+                "headphones", "photo_camera", "palette"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
-            "Finance" to listOf(
+            "Bills & Utilities" to listOf(
                 "receipt_long", "receipt", "payments", "account_balance",
-                "credit_card", "savings", "wallet", "attach_money"
+                "credit_card", "savings", "wallet", "attach_money",
+                "monetization_on", "electric_bolt", "water_drop", "wifi", "subscriptions"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Health" to listOf(
                 "favorite", "local_hospital", "medication", "fitness_center",
-                "spa", "self_improvement"
+                "spa", "self_improvement", "local_pharmacy", "health_and_safety",
+                "monitor_heart"
+            ).mapNotNull { name -> iconMap[name]?.let { name to it } },
+            
+            "Daily Habits" to listOf(
+                "smoking_rooms", "directions_run", "pool", "shower",
+                "alarm", "wb_sunny", "nights_stay", "timer",
+                "recycling", "local_florist"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Education" to listOf(
-                "school", "menu_book", "auto_stories", "science"
+                "school", "menu_book", "auto_stories", "science", "local_library"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Work" to listOf(
-                "work", "business_center", "laptop", "phone_android"
+                "work", "business_center", "laptop", "phone_android",
+                "build", "handyman", "construction"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "Home" to listOf(
                 "home", "apartment", "chair", "lightbulb",
-                "local_laundry_service", "cleaning_services"
+                "local_laundry_service", "cleaning_services", "kitchen"
             ).mapNotNull { name -> iconMap[name]?.let { name to it } },
             
             "People" to listOf(
@@ -298,6 +348,12 @@ object ColorUtils {
         0xFFEC4899.toInt(),  // Pink
         0xFF8B5CF6.toInt(),  // Purple
         0xFF6366F1.toInt(),  // Indigo
-        0xFF6B7280.toInt()   // Gray
+        0xFF6B7280.toInt(),  // Gray
+        0xFFD946EF.toInt(),  // Fuchsia
+        0xFF0EA5E9.toInt(),  // Sky
+        0xFF10B981.toInt(),  // Emerald
+        0xFFE11D48.toInt(),  // Rose
+        0xFF78716C.toInt(),  // Stone
+        0xFF2563EB.toInt()   // Royal Blue
     )
 }

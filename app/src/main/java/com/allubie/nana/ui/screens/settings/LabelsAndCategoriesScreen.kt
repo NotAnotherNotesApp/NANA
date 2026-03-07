@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -439,38 +440,50 @@ private fun LabelEditorDialog(
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     
-                    val popularIcons = listOf(
-                        "restaurant", "directions_bus", "shopping_bag", "movie",
-                        "receipt_long", "favorite", "school", "work",
-                        "home", "person", "event", "card_giftcard",
-                        "payments", "wallet", "savings", "more_horiz"
-                    )
+                    val iconsByGroup = CategoryIcons.getIconsByGroup()
                     
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp)
+                            .verticalScroll(rememberScrollState())
                     ) {
-                        items(popularIcons) { iconName ->
-                            val isSelected = selectedIcon == iconName
-                            Surface(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clickable { selectedIcon = iconName },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) 
-                                    MaterialTheme.colorScheme.primaryContainer
-                                else 
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                border = if (isSelected) {
-                                    androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                                } else null
+                        iconsByGroup.forEach { (groupName, icons) ->
+                            Text(
+                                text = groupName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                            )
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = CategoryIcons.getIcon(iconName),
-                                        contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(22.dp)
-                                    )
+                                icons.forEach { (iconName, icon) ->
+                                    val isSelected = selectedIcon == iconName
+                                    Surface(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clickable { selectedIcon = iconName },
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) 
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else 
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                        border = if (isSelected) {
+                                            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                                        } else null
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
