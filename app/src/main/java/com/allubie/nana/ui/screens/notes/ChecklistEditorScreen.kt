@@ -30,7 +30,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -49,7 +48,6 @@ fun ChecklistEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var newItemText by remember { mutableStateOf("") }
-    LocalFocusManager.current
     val newItemFocusRequester = remember { FocusRequester() }
     
     LaunchedEffect(noteId) {

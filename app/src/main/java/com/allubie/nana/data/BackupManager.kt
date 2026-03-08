@@ -3,6 +3,7 @@ package com.allubie.nana.data
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import androidx.room.withTransaction
 import com.allubie.nana.data.model.*
 import com.allubie.nana.widget.updateAllWidgets
 import com.google.gson.Gson
@@ -103,60 +104,62 @@ class BackupManager(
             val json = inputStream.bufferedReader().use { it.readText() }
             val backupData = gson.fromJson(json, BackupData::class.java)
             
-            // Clear existing data (order matters for foreign keys)
-            database.noteImageDao().deleteAllImages()
-            database.checklistItemDao().deleteAllItems()
-            database.noteDao().deleteAllNotes()
-            database.routineCompletionDao().deleteAllCompletions()
-            database.routineDao().deleteAllRoutines()
-            database.eventDao().deleteAllEvents()
-            database.transactionDao().deleteAllTransactions()
-            database.budgetDao().deleteAllBudgets()
-            database.labelDao().deleteAllLabels()
-            
-            // Import notes
-            backupData.notes.forEach { note ->
-                database.noteDao().insertNote(note)
-            }
-            
-            // Import note images
-            backupData.noteImages.forEach { image ->
-                database.noteImageDao().insertImage(image)
-            }
-            
-            // Import checklist items
-            backupData.checklistItems.forEach { item ->
-                database.checklistItemDao().insertItem(item)
-            }
-            
-            // Import events
-            backupData.events.forEach { event ->
-                database.eventDao().insertEvent(event)
-            }
-            
-            // Import routines
-            backupData.routines.forEach { routine ->
-                database.routineDao().insertRoutine(routine)
-            }
-            
-            // Import routine completions
-            backupData.routineCompletions.forEach { completion ->
-                database.routineCompletionDao().insertCompletion(completion)
-            }
-            
-            // Import transactions
-            backupData.transactions.forEach { transaction ->
-                database.transactionDao().insertTransaction(transaction)
-            }
-            
-            // Import budgets
-            backupData.budgets.forEach { budget ->
-                database.budgetDao().insertBudget(budget)
-            }
-            
-            // Import labels
-            backupData.labels.forEach { label ->
-                database.labelDao().insertLabel(label)
+            database.withTransaction {
+                // Clear existing data (order matters for foreign keys)
+                database.noteImageDao().deleteAllImages()
+                database.checklistItemDao().deleteAllItems()
+                database.noteDao().deleteAllNotes()
+                database.routineCompletionDao().deleteAllCompletions()
+                database.routineDao().deleteAllRoutines()
+                database.eventDao().deleteAllEvents()
+                database.transactionDao().deleteAllTransactions()
+                database.budgetDao().deleteAllBudgets()
+                database.labelDao().deleteAllLabels()
+                
+                // Import notes
+                backupData.notes.forEach { note ->
+                    database.noteDao().insertNote(note)
+                }
+                
+                // Import note images
+                backupData.noteImages.forEach { image ->
+                    database.noteImageDao().insertImage(image)
+                }
+                
+                // Import checklist items
+                backupData.checklistItems.forEach { item ->
+                    database.checklistItemDao().insertItem(item)
+                }
+                
+                // Import events
+                backupData.events.forEach { event ->
+                    database.eventDao().insertEvent(event)
+                }
+                
+                // Import routines
+                backupData.routines.forEach { routine ->
+                    database.routineDao().insertRoutine(routine)
+                }
+                
+                // Import routine completions
+                backupData.routineCompletions.forEach { completion ->
+                    database.routineCompletionDao().insertCompletion(completion)
+                }
+                
+                // Import transactions
+                backupData.transactions.forEach { transaction ->
+                    database.transactionDao().insertTransaction(transaction)
+                }
+                
+                // Import budgets
+                backupData.budgets.forEach { budget ->
+                    database.budgetDao().insertBudget(budget)
+                }
+                
+                // Import labels
+                backupData.labels.forEach { label ->
+                    database.labelDao().insertLabel(label)
+                }
             }
             
             // Restore preferences

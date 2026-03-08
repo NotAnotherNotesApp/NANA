@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.ExpenseCategories
+import com.allubie.nana.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.util.*
 import com.allubie.nana.ui.theme.*
@@ -132,11 +134,7 @@ fun BudgetManagerScreen(
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(kotlin.math.abs(amount))
-        return "$currencySymbol$formatted"
+        return CurrencyFormatter.formatWithSymbol(kotlin.math.abs(amount), currencySymbol)
     }
     
     // Generate months starting from current month
@@ -361,13 +359,14 @@ fun BudgetManagerScreen(
             val usagePercentage = 100 - remainingPercentage
             if (usagePercentage >= 80 && totalBudget > 0) {
                 item {
+                    val isDark = isSystemInDarkTheme()
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        color = AlertWarningBackground,
-                        border = BorderStroke(1.dp, AlertWarningBorder)
+                        color = if (isDark) AlertWarningBackground else AlertWarningBackgroundLight,
+                        border = BorderStroke(1.dp, if (isDark) AlertWarningBorder else AlertWarningBorderLight)
                     ) {
                         Row(
                             modifier = Modifier
@@ -387,12 +386,12 @@ fun BudgetManagerScreen(
                                     text = "Budget Alert",
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = AlertWarningTitle
+                                    color = if (isDark) AlertWarningTitle else Color(0xFFE65100)
                                 )
                                 Text(
                                     text = "You've spent $usagePercentage% of your budget this month.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = AlertWarningText.copy(alpha = 0.8f)
+                                    color = if (isDark) AlertWarningText.copy(alpha = 0.8f) else Color(0xFFBF360C)
                                 )
                             }
                         }
@@ -496,11 +495,7 @@ private fun BudgetCategoryItem(
     
     // Format currency with symbol
     fun formatCurrency(amount: Double): String {
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(amount)
-        return "$currencySymbol$formatted"
+        return CurrencyFormatter.formatWithSymbol(amount, currencySymbol)
     }
     
     Card(

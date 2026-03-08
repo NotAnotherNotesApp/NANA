@@ -1,6 +1,7 @@
 package com.allubie.nana.ui.screens.finances
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -88,8 +89,18 @@ fun TransactionEditorScreen(
     val currentLabels = if (uiState.type == TransactionType.EXPENSE) expenseLabels else incomeLabels
     val currentLabel = currentLabels.find { it.name == uiState.category } ?: currentLabels.firstOrNull()
     
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show error messages
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+    
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -476,7 +487,8 @@ fun TransactionEditorScreen(
         var showAddCategory by remember { mutableStateOf(false) }
         var newCategoryName by remember { mutableStateOf("") }
         var newCategoryIcon by remember { mutableStateOf<String?>("restaurant") }
-        val defaultColor = if (uiState.type == TransactionType.EXPENSE) 0xFFF97316.toInt() else 0xFF22C55E.toInt()
+        val usedColors = currentLabels.map { it.color }
+        val autoColor = remember(usedColors) { ColorUtils.nextAvailableColor(usedColors) }
         
         if (!showAddCategory) {
             AlertDialog(
@@ -673,7 +685,7 @@ fun TransactionEditorScreen(
                     Button(
                         onClick = {
                             if (newCategoryName.isNotBlank()) {
-                                viewModel.createLabel(newCategoryName.trim(), newCategoryIcon, defaultColor)
+                                viewModel.createLabel(newCategoryName.trim(), newCategoryIcon, autoColor)
                                 viewModel.updateCategory(newCategoryName.trim())
                                 showAddCategory = false
                                 showCategoryPicker = false

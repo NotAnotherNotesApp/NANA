@@ -87,6 +87,7 @@ class ReminderReceiver : BroadcastReceiver() {
         
         // Mark routine as completed in database
         if (routineId != -1L) {
+            val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val app = context.applicationContext as? com.allubie.nana.NanaApplication
@@ -122,6 +123,8 @@ class ReminderReceiver : BroadcastReceiver() {
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
@@ -129,6 +132,7 @@ class ReminderReceiver : BroadcastReceiver() {
     
     private fun handleBootCompleted(context: Context) {
         // Reschedule all reminders after device reboot
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val app = context.applicationContext as? com.allubie.nana.NanaApplication
@@ -137,6 +141,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }

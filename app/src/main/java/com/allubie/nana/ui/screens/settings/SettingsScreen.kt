@@ -464,17 +464,30 @@ fun SettingsScreen(
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
-                        icon = Icons.Outlined.Person,
-                        title = "About the app",
-                        subtitle = "Visit the github page",
+                        icon = Icons.Outlined.Public,
+                        title = "About app",
+                        subtitle = "Visit the github repository",
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.NewReleases,
                         title = "Latest Release",
-                        subtitle = "Check for updates",
+                        subtitle = "Check for latest release",
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA/releases") }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    SettingsItem(
+                        icon = Icons.Outlined.BugReport,
+                        title = "Report a Bug",
+                        subtitle = "Send feedback or report issues",
+                        onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                data = android.net.Uri.parse("mailto:istiaque.ahmed@outlook.sa")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Nana Bug Report (v$appVersion)")
+                            }
+                            context.startActivity(intent)
+                        }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(

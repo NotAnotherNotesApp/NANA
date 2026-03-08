@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.allubie.nana.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.util.*
 
@@ -37,11 +38,7 @@ fun FinancesOverviewScreen(
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(kotlin.math.abs(amount))
-        return "$currencySymbol$formatted"
+        return CurrencyFormatter.formatWithSymbol(kotlin.math.abs(amount), currencySymbol)
     }
     
     Scaffold(

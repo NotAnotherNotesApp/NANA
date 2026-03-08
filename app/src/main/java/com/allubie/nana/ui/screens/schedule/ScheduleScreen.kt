@@ -45,8 +45,6 @@ fun ScheduleScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val use24HourFormat by viewModel.use24HourFormat.collectAsState()
 
-    Calendar.getInstance()
-    SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val dayNameFormat = SimpleDateFormat("EEE", Locale.getDefault())
     val dayNumberFormat = SimpleDateFormat("d", Locale.getDefault())
     val timeFormat = remember(use24HourFormat) {
@@ -329,15 +327,19 @@ private fun TimelineEventCard(
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     
-    // Determine category color based on event category
-    val categoryColor = when (event.category.lowercase()) {
-        "class", "lecture" -> ScheduleLecture
-        "social" -> ScheduleSocial
-        "lab" -> ScheduleLab
-        "gym" -> ScheduleWork
-        "exam" -> ScheduleWork
-        "study" -> ScheduleStudy
-        else -> ScheduleOther
+    // Determine category color - use event.color if set, otherwise fall back to category name
+    val categoryColor = if (event.color != 0) {
+        Color(event.color)
+    } else {
+        when (event.category.lowercase()) {
+            "class", "lecture" -> ScheduleLecture
+            "social" -> ScheduleSocial
+            "lab" -> ScheduleLab
+            "gym" -> ScheduleWork
+            "exam" -> ScheduleWork
+            "study" -> ScheduleStudy
+            else -> ScheduleOther
+        }
     }
     
     val categoryName = event.category

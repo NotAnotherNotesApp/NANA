@@ -89,7 +89,7 @@ object NotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .build()
         
         try {
@@ -147,7 +147,7 @@ object NotificationHelper {
                 donePendingIntent
             )
             .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .build()
         
         try {

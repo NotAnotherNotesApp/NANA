@@ -354,6 +354,39 @@ object ColorUtils {
         0xFF10B981.toInt(),  // Emerald
         0xFFE11D48.toInt(),  // Rose
         0xFF78716C.toInt(),  // Stone
-        0xFF2563EB.toInt()   // Royal Blue
+        0xFF2563EB.toInt(),  // Royal Blue
+        0xFFE879F9.toInt(),  // Light Fuchsia
+        0xFF34D399.toInt(),  // Light Emerald
+        0xFFFB923C.toInt(),  // Light Orange
+        0xFF38BDF8.toInt(),  // Light Sky
+        0xFFA78BFA.toInt(),  // Light Purple
+        0xFF4ADE80.toInt(),  // Light Green
+        0xFFFBBF24.toInt(),  // Gold
+        0xFF2DD4BF.toInt(),  // Turquoise
+        0xFFF472B6.toInt(),  // Light Pink
+        0xFF818CF8.toInt(),  // Light Indigo
+        0xFFFF6B6B.toInt(),  // Coral
+        0xFF7C3AED.toInt(),  // Violet
+        0xFFDB2777.toInt(),  // Magenta
+        0xFF059669.toInt(),  // Dark Emerald
+        0xFFD97706.toInt(),  // Dark Amber
+        0xFF0891B2.toInt(),  // Dark Cyan
+        0xFFBE185D.toInt(),  // Dark Pink
+        0xFF7E22CE.toInt(),  // Dark Purple
+        0xFF15803D.toInt(),  // Dark Green
+        0xFFB91C1C.toInt(),  // Dark Red
+        0xFF1D4ED8.toInt(),  // Dark Blue
+        0xFF9333EA.toInt(),  // Bright Purple
+        0xFF16A34A.toInt(),  // Bright Green
+        0xFFDC2626.toInt(),  // Bright Red
+        0xFFCA8A04.toInt(),  // Dark Gold
+        0xFF0D9488.toInt()   // Dark Teal
     )
+
+    /**
+     * Get the next unused color from availableColors given a list of already-used colors.
+     */
+    fun nextAvailableColor(usedColors: List<Int>): Int {
+        return availableColors.firstOrNull { it !in usedColors } ?: availableColors.random()
+    }
 }

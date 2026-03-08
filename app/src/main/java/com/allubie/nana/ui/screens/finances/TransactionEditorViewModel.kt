@@ -53,6 +53,9 @@ class TransactionEditorViewModel(
     private val _saveComplete = MutableSharedFlow<Boolean>()
     val saveComplete: SharedFlow<Boolean> = _saveComplete.asSharedFlow()
     
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage: SharedFlow<String> = _errorMessage.asSharedFlow()
+    
     private val _customBudgets = MutableStateFlow<List<Budget>>(emptyList())
     val customBudgets: StateFlow<List<Budget>> = _customBudgets.asStateFlow()
     
@@ -157,7 +160,11 @@ class TransactionEditorViewModel(
     fun saveTransaction() {
         viewModelScope.launch {
             val state = _uiState.value
-            val amount = state.amount.toDoubleOrNull() ?: return@launch
+            val amount = state.amount.toDoubleOrNull()
+            if (amount == null || amount <= 0) {
+                _errorMessage.emit("Please enter a valid amount")
+                return@launch
+            }
             
             val transaction = Transaction(
                 id = state.id ?: 0,

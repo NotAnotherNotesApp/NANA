@@ -36,6 +36,7 @@ import com.allubie.nana.ui.theme.Expense
 import com.allubie.nana.ui.theme.Income
 import com.allubie.nana.util.CategoryIcons
 import com.allubie.nana.ui.components.NanaConfirmationDialog
+import com.allubie.nana.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -77,11 +78,7 @@ fun FinancesScreen(
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(kotlin.math.abs(amount))
-        return "$currencySymbol$formatted"
+        return CurrencyFormatter.formatWithSymbol(kotlin.math.abs(amount), currencySymbol)
     }
     
     Scaffold(
@@ -446,9 +443,11 @@ private fun FinanceCard(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        color = if (isIncome) CardSurfaceElevatedDark else CardSurfaceDark,
+        color = if (isIncome) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         border = if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
     ) {
+        val contentColor = if (isIncome) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+
         Box {
             // Large background icon (opacity-10)
             Icon(
@@ -458,7 +457,7 @@ private fun FinanceCard(
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
                     .size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                tint = contentColor.copy(alpha = 0.1f)
             )
             
             Column(
@@ -489,7 +488,7 @@ private fun FinanceCard(
                         text = title,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = TextSecondary
+                        color = contentColor
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -497,7 +496,7 @@ private fun FinanceCard(
                     text = amount,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = contentColor,
                     letterSpacing = (-0.5).sp
                 )
             }
@@ -607,7 +606,7 @@ private fun TransactionItem(
                 Text(
                     text = "${transaction.category} - ${dayFormat.format(Date(transaction.date))}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             

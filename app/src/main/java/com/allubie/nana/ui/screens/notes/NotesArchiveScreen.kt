@@ -86,7 +86,7 @@ fun NotesArchiveScreen(
                         note = note,
                         onClick = { onNavigateToEditor(note.id) },
                         onLongClick = { },
-                        onPinClick = { viewModel.unarchiveNote(note) },
+                        onPinClick = { },
                         onArchive = { viewModel.unarchiveNote(note) },
                         onDelete = { viewModel.deleteNote(note) },
                         isArchived = true

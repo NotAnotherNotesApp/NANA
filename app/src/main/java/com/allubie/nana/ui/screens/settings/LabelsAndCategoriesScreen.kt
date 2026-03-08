@@ -38,6 +38,7 @@ import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.repository.LabelRepository
 import com.allubie.nana.util.CategoryIcons
+import com.allubie.nana.util.ColorUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -202,9 +203,16 @@ fun LabelsAndCategoriesScreen(
     
     // Add Label Dialog
     if (showAddDialog && addingType != null) {
+        val labelsForType = when (addingType!!) {
+            LabelType.NOTE -> noteLabels
+            LabelType.EVENT -> eventLabels
+            LabelType.EXPENSE -> expenseCategories
+            LabelType.INCOME -> incomeCategories
+        }
         LabelEditorDialog(
             labelType = addingType!!,
             existingLabel = null,
+            usedColors = labelsForType.map { it.color },
             onDismiss = { 
                 showAddDialog = false
                 addingType = null
@@ -220,9 +228,16 @@ fun LabelsAndCategoriesScreen(
     
     // Edit Label Dialog
     if (editingLabel != null) {
+        val labelsForEditType = when (editingLabel!!.type) {
+            LabelType.NOTE -> noteLabels
+            LabelType.EVENT -> eventLabels
+            LabelType.EXPENSE -> expenseCategories
+            LabelType.INCOME -> incomeCategories
+        }
         LabelEditorDialog(
             labelType = editingLabel!!.type,
             existingLabel = editingLabel,
+            usedColors = labelsForEditType.map { it.color },
             onDismiss = { editingLabel = null },
             onSave = { name, iconName, color ->
                 viewModel.updateLabel(
@@ -378,20 +393,15 @@ private fun AddLabelChip(
 private fun LabelEditorDialog(
     labelType: LabelType,
     existingLabel: Label?,
+    usedColors: List<Int> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (name: String, iconName: String?, color: Int) -> Unit,
     onDelete: (() -> Unit)?
 ) {
     var name by remember { mutableStateOf(existingLabel?.name ?: "") }
     var selectedIcon by remember { mutableStateOf(existingLabel?.iconName) }
-    // Use a default color based on label type
-    val defaultColor = when (labelType) {
-        LabelType.NOTE -> 0xFF3B82F6.toInt()
-        LabelType.EXPENSE -> 0xFFF97316.toInt()
-        LabelType.INCOME -> 0xFF22C55E.toInt()
-        LabelType.EVENT -> 0xFF6366F1.toInt()
-    }
-    val selectedColor = existingLabel?.color ?: defaultColor
+    val autoColor = remember(usedColors) { ColorUtils.nextAvailableColor(usedColors) }
+    val selectedColor = existingLabel?.color ?: autoColor
     
     val showIconPicker = labelType != LabelType.NOTE
     val isEditing = existingLabel != null

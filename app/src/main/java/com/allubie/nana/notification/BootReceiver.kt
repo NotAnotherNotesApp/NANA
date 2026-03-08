@@ -14,6 +14,7 @@ class BootReceiver : BroadcastReceiver() {
             intent.action == "android.intent.action.QUICKBOOT_POWERON") {
             
             // Reschedule all reminders after device reboot
+            val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val app = context.applicationContext as? com.allubie.nana.NanaApplication
@@ -22,6 +23,8 @@ class BootReceiver : BroadcastReceiver() {
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }
