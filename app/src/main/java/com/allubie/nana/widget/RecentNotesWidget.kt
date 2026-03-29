@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.text.Html
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.action.clickable
@@ -24,25 +25,25 @@ import com.allubie.nana.MainActivity
 import com.allubie.nana.R
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.model.Note
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
+import com.allubie.nana.widget.NanaWidgetColorProviders
 
 class RecentNotesWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = NanaDatabase.getDatabase(context)
-        val initialNotes = try {
-            db.noteDao().getAllNotes().first()
-        } catch (e: Exception) {
-            emptyList()
+        val initialNotes = withContext(Dispatchers.IO) {
+            runCatching { db.noteDao().getRecentNonChecklistNotesOnce(3) }
+                .getOrDefault(emptyList())
         }
 
         provideContent {
-            val allNotes by db.noteDao().getAllNotes()
+            val notes by db.noteDao().getRecentNonChecklistNotes(3)
                 .collectAsState(initial = initialNotes)
-            val notes = allNotes.filter { !it.isChecklist }.take(3)
 
-            GlanceTheme {
+            GlanceTheme(colors = NanaWidgetColorProviders) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()

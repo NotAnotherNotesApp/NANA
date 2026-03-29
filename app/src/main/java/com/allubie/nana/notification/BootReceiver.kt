@@ -6,6 +6,8 @@ import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.allubie.nana.widget.WidgetRefreshWorker
+import com.allubie.nana.widget.updateAllWidgets
 
 class BootReceiver : BroadcastReceiver() {
     
@@ -20,6 +22,8 @@ class BootReceiver : BroadcastReceiver() {
                     val app = context.applicationContext as? com.allubie.nana.NanaApplication
                     app?.let {
                         ReminderScheduler.rescheduleAllReminders(context, it.database)
+                        WidgetRefreshWorker.schedule(context)
+                        updateAllWidgets(context)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

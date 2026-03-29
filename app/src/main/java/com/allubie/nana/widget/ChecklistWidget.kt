@@ -44,6 +44,7 @@ import com.allubie.nana.MainActivity
 import com.allubie.nana.R
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.model.ChecklistItem
+import com.allubie.nana.widget.NanaWidgetColorProviders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
@@ -91,7 +92,7 @@ class ChecklistWidget : GlanceAppWidget() {
         provideContent {
             val items by itemsFlow.collectAsState(initial = initialItems)
 
-            GlanceTheme {
+            GlanceTheme(colors = NanaWidgetColorProviders) {
                 ChecklistWidgetContent(
                     context = context,
                     noteId = checklistNote?.id,
@@ -217,9 +218,9 @@ class ToggleChecklistItemAction : ActionCallback {
         val db = NanaDatabase.getDatabase(context)
         val dao = db.checklistItemDao()
 
-        val allItems = dao.getAllItemsSync()
-        val item = allItems.find { it.id == itemId } ?: return
+        val item = dao.getItemById(itemId) ?: return
         dao.updateItem(item.copy(isChecked = !item.isChecked))
+        ChecklistWidget().update(context, glanceId)
     }
 }
 

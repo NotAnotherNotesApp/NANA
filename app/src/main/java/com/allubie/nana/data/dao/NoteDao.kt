@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.Flow
 interface NoteDao {
     @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isArchived = 0 ORDER BY isPinned DESC, updatedAt DESC")
     fun getAllNotes(): Flow<List<Note>>
+
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isArchived = 0 AND isChecklist = 0 ORDER BY updatedAt DESC LIMIT :limit")
+    fun getRecentNonChecklistNotes(limit: Int = 3): Flow<List<Note>>
+    
+    @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isArchived = 0 AND isChecklist = 0 ORDER BY updatedAt DESC LIMIT :limit")
+    suspend fun getRecentNonChecklistNotesOnce(limit: Int = 3): List<Note>
     
     @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isArchived = 0 AND isPinned = 1 ORDER BY updatedAt DESC")
     fun getPinnedNotes(): Flow<List<Note>>
@@ -57,6 +63,9 @@ interface NoteDao {
 interface ChecklistItemDao {
     @Query("SELECT * FROM checklist_items WHERE noteId = :noteId ORDER BY position ASC")
     fun getItemsForNote(noteId: Long): Flow<List<ChecklistItem>>
+
+    @Query("SELECT * FROM checklist_items WHERE id = :id LIMIT 1")
+    suspend fun getItemById(id: Long): ChecklistItem?
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem(item: ChecklistItem): Long

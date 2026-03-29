@@ -30,56 +30,70 @@ import com.allubie.nana.R
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.model.TransactionType
+import com.allubie.nana.widget.NanaWidgetColorProviders
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 class BudgetStatusWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = NanaDatabase.getDatabase(context)
         val prefs = PreferencesManager(context)
-        val currencySymbol = prefs.currencySymbol.first()
 
-        // Current month range
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startOfMonth = calendar.timeInMillis
-        calendar.add(Calendar.MONTH, 1)
-        val endOfMonth = calendar.timeInMillis
+        val snapshot = withContext(Dispatchers.IO) {
+            val currencySymbol = prefs.currencySymbol.first()
 
-        val monthSpending = try {
-            db.transactionDao().getTotalByTypeInRange(
-                TransactionType.EXPENSE, startOfMonth, endOfMonth
-            ) ?: 0.0
-        } catch (_: Exception) { 0.0 }
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val startOfMonth = calendar.timeInMillis
+            calendar.add(Calendar.MONTH, 1)
+            val endOfMonth = calendar.timeInMillis
 
-        val totalBudgetLimit = prefs.totalBudget.first()
-        val allBudgets = try {
-            db.budgetDao().getAllBudgets().first()
-        } catch (_: Exception) { emptyList() }
-        val totalAllocated = allBudgets.sumOf { it.amount }
-        val budgetAmount = if (totalBudgetLimit > 0) totalBudgetLimit else totalAllocated
-        val hasBudget = budgetAmount > 0
+            val monthSpending = runCatching {
+                db.transactionDao().getTotalByTypeInRange(
+                    TransactionType.EXPENSE, startOfMonth, endOfMonth
+                ) ?: 0.0
+            }.getOrDefault(0.0)
 
-        val percentage = if (budgetAmount > 0) (monthSpending / budgetAmount * 100).coerceIn(0.0, 100.0) else 0.0
-        val spendingFormatted = formatAmount(monthSpending, currencySymbol)
-        val budgetFormatted = formatAmount(budgetAmount, currencySymbol)
-        val percentageInt = percentage.toInt()
+            val totalBudgetLimit = prefs.totalBudget.first()
+            val allBudgets = runCatching { db.budgetDao().getAllBudgets().first() }
+                .getOrDefault(emptyList())
+            val totalAllocated = allBudgets.sumOf { it.amount }
+            val budgetAmount = if (totalBudgetLimit > 0) totalBudgetLimit else totalAllocated
+            val percentage = if (budgetAmount > 0) (monthSpending / budgetAmount * 100).coerceIn(0.0, 100.0) else 0.0
+
+            BudgetSnapshot(
+                currencySymbol = currencySymbol,
+                monthSpending = monthSpending,
+                budgetAmount = budgetAmount,
+                hasBudget = budgetAmount > 0,
+                percentage = percentage
+            )
+        }
 
         val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         val progressColor = when {
-            percentage >= 90 -> 0xFFBA1A1A.toInt()
+            snapshot.percentage >= 90 -> 0xFFBA1A1A.toInt()
             else -> if (isDark) 0xFFD0BCFF.toInt() else 0xFF6750A4.toInt()
         }
         val trackColor = if (isDark) 0xFF4A4A4D.toInt() else 0xFFE1DFE4.toInt()
-        val progressBitmap = createCircularProgressBitmap(context, percentage, progressColor, trackColor, 56)
+        val progressBitmap = withContext(Dispatchers.Default) {
+            createCircularProgressBitmap(context, snapshot.percentage, progressColor, trackColor, 56)
+        }
+
+        val spendingFormatted = formatAmount(snapshot.monthSpending, snapshot.currencySymbol)
+        val budgetFormatted = formatAmount(snapshot.budgetAmount, snapshot.currencySymbol)
+        val percentageInt = snapshot.percentage.toInt()
 
         provideContent {
-            GlanceTheme {
+            GlanceTheme(colors = NanaWidgetColorProviders) {
                 Row(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -113,7 +127,7 @@ class BudgetStatusWidget : GlanceAppWidget() {
                             )
                         )
 
-                        if (!hasBudget) {
+                        if (!snapshot.hasBudget) {
                             Text(
                                 text = "No budget set",
                                 style = TextStyle(
@@ -154,6 +168,14 @@ class BudgetStatusWidget : GlanceAppWidget() {
             }
         }
     }
+
+    private data class BudgetSnapshot(
+        val currencySymbol: String,
+        val monthSpending: Double,
+        val budgetAmount: Double,
+        val hasBudget: Boolean,
+        val percentage: Double
+    )
 
     private fun createCircularProgressBitmap(
         context: Context,

@@ -13,8 +13,8 @@ android {
         applicationId = "com.allubie.nana"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.8.9"
+        versionCode = 5
+        versionName = "0.9.1"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -88,6 +88,9 @@ dependencies {
     // Glance App Widgets
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+
+    // WorkManager for scheduled widget refreshes
+    implementation(libs.androidx.work.runtime.ktx)
     
     // Google Fonts
     implementation(libs.androidx.ui.text.google.fonts)

@@ -5,6 +5,7 @@ import com.allubie.nana.data.BackupManager
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.notification.NotificationHelper
+import com.allubie.nana.widget.WidgetRefreshWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,5 +40,7 @@ class NanaApplication : Application() {
             val savedTimezone = preferencesManager.timezone.first()
             TimeZone.setDefault(TimeZone.getTimeZone(savedTimezone))
         }
+
+        WidgetRefreshWorker.schedule(this)
     }
 }

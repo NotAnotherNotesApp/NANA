@@ -24,11 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.allubie.nana.MainActivity
 import com.allubie.nana.R
+import com.allubie.nana.widget.NanaWidgetColorProviders
 
 class QuickActionsWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            GlanceTheme {
+            GlanceTheme(colors = NanaWidgetColorProviders) {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
