@@ -6,6 +6,7 @@
 - Widgets: off-main-thread DB/DataStore work with snapshot rendering for faster updates
 - Checklist widget: single-row toggle with immediate refresh to avoid stale state
 - Recent Notes widget: top-three non-checklist query and shared Glance color providers
+- Budget widget: now shows remaining budget and remaining percentage instead of spent-only status
 - Scheduling: periodic polling disabled; daily midnight WorkManager refresh plus boot-time update
 - Stability: tightened widget error handling paths and consistent theming across widgets
 
