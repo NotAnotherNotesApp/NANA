@@ -1,4 +1,6 @@
 # Changelog
+## v0.9.5 (Build 6)
+- Various bug fixes and improvements
 
 ## v0.9.1 (Build 5)
 
