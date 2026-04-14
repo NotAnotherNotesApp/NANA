@@ -75,6 +75,12 @@ class TransactionEditorViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "USD")
     
     private val labelRepository = LabelRepository(labelDao)
+
+    private fun refreshBudgetWidgetAsync() {
+        viewModelScope.launch(Dispatchers.Default + NonCancellable) {
+            updateBudgetWidget(application)
+        }
+    }
     
     init {
         loadCustomBudgets()
@@ -179,9 +185,7 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
-            viewModelScope.launch(Dispatchers.Default + NonCancellable) {
-                updateBudgetWidget(application)
-            }
+            refreshBudgetWidgetAsync()
             _saveComplete.emit(true)
         }
     }
@@ -190,9 +194,7 @@ class TransactionEditorViewModel(
         viewModelScope.launch {
             _uiState.value.id?.let { id ->
                 transactionDao.deleteTransactionById(id)
-                viewModelScope.launch(Dispatchers.Default + NonCancellable) {
-                    updateBudgetWidget(application)
-                }
+                refreshBudgetWidgetAsync()
             }
         }
     }
