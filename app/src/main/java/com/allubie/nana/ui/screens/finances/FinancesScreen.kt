@@ -71,15 +71,21 @@ fun FinancesScreen(
     var showMonthPicker by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     
+    val hasEffectiveBudget = hasBudget && totalBudget > 0
     val balance = totalIncome - totalExpenses
-    // If budget exists, compare expenses to budget; otherwise compare income to expenses
-    val isOnTrack = if (hasBudget && totalBudget > 0) totalExpenses <= totalBudget else balance >= 0
+    val displayedTotal = if (hasEffectiveBudget) totalBudget - totalExpenses else balance
+    val totalLabel = if (hasEffectiveBudget) "Remaining Budget" else "Total Balance"
+    val isOnTrack = if (hasEffectiveBudget) displayedTotal >= 0 else balance >= 0
     val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val dayFormat = SimpleDateFormat("MMM d", Locale.getDefault())
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
         return CurrencyFormatter.formatWithSymbol(kotlin.math.abs(amount), currencySymbol)
+    }
+    fun formatSignedCurrency(amount: Double): String {
+        val formatted = formatCurrency(amount)
+        return if (amount < 0) "-$formatted" else formatted
     }
     
     Scaffold(
@@ -208,16 +214,18 @@ fun FinancesScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Total Balance",
+                        text = totalLabel,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = formatCurrency(balance),
+                        text = formatSignedCurrency(displayedTotal),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-1).sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -500,7 +508,9 @@ private fun FinanceCard(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,
-                    letterSpacing = (-0.5).sp
+                    letterSpacing = (-0.5).sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.allubie.nana.util.CurrencyFormatter
+import kotlin.math.roundToInt
 import java.text.NumberFormat
 import java.util.*
 
@@ -191,7 +192,9 @@ fun FinancesOverviewScreen(
                         category = budget.category,
                         budgeted = formatCurrency(budget.budgeted),
                         actual = formatCurrency(budget.actual),
-                        progress = (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f),
+                        progress = if (budget.budgeted > 0.0) {
+                            (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f)
+                        } else 0f,
                         isOverBudget = budget.actual > budget.budgeted
                     )
                 }
@@ -238,7 +241,7 @@ private fun CategorySpendingItem(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "${(percentage * 100).toInt()}%",
+                    text = "${(percentage * 100).roundToInt().coerceIn(0, 100)}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

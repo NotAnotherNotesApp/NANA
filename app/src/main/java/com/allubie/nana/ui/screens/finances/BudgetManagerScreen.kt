@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -37,7 +38,6 @@ import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.ExpenseCategories
 import com.allubie.nana.util.CurrencyFormatter
-import java.text.NumberFormat
 import java.util.*
 import com.allubie.nana.ui.theme.*
 
@@ -130,7 +130,9 @@ fun BudgetManagerScreen(
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
     
     val remainingBudget = totalBudget - totalSpent
-    val remainingPercentage = if (totalBudget > 0) ((remainingBudget / totalBudget) * 100).toInt().coerceAtLeast(0) else 0
+    val remainingPercentage = if (totalBudget > 0) {
+        ((remainingBudget / totalBudget) * 100).coerceIn(0.0, 100.0).toInt()
+    } else 0
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
@@ -322,7 +324,11 @@ fun BudgetManagerScreen(
                             text = formatCurrency(remainingBudget.coerceAtLeast(0.0)),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -356,7 +362,9 @@ fun BudgetManagerScreen(
             }
             
             // Alert pill if over 80% AND budget is actually set
-            val usagePercentage = 100 - remainingPercentage
+            val usagePercentage = if (totalBudget > 0) {
+                ((totalSpent / totalBudget) * 100).toInt().coerceAtLeast(0)
+            } else 0
             if (usagePercentage >= 80 && totalBudget > 0) {
                 item {
                     val isDark = isSystemInDarkTheme()
