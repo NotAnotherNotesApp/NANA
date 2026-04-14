@@ -48,7 +48,6 @@ fun TransactionEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currencySymbol by viewModel.currencySymbol.collectAsState()
-    val currencyCode by viewModel.currencyCode.collectAsState()
     var showCategoryPicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
@@ -294,16 +293,6 @@ fun TransactionEditorScreen(
                         )
                     }
                     
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    // Currency code on right
-                    Text(
-                        text = currencyCode,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        letterSpacing = 1.sp
-                    )
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))

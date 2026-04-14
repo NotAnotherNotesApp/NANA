@@ -177,8 +177,8 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
+            updateBudgetWidget(application)
             _saveComplete.emit(true)
-            viewModelScope.launch { updateBudgetWidget(application) }
         }
     }
     

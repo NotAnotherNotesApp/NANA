@@ -136,6 +136,13 @@ class BudgetStatusWidget : GlanceAppWidget() {
                                     fontWeight = FontWeight.Bold
                                 )
                             )
+                            Text(
+                                text = "Spent $spendingFormatted",
+                                style = TextStyle(
+                                    color = GlanceTheme.colors.onSurfaceVariant,
+                                    fontSize = 10.sp
+                                )
+                            )
                         } else {
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
