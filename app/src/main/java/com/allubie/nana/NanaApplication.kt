@@ -1,11 +1,13 @@
 package com.allubie.nana
 
 import android.app.Application
+import androidx.room.InvalidationTracker
 import com.allubie.nana.data.BackupManager
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.notification.NotificationHelper
 import com.allubie.nana.widget.WidgetRefreshWorker
+import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +30,12 @@ class NanaApplication : Application() {
     val backupManager: BackupManager by lazy {
         BackupManager(this, database, preferencesManager)
     }
+
+    private val budgetWidgetDbObserver = object : InvalidationTracker.Observer("transactions", "budgets") {
+        override fun onInvalidated(tables: Set<String>) {
+            requestBudgetWidgetRefresh(this@NanaApplication)
+        }
+    }
     
     override fun onCreate() {
         super.onCreate()
@@ -41,6 +49,7 @@ class NanaApplication : Application() {
             TimeZone.setDefault(TimeZone.getTimeZone(savedTimezone))
         }
 
+        database.invalidationTracker.addObserver(budgetWidgetDbObserver)
         WidgetRefreshWorker.schedule(this)
     }
 }

@@ -14,7 +14,6 @@ import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
-import com.allubie.nana.widget.updateBudgetWidget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -25,8 +24,7 @@ class FinancesViewModel(
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
     private val labelDao: LabelDao,
-    private val preferencesManager: PreferencesManager,
-    private val application: NanaApplication
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance())
@@ -108,7 +106,6 @@ class FinancesViewModel(
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             transactionDao.deleteTransaction(transaction)
-            updateBudgetWidget(application)
         }
     }
     
@@ -120,8 +117,7 @@ class FinancesViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),
                     application.database.labelDao(),
-                    application.preferencesManager,
-                    application
+                    application.preferencesManager
                 )
             }
         }

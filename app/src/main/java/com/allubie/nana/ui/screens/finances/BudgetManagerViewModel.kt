@@ -13,7 +13,7 @@ import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.TransactionType
-import com.allubie.nana.widget.updateBudgetWidget
+import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -108,28 +108,25 @@ class BudgetManagerViewModel(
                 iconName = iconName
             )
             budgetDao.insertBudget(budget)
-            updateBudgetWidget(application)
         }
     }
     
     fun updateBudget(budget: Budget) {
         viewModelScope.launch {
             budgetDao.updateBudget(budget)
-            updateBudgetWidget(application)
         }
     }
     
     fun deleteBudget(budget: Budget) {
         viewModelScope.launch {
             budgetDao.deleteBudget(budget)
-            updateBudgetWidget(application)
         }
     }
     
     fun setTotalBudgetLimit(amount: Double) {
         viewModelScope.launch {
             preferencesManager.setTotalBudget(amount)
-            updateBudgetWidget(application)
+            requestBudgetWidgetRefresh(application)
         }
     }
     

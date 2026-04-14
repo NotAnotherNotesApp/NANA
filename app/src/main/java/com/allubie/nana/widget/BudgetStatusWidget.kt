@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.util.Log
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -37,6 +38,10 @@ import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 class BudgetStatusWidget : GlanceAppWidget() {
+    private companion object {
+        const val TAG = "BudgetStatusWidget"
+    }
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val db = NanaDatabase.getDatabase(context)
         val prefs = PreferencesManager(context)
@@ -55,15 +60,22 @@ class BudgetStatusWidget : GlanceAppWidget() {
             calendar.add(Calendar.MONTH, 1)
             val endOfMonth = calendar.timeInMillis
 
-            val monthSpending = runCatching {
+            val monthSpending = try {
                 db.transactionDao().getTotalByTypeInRange(
                     TransactionType.EXPENSE, startOfMonth, endOfMonth
                 ) ?: 0.0
-            }.getOrDefault(0.0)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to read monthly spending for widget", e)
+                0.0
+            }
 
             val totalBudgetLimit = prefs.totalBudget.first()
-            val allBudgets = runCatching { db.budgetDao().getAllBudgets().first() }
-                .getOrDefault(emptyList())
+            val allBudgets = try {
+                db.budgetDao().getAllBudgets().first()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to read budgets for widget", e)
+                emptyList()
+            }
             val totalAllocated = allBudgets.sumOf { it.amount }
             val budgetAmount = if (totalBudgetLimit > 0) totalBudgetLimit else totalAllocated
             val percentage = if (budgetAmount > 0) (monthSpending / budgetAmount * 100).coerceIn(0.0, 100.0) else 0.0

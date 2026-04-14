@@ -16,9 +16,6 @@ import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
-import com.allubie.nana.widget.updateBudgetWidget
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,8 +42,7 @@ class TransactionEditorViewModel(
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao,
     private val labelDao: LabelDao,
-    private val preferencesManager: PreferencesManager,
-    private val application: NanaApplication
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(TransactionEditorUiState())
@@ -76,12 +72,6 @@ class TransactionEditorViewModel(
     
     private val labelRepository = LabelRepository(labelDao)
 
-    private fun refreshBudgetWidgetAsync() {
-        viewModelScope.launch(Dispatchers.Default + NonCancellable) {
-            updateBudgetWidget(application)
-        }
-    }
-    
     init {
         loadCustomBudgets()
         seedLabelsIfNeeded()
@@ -185,7 +175,6 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
-            refreshBudgetWidgetAsync()
             _saveComplete.emit(true)
         }
     }
@@ -194,7 +183,6 @@ class TransactionEditorViewModel(
         viewModelScope.launch {
             _uiState.value.id?.let { id ->
                 transactionDao.deleteTransactionById(id)
-                refreshBudgetWidgetAsync()
             }
         }
     }
@@ -207,8 +195,7 @@ class TransactionEditorViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),
                     application.database.labelDao(),
-                    application.preferencesManager,
-                    application
+                    application.preferencesManager
                 )
             }
         }
