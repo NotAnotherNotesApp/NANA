@@ -36,6 +36,8 @@ private object BudgetWidgetRefreshCoordinator {
                 refreshLock.withLock {
                     val refreshed = runCatching {
                         updateBudgetWidget(context)
+                    }.onFailure { error ->
+                        Log.e(TAG, "Budget widget refresh failed, retrying", error)
                     }.isSuccess
 
                     if (!refreshed) {
