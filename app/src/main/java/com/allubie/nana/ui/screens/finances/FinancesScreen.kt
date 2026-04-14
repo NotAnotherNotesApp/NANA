@@ -219,7 +219,6 @@ fun FinancesScreen(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-1).sp,
                         maxLines = 1,
-                        softWrap = false,
                         overflow = TextOverflow.Ellipsis
                     )
                     
