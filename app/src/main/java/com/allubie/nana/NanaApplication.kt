@@ -8,6 +8,7 @@ import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.notification.NotificationHelper
 import com.allubie.nana.widget.WidgetRefreshWorker
 import com.allubie.nana.widget.requestBudgetWidgetRefresh
+import com.allubie.nana.widget.updateChecklistWidgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +37,14 @@ class NanaApplication : Application() {
             requestBudgetWidgetRefresh(this@NanaApplication)
         }
     }
+
+    private val checklistWidgetDbObserver = object : InvalidationTracker.Observer("notes", "checklist_items") {
+        override fun onInvalidated(tables: Set<String>) {
+            applicationScope.launch {
+                updateChecklistWidgets(this@NanaApplication)
+            }
+        }
+    }
     
     override fun onCreate() {
         super.onCreate()
@@ -50,6 +59,7 @@ class NanaApplication : Application() {
         }
 
         database.invalidationTracker.addObserver(budgetWidgetDbObserver)
+        database.invalidationTracker.addObserver(checklistWidgetDbObserver)
         WidgetRefreshWorker.schedule(this)
     }
 }
