@@ -42,10 +42,14 @@ private object BudgetWidgetRefreshCoordinator {
 
                     if (!refreshed) {
                         delay(RETRY_DELAY_MS)
-                        runCatching { updateBudgetWidget(context) }
+                        val retried = runCatching { updateBudgetWidget(context) }
                             .onFailure { error ->
                                 Log.e(TAG, "Budget widget refresh failed after retry", error)
                             }
+                            .isSuccess
+                        if (!retried) {
+                            // A fallback one-time WorkManager refresh has already been enqueued on request.
+                        }
                     }
                 }
             }
