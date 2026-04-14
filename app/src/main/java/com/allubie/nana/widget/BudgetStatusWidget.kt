@@ -78,31 +78,39 @@ class BudgetStatusWidget : GlanceAppWidget() {
             }
             val totalAllocated = allBudgets.sumOf { it.amount }
             val budgetAmount = if (totalBudgetLimit > 0) totalBudgetLimit else totalAllocated
-            val percentage = if (budgetAmount > 0) (monthSpending / budgetAmount * 100).coerceIn(0.0, 100.0) else 0.0
+            val remainingAmountRaw = budgetAmount - monthSpending
+            val remainingAmount = remainingAmountRaw.coerceAtLeast(0.0)
+            val remainingPercentage = if (budgetAmount > 0) {
+                (remainingAmount / budgetAmount * 100).coerceIn(0.0, 100.0)
+            } else {
+                0.0
+            }
 
             BudgetSnapshot(
                 currencySymbol = currencySymbol,
                 monthSpending = monthSpending,
                 budgetAmount = budgetAmount,
+                remainingAmount = remainingAmount,
                 hasBudget = budgetAmount > 0,
-                percentage = percentage
+                remainingPercentage = remainingPercentage
             )
         }
 
         val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         val progressColor = when {
-            snapshot.percentage >= 90 -> 0xFFBA1A1A.toInt()
+            snapshot.remainingPercentage <= 10 -> 0xFFBA1A1A.toInt()
             else -> if (isDark) 0xFFD0BCFF.toInt() else 0xFF6750A4.toInt()
         }
         val trackColor = if (isDark) 0xFF4A4A4D.toInt() else 0xFFE1DFE4.toInt()
         val progressBitmap = withContext(Dispatchers.Default) {
-            createCircularProgressBitmap(context, snapshot.percentage, progressColor, trackColor, 56)
+            createCircularProgressBitmap(context, snapshot.remainingPercentage, progressColor, trackColor, 56)
         }
 
         val spendingFormatted = formatAmount(snapshot.monthSpending, snapshot.currencySymbol)
         val budgetFormatted = formatAmount(snapshot.budgetAmount, snapshot.currencySymbol)
-        val percentageInt = snapshot.percentage.toInt()
+        val remainingFormatted = formatAmount(snapshot.remainingAmount, snapshot.currencySymbol)
+        val percentageInt = snapshot.remainingPercentage.toInt()
 
         provideContent {
             GlanceTheme(colors = NanaWidgetColorProviders) {
@@ -124,7 +132,7 @@ class BudgetStatusWidget : GlanceAppWidget() {
                 ) {
                     Image(
                         provider = ImageProvider(progressBitmap),
-                        contentDescription = "$percentageInt% of budget spent",
+                        contentDescription = "$percentageInt% of budget remaining",
                         modifier = GlanceModifier.size(56.dp)
                     )
 
@@ -158,7 +166,7 @@ class BudgetStatusWidget : GlanceAppWidget() {
                         } else {
                             Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
-                                    text = spendingFormatted,
+                                    text = remainingFormatted,
                                     style = TextStyle(
                                         color = GlanceTheme.colors.primary,
                                         fontWeight = FontWeight.Bold,
@@ -175,7 +183,7 @@ class BudgetStatusWidget : GlanceAppWidget() {
                             }
 
                             Text(
-                                text = "${percentageInt}% spent",
+                                text = "${percentageInt}% left",
                                 style = TextStyle(
                                     color = GlanceTheme.colors.onSurfaceVariant,
                                     fontSize = 10.sp
@@ -192,8 +200,9 @@ class BudgetStatusWidget : GlanceAppWidget() {
         val currencySymbol: String,
         val monthSpending: Double,
         val budgetAmount: Double,
+        val remainingAmount: Double,
         val hasBudget: Boolean,
-        val percentage: Double
+        val remainingPercentage: Double
     )
 
     private fun createCircularProgressBitmap(
