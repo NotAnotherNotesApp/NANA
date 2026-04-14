@@ -17,6 +17,8 @@ import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
 import com.allubie.nana.widget.updateBudgetWidget
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class TransactionEditorUiState(
     val id: Long? = null,
@@ -177,8 +180,10 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
-            updateBudgetWidget(application)
             _saveComplete.emit(true)
+            withContext(Dispatchers.Default + NonCancellable) {
+                updateBudgetWidget(application)
+            }
         }
     }
     
