@@ -2,6 +2,7 @@ package com.allubie.nana.ui.screens.finances
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -16,7 +17,7 @@ import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
-import com.allubie.nana.widget.updateBudgetWidget
+import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -73,7 +74,7 @@ class TransactionEditorViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "USD")
     
     private val labelRepository = LabelRepository(labelDao)
-    
+
     init {
         loadCustomBudgets()
         seedLabelsIfNeeded()
@@ -177,8 +178,8 @@ class TransactionEditorViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             transactionDao.insertTransaction(transaction)
+            requestBudgetWidgetRefresh(application)
             _saveComplete.emit(true)
-            viewModelScope.launch { updateBudgetWidget(application) }
         }
     }
     
@@ -186,7 +187,7 @@ class TransactionEditorViewModel(
         viewModelScope.launch {
             _uiState.value.id?.let { id ->
                 transactionDao.deleteTransactionById(id)
-                updateBudgetWidget(application)
+                requestBudgetWidgetRefresh(application)
             }
         }
     }
@@ -194,7 +195,7 @@ class TransactionEditorViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val application = this[APPLICATION_KEY] as NanaApplication
                 TransactionEditorViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),

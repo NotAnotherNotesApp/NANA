@@ -104,11 +104,11 @@ class FinancesOverviewViewModel(
                     val endOfMonth = calendar.timeInMillis
 
                     val totalIncome = transactions
-                        .filter { it.type == TransactionType.INCOME && it.date in startOfMonth..endOfMonth }
+                        .filter { it.type == TransactionType.INCOME && it.date in startOfMonth until endOfMonth }
                         .sumOf { it.amount }
 
                     val totalExpenses = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth..endOfMonth }
+                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth until endOfMonth }
                         .sumOf { it.amount }
                     
                     // Build label color map
@@ -116,7 +116,7 @@ class FinancesOverviewViewModel(
 
                     // Group expenses by category - include custom categories
                     val expenseTransactions = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth..endOfMonth }
+                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth until endOfMonth }
                     
                     val categoryBreakdown = expenseTransactions
                         .groupBy { it.category }
@@ -142,7 +142,7 @@ class FinancesOverviewViewModel(
                             totalExpenses
                         } else {
                             transactions
-                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date in startOfMonth..endOfMonth }
+                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date in startOfMonth until endOfMonth }
                                 .sumOf { it.amount }
                         }
                         BudgetComparison(

@@ -2,6 +2,7 @@ package com.allubie.nana.ui.screens.finances
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -14,7 +15,7 @@ import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
-import com.allubie.nana.widget.updateBudgetWidget
+import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -108,14 +109,14 @@ class FinancesViewModel(
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             transactionDao.deleteTransaction(transaction)
-            updateBudgetWidget(application)
+            requestBudgetWidgetRefresh(application)
         }
     }
     
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val application = this[APPLICATION_KEY] as NanaApplication
                 FinancesViewModel(
                     application.database.transactionDao(),
                     application.database.budgetDao(),

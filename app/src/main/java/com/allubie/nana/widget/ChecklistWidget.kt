@@ -113,7 +113,7 @@ private fun ChecklistWidgetContent(
 ) {
     val openAction = actionStartActivity(
         Intent(context, MainActivity::class.java).apply {
-            putExtra("navigate_to", if (noteId != null) "notes/checklist/$noteId" else "notes")
+            putExtra("navigate_to", if (noteId != null) "notes/checklist/$noteId" else "notes/checklist/-1")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
     )
