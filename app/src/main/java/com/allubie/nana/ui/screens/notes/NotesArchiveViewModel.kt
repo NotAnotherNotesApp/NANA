@@ -6,26 +6,26 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.data.repository.NoteRepository
 import com.allubie.nana.widget.updateNotesWidgets
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class NotesArchiveViewModel(private val noteDao: NoteDao, private val application: NanaApplication) : ViewModel() {
+class NotesArchiveViewModel(private val noteRepository: NoteRepository, private val application: NanaApplication) : ViewModel() {
     
-    val archivedNotes: Flow<List<Note>> = noteDao.getArchivedNotes()
+    val archivedNotes: Flow<List<Note>> = noteRepository.getArchivedNotes()
     
     fun unarchiveNote(note: Note) {
         viewModelScope.launch {
-            noteDao.updateArchiveStatus(note.id, false)
+            noteRepository.updateArchiveStatus(note.id, false)
             updateNotesWidgets(application)
         }
     }
     
     fun deleteNote(note: Note) {
         viewModelScope.launch {
-            noteDao.updateDeleteStatus(note.id, true)
+            noteRepository.updateDeleteStatus(note.id, true)
             updateNotesWidgets(application)
         }
     }
@@ -34,7 +34,13 @@ class NotesArchiveViewModel(private val noteDao: NoteDao, private val applicatio
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                NotesArchiveViewModel(application.database.noteDao(), application)
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
+                NotesArchiveViewModel(noteRepository, application)
             }
         }
     }

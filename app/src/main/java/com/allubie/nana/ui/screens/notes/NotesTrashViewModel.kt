@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.data.repository.NoteRepository
 import com.allubie.nana.widget.updateNotesWidgets
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class NotesTrashViewModel(private val noteDao: NoteDao, private val application: NanaApplication) : ViewModel() {
+class NotesTrashViewModel(private val noteRepository: NoteRepository, private val application: NanaApplication) : ViewModel() {
     
-    val deletedNotes: Flow<List<Note>> = noteDao.getDeletedNotes()
+    val deletedNotes: Flow<List<Note>> = noteRepository.getDeletedNotes()
     
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
@@ -28,7 +28,7 @@ class NotesTrashViewModel(private val noteDao: NoteDao, private val application:
     
     fun restoreNote(note: Note) {
         viewModelScope.launch {
-            noteDao.updateDeleteStatus(note.id, false)
+            noteRepository.updateDeleteStatus(note.id, false)
             updateNotesWidgets(application)
             _message.value = "Note restored"
         }
@@ -36,7 +36,7 @@ class NotesTrashViewModel(private val noteDao: NoteDao, private val application:
     
     fun permanentlyDeleteNote(note: Note) {
         viewModelScope.launch {
-            noteDao.deleteNote(note)
+            noteRepository.deleteNote(note)
             updateNotesWidgets(application)
             _message.value = "Note permanently deleted"
         }
@@ -44,7 +44,7 @@ class NotesTrashViewModel(private val noteDao: NoteDao, private val application:
     
     fun emptyTrash() {
         viewModelScope.launch {
-            noteDao.emptyTrash()
+            noteRepository.emptyTrash()
             updateNotesWidgets(application)
             _message.value = "Trash emptied"
         }
@@ -54,7 +54,13 @@ class NotesTrashViewModel(private val noteDao: NoteDao, private val application:
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                NotesTrashViewModel(application.database.noteDao(), application)
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
+                NotesTrashViewModel(noteRepository, application)
             }
         }
     }

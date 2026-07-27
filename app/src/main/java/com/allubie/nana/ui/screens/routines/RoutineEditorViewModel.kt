@@ -3,14 +3,17 @@ package com.allubie.nana.ui.screens.routines
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.RoutineDao
 import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.model.RoutineType
+import com.allubie.nana.data.repository.RoutineRepository
 import com.allubie.nana.notification.ReminderScheduler
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,17 +34,20 @@ data class RoutineEditorUiState(
 )
 
 class RoutineEditorViewModel(
-    private val routineDao: RoutineDao,
+    private val routineRepository: RoutineRepository,
     private val applicationContext: Context
 ) : ViewModel() {
     
+    private val _navigateBack = MutableSharedFlow<Unit>()
+    val navigateBack = _navigateBack.asSharedFlow()
+
     private val _uiState = MutableStateFlow(RoutineEditorUiState())
     val uiState: StateFlow<RoutineEditorUiState> = _uiState.asStateFlow()
     
     fun loadRoutine(routineId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val routine = routineDao.getRoutineById(routineId)
+            val routine = routineRepository.getRoutineById(routineId)
             if (routine != null) {
                 _uiState.update {
                     it.copy(
@@ -119,13 +125,14 @@ class RoutineEditorViewModel(
                 durationMinutes = state.durationMinutes,
                 updatedAt = System.currentTimeMillis()
             )
-            val insertedId = routineDao.insertRoutine(routine)
+            val insertedId = routineRepository.insertRoutine(routine)
             
             // Schedule reminders for the routine
             val savedRoutine = if (state.id != null) routine else routine.copy(id = insertedId)
             if (savedRoutine.reminderTime != null) {
                 ReminderScheduler.scheduleRoutineReminder(applicationContext, savedRoutine)
             }
+            _navigateBack.emit(Unit)
         }
     }
     
@@ -134,7 +141,7 @@ class RoutineEditorViewModel(
             _uiState.value.id?.let { id ->
                 // Cancel scheduled reminders
                 ReminderScheduler.cancelRoutineReminders(applicationContext, id)
-                routineDao.deleteRoutineById(id)
+                routineRepository.deleteRoutineById(id)
             }
         }
     }
@@ -142,8 +149,12 @@ class RoutineEditorViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                RoutineEditorViewModel(application.database.routineDao(), application.applicationContext)
+                val application = this[APPLICATION_KEY] as NanaApplication
+                val routineRepository = RoutineRepository(
+                    application.database.routineDao(),
+                    application.database.routineCompletionDao()
+                )
+                RoutineEditorViewModel(routineRepository, application.applicationContext)
             }
         }
     }

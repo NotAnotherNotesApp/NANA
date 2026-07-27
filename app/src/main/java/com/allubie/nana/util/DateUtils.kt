@@ -1,6 +1,8 @@
 package com.allubie.nana.util
 
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -14,28 +16,23 @@ object DateUtils {
      * Check if two timestamps represent the same calendar day.
      */
     fun isSameDay(date1: Long, date2: Long): Boolean {
-        val cal1 = Calendar.getInstance().apply { timeInMillis = date1 }
-        val cal2 = Calendar.getInstance().apply { timeInMillis = date2 }
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        val ld1 = Instant.ofEpochMilli(date1).atZone(ZoneId.systemDefault()).toLocalDate()
+        val ld2 = Instant.ofEpochMilli(date2).atZone(ZoneId.systemDefault()).toLocalDate()
+        return ld1 == ld2
     }
     
     /**
      * Check if two Calendar instances represent the same day.
      */
     fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        return isSameDay(cal1.timeInMillis, cal2.timeInMillis)
     }
     
     /**
      * Check if two Date instances represent the same day.
      */
     fun isSameDay(date1: Date, date2: Date): Boolean {
-        val cal1 = Calendar.getInstance().apply { time = date1 }
-        val cal2 = Calendar.getInstance().apply { time = date2 }
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+        return isSameDay(date1.time, date2.time)
     }
     
     /**
@@ -49,62 +46,72 @@ object DateUtils {
      * Get start of day (midnight) for the given calendar.
      */
     fun getStartOfDay(calendar: Calendar): Calendar {
-        return (calendar.clone() as Calendar).apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
+        val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        return Calendar.getInstance().apply { timeInMillis = startOfDay.toEpochMilli() }
+    }
+    
+    fun getStartOfDay(timestamp: Long): Long {
+        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
     
     /**
      * Get end of day (23:59:59.999) for the given calendar.
      */
     fun getEndOfDay(calendar: Calendar): Calendar {
-        return (calendar.clone() as Calendar).apply {
-            set(Calendar.HOUR_OF_DAY, 23)
-            set(Calendar.MINUTE, 59)
-            set(Calendar.SECOND, 59)
-            set(Calendar.MILLISECOND, 999)
-        }
+        val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1_000_000).toInstant()
+        return Calendar.getInstance().apply { timeInMillis = endOfDay.toEpochMilli() }
+    }
+    
+    fun getEndOfDay(timestamp: Long): Long {
+        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+        return date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1_000_000).toInstant().toEpochMilli()
     }
     
     /**
      * Get start of month for the given calendar.
      */
     fun getStartOfMonth(calendar: Calendar): Calendar {
-        return (calendar.clone() as Calendar).apply {
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
+        val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val startOfMonth = date.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+        return Calendar.getInstance().apply { timeInMillis = startOfMonth.toEpochMilli() }
+    }
+    
+    fun getStartOfMonth(timestamp: Long): Long {
+        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+        return date.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
     
     /**
      * Get start of next month for the given calendar (exclusive end for range queries).
      */
     fun getStartOfNextMonth(calendar: Calendar): Calendar {
-        return getStartOfMonth(calendar).apply {
-            add(Calendar.MONTH, 1)
-        }
+        val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val startOfNextMonth = date.withDayOfMonth(1).plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+        return Calendar.getInstance().apply { timeInMillis = startOfNextMonth.toEpochMilli() }
+    }
+    
+    fun getStartOfNextMonth(timestamp: Long): Long {
+        val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+        return date.withDayOfMonth(1).plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 }
 
 /**
- * Centralized date formatters to avoid repeated SimpleDateFormat instantiation.
- * Note: SimpleDateFormat is not thread-safe, so these should be used within remember {} in composables.
+ * Centralized date formatters using immutable DateTimeFormatter.
+ * DateTimeFormatter is thread-safe, so these are properties.
  */
 object DateFormatters {
-    fun monthYear(): SimpleDateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-    fun monthShort(): SimpleDateFormat = SimpleDateFormat("MMM", Locale.getDefault())
-    fun dayOfMonth(): SimpleDateFormat = SimpleDateFormat("d", Locale.getDefault())
-    fun dayName(): SimpleDateFormat = SimpleDateFormat("EEE", Locale.getDefault())
-    fun dayNameFull(): SimpleDateFormat = SimpleDateFormat("EEEE", Locale.getDefault())
-    fun time(): SimpleDateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    fun time12Hour(): SimpleDateFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-    fun dateShort(): SimpleDateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
-    fun dateFull(): SimpleDateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
-    fun dateTime(): SimpleDateFormat = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+    val monthYear: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+    val monthShort: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())
+    val dayOfMonth: DateTimeFormatter = DateTimeFormatter.ofPattern("d", Locale.getDefault())
+    val dayName: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE", Locale.getDefault())
+    val dayNameFull: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
+    val time: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+    val time12Hour: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+    val dateShort: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+    val dateFull: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
+    val dateTime: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.getDefault())
 }

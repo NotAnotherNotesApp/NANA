@@ -3,6 +3,7 @@ package com.allubie.nana.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ class BootReceiver : BroadcastReceiver() {
                         updateAllWidgets(context)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("BootReceiver", "Failed to reschedule reminders", e)
                 } finally {
                     pendingResult.finish()
                 }

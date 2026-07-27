@@ -129,8 +129,6 @@ object ReminderScheduler {
         
         val hour = timeParts[0].toIntOrNull() ?: return
         val minute = timeParts[1].toIntOrNull() ?: return
-
-        getAlarmManager(context)
         
         // Schedule for each day of the week
         val daysToSchedule = if (scheduledDays.isEmpty()) {

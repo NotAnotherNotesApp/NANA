@@ -1,6 +1,7 @@
 package com.allubie.nana.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -29,7 +30,13 @@ data class Note(
 
 @Entity(
     tableName = "note_images",
-    indices = [Index(value = ["noteId"])]
+    indices = [Index(value = ["noteId"])],
+    foreignKeys = [ForeignKey(
+        entity = Note::class,
+        parentColumns = ["id"],
+        childColumns = ["noteId"],
+        onDelete = ForeignKey.CASCADE
+    )]
 )
 data class NoteImage(
     @PrimaryKey(autoGenerate = true)
@@ -42,7 +49,13 @@ data class NoteImage(
 
 @Entity(
     tableName = "checklist_items",
-    indices = [Index(value = ["noteId"])]
+    indices = [Index(value = ["noteId"])],
+    foreignKeys = [ForeignKey(
+        entity = Note::class,
+        parentColumns = ["id"],
+        childColumns = ["noteId"],
+        onDelete = ForeignKey.CASCADE
+    )]
 )
 data class ChecklistItem(
     @PrimaryKey(autoGenerate = true)

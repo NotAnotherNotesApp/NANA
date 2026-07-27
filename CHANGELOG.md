@@ -1,4 +1,15 @@
 # Changelog
+
+## v1.0.0 (Build 7)
+
+### Highlights
+- Upgraded WYSIWYG rich text editor to v1.0.0 stable
+- Consolidated ViewModel screen states into unified UiState flows
+- Added Room FTS4 full-text search engine for fast note search
+- Added missing Foreign Key CASCADE constraints across database entities
+- Refactored transition animations and deduplicated navigation boilerplate
+- Converted date utilities to thread-safe `java.time` APIs and extracted all UI strings to `strings.xml`
+
 ## v0.9.5 (Build 6)
 - Various bug fixes and improvements
 

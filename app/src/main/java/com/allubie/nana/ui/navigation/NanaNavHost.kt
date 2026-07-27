@@ -1,11 +1,14 @@
 package com.allubie.nana.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,49 +32,106 @@ import com.allubie.nana.ui.screens.schedule.ScheduleScreen
 import com.allubie.nana.ui.screens.schedule.ScheduleViewerScreen
 import com.allubie.nana.ui.screens.settings.SettingsScreen
 
+// ── Shared transition helpers ────────────────────────────────────────────────
+// All sub-screens share the same enter/popEnter/popExit animations.
+// Only the exit animation varies: slideOutLeft for screens that push deeper,
+// fadeOut for leaf/editor screens.
+
+private const val TRANSITION_DURATION_MS = 300
+
+/** Sub-screen enter: slide in from the right edge (visually "pushed" onto the stack). */
+private val subScreenEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(TRANSITION_DURATION_MS))
+}
+
+/** Sub-screen pop-enter: slide back in from the left edge (returning from a deeper screen). */
+private val subScreenPopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+    slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
+}
+
+/** Sub-screen pop-exit: slide out to the right edge (being popped off the stack). */
+private val subScreenPopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
+}
+
+/** Exit by sliding out left – used by screens that can navigate deeper (viewers, settings). */
+private val exitSlideLeft: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+    slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(TRANSITION_DURATION_MS))
+}
+
+/** Exit with a fade – used by leaf/editor screens that don't push further. */
+private val exitFade: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+    fadeOut(animationSpec = tween(TRANSITION_DURATION_MS))
+}
+
+// ── Main-tab transition helpers ──────────────────────────────────────────────
+// Main tabs use conditional transitions: slide when navigating to/from child
+// sub-screens, fade when switching between sibling tabs.
+
+private fun mainTabEnter(
+    childRoutes: Set<String>
+): AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+    if (initialState.destination.route in childRoutes)
+        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
+    else
+        fadeIn(animationSpec = tween(TRANSITION_DURATION_MS))
+}
+
+private fun mainTabExit(
+    childRoutes: Set<String>
+): AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+    if (targetState.destination.route in childRoutes)
+        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(TRANSITION_DURATION_MS))
+    else
+        fadeOut(animationSpec = tween(TRANSITION_DURATION_MS))
+}
+
+private fun mainTabPopEnter(
+    childRoutes: Set<String>
+): AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+    if (initialState.destination.route in childRoutes)
+        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
+    else
+        fadeIn(animationSpec = tween(TRANSITION_DURATION_MS))
+}
+
+// ── NanaNavHost ──────────────────────────────────────────────────────────────
+
 @Composable
 fun NanaNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    // Child route sets for each main tab's conditional transitions
+    val notesChildRoutes = setOf(
+        Screen.NoteViewer.route, Screen.NoteEditor.route,
+        Screen.ChecklistEditor.route, Screen.NotesArchive.route,
+        Screen.NotesTrash.route, Screen.Settings.route
+    )
+    val scheduleChildRoutes = setOf(
+        Screen.ScheduleViewer.route, Screen.ScheduleEditor.route, Screen.Settings.route
+    )
+    val routinesChildRoutes = setOf(
+        Screen.RoutineEditor.route, Screen.RoutineStatistics.route, Screen.Settings.route
+    )
+    val financesChildRoutes = setOf(
+        Screen.TransactionEditor.route, Screen.FinancesOverview.route,
+        Screen.BudgetManager.route, Screen.Settings.route
+    )
+
     NavHost(
         navController = navController,
         startDestination = Screen.Notes.route,
         modifier = modifier
     ) {
-        // Main screens - with slide transitions for navigating to/from sub-screens
+        // ── Main tab screens ─────────────────────────────────────────────
+
         composable(
             route = Screen.Notes.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screen.NoteViewer.route, Screen.NoteEditor.route, 
-                    Screen.ChecklistEditor.route, Screen.NotesArchive.route,
-                    Screen.NotesTrash.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screen.NoteViewer.route, Screen.NoteEditor.route,
-                    Screen.ChecklistEditor.route, Screen.NotesArchive.route,
-                    Screen.NotesTrash.route, Screen.Settings.route ->
-                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                    else -> fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screen.NoteViewer.route, Screen.NoteEditor.route, 
-                    Screen.ChecklistEditor.route, Screen.NotesArchive.route,
-                    Screen.NotesTrash.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            popExitTransition = {
-                fadeOut(animationSpec = tween(300))
-            }
+            enterTransition = mainTabEnter(notesChildRoutes),
+            exitTransition = mainTabExit(notesChildRoutes),
+            popEnterTransition = mainTabPopEnter(notesChildRoutes),
+            popExitTransition = exitFade
         ) {
             NotesScreen(
                 onNavigateToViewer = { noteId ->
@@ -94,33 +154,13 @@ fun NanaNavHost(
                 }
             )
         }
-        
+
         composable(
             route = Screen.Schedule.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screen.ScheduleViewer.route, Screen.ScheduleEditor.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screen.ScheduleViewer.route, Screen.ScheduleEditor.route, Screen.Settings.route ->
-                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                    else -> fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screen.ScheduleViewer.route, Screen.ScheduleEditor.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            popExitTransition = {
-                fadeOut(animationSpec = tween(300))
-            }
+            enterTransition = mainTabEnter(scheduleChildRoutes),
+            exitTransition = mainTabExit(scheduleChildRoutes),
+            popEnterTransition = mainTabPopEnter(scheduleChildRoutes),
+            popExitTransition = exitFade
         ) {
             ScheduleScreen(
                 onNavigateToViewer = { eventId ->
@@ -134,33 +174,13 @@ fun NanaNavHost(
                 }
             )
         }
-        
+
         composable(
             route = Screen.Routines.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screen.RoutineEditor.route, Screen.RoutineStatistics.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screen.RoutineEditor.route, Screen.RoutineStatistics.route, Screen.Settings.route ->
-                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                    else -> fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screen.RoutineEditor.route, Screen.RoutineStatistics.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            popExitTransition = {
-                fadeOut(animationSpec = tween(300))
-            }
+            enterTransition = mainTabEnter(routinesChildRoutes),
+            exitTransition = mainTabExit(routinesChildRoutes),
+            popEnterTransition = mainTabPopEnter(routinesChildRoutes),
+            popExitTransition = exitFade
         ) {
             RoutinesScreen(
                 onNavigateToEditor = { routineId ->
@@ -174,36 +194,13 @@ fun NanaNavHost(
                 }
             )
         }
-        
+
         composable(
             route = Screen.Finances.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screen.TransactionEditor.route, Screen.FinancesOverview.route,
-                    Screen.BudgetManager.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screen.TransactionEditor.route, Screen.FinancesOverview.route,
-                    Screen.BudgetManager.route, Screen.Settings.route ->
-                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-                    else -> fadeOut(animationSpec = tween(300))
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screen.TransactionEditor.route, Screen.FinancesOverview.route,
-                    Screen.BudgetManager.route, Screen.Settings.route ->
-                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-                    else -> fadeIn(animationSpec = tween(300))
-                }
-            },
-            popExitTransition = {
-                fadeOut(animationSpec = tween(300))
-            }
+            enterTransition = mainTabEnter(financesChildRoutes),
+            exitTransition = mainTabExit(financesChildRoutes),
+            popEnterTransition = mainTabPopEnter(financesChildRoutes),
+            popExitTransition = exitFade
         ) {
             FinancesScreen(
                 onNavigateToEditor = { transactionId ->
@@ -220,23 +217,16 @@ fun NanaNavHost(
                 }
             )
         }
-        
-        // Sub-screens with slide animation
+
+        // ── Viewer sub-screens (slide-out-left exit: can push deeper) ────
+
         composable(
             route = Screen.NoteViewer.route,
             arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitSlideLeft,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1
             NoteViewerScreen(
@@ -247,67 +237,13 @@ fun NanaNavHost(
                 }
             )
         }
-        
-        composable(
-            route = Screen.NoteEditor.route,
-            arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1
-            NoteEditorScreen(
-                noteId = if (noteId == -1L) null else noteId,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-        
-        composable(
-            route = Screen.ChecklistEditor.route,
-            arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1
-            ChecklistEditorScreen(
-                noteId = if (noteId == -1L) null else noteId,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-        
+
         composable(
             route = Screen.NotesArchive.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitSlideLeft,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) {
             NotesArchiveScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -316,42 +252,14 @@ fun NanaNavHost(
                 }
             )
         }
-        
-        composable(
-            route = Screen.NotesTrash.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) {
-            NotesTrashScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-        
+
         composable(
             route = Screen.ScheduleViewer.route,
             arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitSlideLeft,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1
             ScheduleViewerScreen(
@@ -362,22 +270,84 @@ fun NanaNavHost(
                 }
             )
         }
-        
+
+        composable(
+            route = Screen.BudgetManager.route,
+            enterTransition = subScreenEnter,
+            exitTransition = exitSlideLeft,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
+        ) {
+            BudgetManagerScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+            )
+        }
+
+        composable(
+            route = Screen.Settings.route,
+            enterTransition = subScreenEnter,
+            exitTransition = exitSlideLeft,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
+        ) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToLabels = { navController.navigate(Screen.LabelsAndCategories.route) }
+            )
+        }
+
+        // ── Leaf/editor sub-screens (fade exit: don't push deeper) ───────
+
+        composable(
+            route = Screen.NoteEditor.route,
+            arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1
+            NoteEditorScreen(
+                noteId = if (noteId == -1L) null else noteId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.ChecklistEditor.route,
+            arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1
+            ChecklistEditorScreen(
+                noteId = if (noteId == -1L) null else noteId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.NotesTrash.route,
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
+        ) {
+            NotesTrashScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable(
             route = Screen.ScheduleEditor.route,
             arguments = listOf(navArgument("eventId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1
             ScheduleEditorScreen(
@@ -385,22 +355,14 @@ fun NanaNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.RoutineEditor.route,
             arguments = listOf(navArgument("routineId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) { backStackEntry ->
             val routineId = backStackEntry.arguments?.getLong("routineId") ?: -1
             RoutineEditorScreen(
@@ -408,83 +370,38 @@ fun NanaNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.RoutineStatistics.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) {
             RoutineStatisticsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         composable(
             route = Screen.FinancesOverview.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) {
             FinancesOverviewScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
-        composable(
-            route = Screen.BudgetManager.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) {
-            BudgetManagerScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
-            )
-        }
-        
+
         composable(
             route = Screen.TransactionEditor.route,
             arguments = listOf(navArgument("transactionId") { type = NavType.LongType }),
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) { backStackEntry ->
             val transactionId = backStackEntry.arguments?.getLong("transactionId") ?: -1
             TransactionEditorScreen(
@@ -492,42 +409,13 @@ fun NanaNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
-        composable(
-            route = Screen.Settings.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
-        ) {
-            SettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToLabels = { navController.navigate(Screen.LabelsAndCategories.route) }
-            )
-        }
-        
+
         composable(
             route = Screen.LabelsAndCategories.route,
-            enterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
-            }
+            enterTransition = subScreenEnter,
+            exitTransition = exitFade,  // Fixed: was incorrectly slideOutRight
+            popEnterTransition = subScreenPopEnter,
+            popExitTransition = subScreenPopExit
         ) {
             com.allubie.nana.ui.screens.settings.LabelsAndCategoriesScreen(
                 database = com.allubie.nana.data.NanaDatabase.getDatabase(

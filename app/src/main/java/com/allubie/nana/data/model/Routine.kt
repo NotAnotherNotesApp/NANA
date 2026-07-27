@@ -1,6 +1,7 @@
 package com.allubie.nana.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -43,7 +44,13 @@ data class Routine(
         Index(value = ["routineId"]),
         Index(value = ["date"]),
         Index(value = ["routineId", "date"], unique = true)
-    ]
+    ],
+    foreignKeys = [ForeignKey(
+        entity = Routine::class,
+        parentColumns = ["id"],
+        childColumns = ["routineId"],
+        onDelete = ForeignKey.CASCADE
+    )]
 )
 data class RoutineCompletion(
     @PrimaryKey(autoGenerate = true)

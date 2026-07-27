@@ -6,13 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.ChecklistItemDao
-import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.model.ChecklistItem
-import com.allubie.nana.data.model.Note
+import com.allubie.nana.data.repository.NoteRepository
 import com.allubie.nana.widget.updateChecklistWidgets
 import com.allubie.nana.widget.updateNotesWidgets
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,8 +31,7 @@ data class ChecklistEditorUiState(
 )
 
 class ChecklistEditorViewModel(
-    private val noteDao: NoteDao,
-    private val checklistItemDao: ChecklistItemDao,
+    private val noteRepository: NoteRepository,
     private val application: NanaApplication
 ) : ViewModel() {
     
@@ -43,6 +42,9 @@ class ChecklistEditorViewModel(
         }
     }
     
+    private val _navigateBack = MutableSharedFlow<Unit>()
+    val navigateBack = _navigateBack.asSharedFlow()
+
     private val _uiState = MutableStateFlow(ChecklistEditorUiState())
     val uiState: StateFlow<ChecklistEditorUiState> = _uiState.asStateFlow()
     
@@ -54,7 +56,7 @@ class ChecklistEditorViewModel(
         
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val note = noteDao.getNoteById(noteId)
+            val note = noteRepository.getNoteById(noteId)
             if (note != null && note.isChecklist) {
                 // Store note data first
                 _uiState.update {
@@ -70,7 +72,7 @@ class ChecklistEditorViewModel(
                 
                 // Collect items in a cancellable job
                 itemsCollectionJob = viewModelScope.launch {
-                    checklistItemDao.getItemsForNote(noteId).collect { items ->
+                    noteRepository.getItemsForNote(noteId).collect { items ->
                         _uiState.update { it.copy(items = items, isLoading = false) }
                     }
                 }
@@ -103,7 +105,7 @@ class ChecklistEditorViewModel(
             
             if (noteId != null && noteId > 0) {
                 // Note already exists, save item immediately
-                val itemId = checklistItemDao.insertItem(newItem)
+                val itemId = noteRepository.insertItem(newItem)
                 _uiState.update { 
                     it.copy(items = it.items + newItem.copy(id = itemId))
                 }
@@ -121,7 +123,7 @@ class ChecklistEditorViewModel(
         viewModelScope.launch {
             val updatedItem = item.copy(text = newText)
             if (item.id > 0) {
-                checklistItemDao.updateItem(updatedItem)
+                noteRepository.updateItem(updatedItem)
             }
             _uiState.update { state ->
                 state.copy(
@@ -137,7 +139,7 @@ class ChecklistEditorViewModel(
         viewModelScope.launch {
             val updatedItem = item.copy(isChecked = !item.isChecked)
             if (item.id > 0) {
-                checklistItemDao.updateItem(updatedItem)
+                noteRepository.updateItem(updatedItem)
             }
             _uiState.update { state ->
                 state.copy(
@@ -153,7 +155,7 @@ class ChecklistEditorViewModel(
     fun deleteItem(item: ChecklistItem) {
         viewModelScope.launch {
             if (item.id > 0) {
-                checklistItemDao.deleteItem(item)
+                noteRepository.deleteItem(item)
             }
             _uiState.update { state ->
                 state.copy(items = state.items.filter { it.id != item.id || it.position != item.position })
@@ -179,7 +181,7 @@ class ChecklistEditorViewModel(
                 // Persist position changes
                 updatedItems.forEach { item ->
                     if (item.id > 0) {
-                        checklistItemDao.updateItem(item)
+                        noteRepository.updateItem(item)
                     }
                 }
             }
@@ -205,7 +207,7 @@ class ChecklistEditorViewModel(
             val noteId = _uiState.value.id
             val newPinState = !_uiState.value.isPinned
             if (noteId != null) {
-                noteDao.updatePinStatus(noteId, newPinState)
+                noteRepository.updatePinStatus(noteId, newPinState)
             }
             _uiState.update { it.copy(isPinned = newPinState) }
         }
@@ -214,7 +216,7 @@ class ChecklistEditorViewModel(
     fun saveChecklist() {
         viewModelScope.launch {
             val state = _uiState.value
-            val note = Note(
+            val note = com.allubie.nana.data.model.Note(
                 id = state.id ?: 0,
                 title = state.title.ifBlank { "Checklist" },
                 content = "", // Checklists don't use content field
@@ -224,13 +226,13 @@ class ChecklistEditorViewModel(
                 isChecklist = true,
                 updatedAt = System.currentTimeMillis()
             )
-            val noteId = noteDao.insertNote(note)
+            val noteId = noteRepository.insertNote(note)
             
             // Save all items with the note ID
             if (state.id == null) {
                 // New checklist - save all items
                 state.items.forEachIndexed { index, item ->
-                    checklistItemDao.insertItem(
+                    noteRepository.insertItem(
                         item.copy(noteId = noteId, position = index)
                     )
                 }
@@ -238,6 +240,7 @@ class ChecklistEditorViewModel(
             
             _uiState.update { it.copy(id = noteId) }
             updateChecklistWidget()
+            _navigateBack.emit(Unit)
         }
     }
     
@@ -245,7 +248,7 @@ class ChecklistEditorViewModel(
         viewModelScope.launch {
             val noteId = _uiState.value.id
             if (noteId != null) {
-                noteDao.updateArchiveStatus(noteId, true)
+                noteRepository.updateArchiveStatus(noteId, true)
                 updateChecklistWidget()
                 onComplete()
             }
@@ -256,7 +259,7 @@ class ChecklistEditorViewModel(
         viewModelScope.launch {
             val noteId = _uiState.value.id
             if (noteId != null) {
-                noteDao.updateDeleteStatus(noteId, true)
+                noteRepository.updateDeleteStatus(noteId, true)
                 updateChecklistWidget()
                 onComplete()
             }
@@ -267,9 +270,14 @@ class ChecklistEditorViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
                 ChecklistEditorViewModel(
-                    application.database.noteDao(),
-                    application.database.checklistItemDao(),
+                    noteRepository,
                     application
                 )
             }

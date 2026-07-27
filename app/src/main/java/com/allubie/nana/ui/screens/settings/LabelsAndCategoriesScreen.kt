@@ -33,6 +33,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.NanaDatabase
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
@@ -41,6 +42,8 @@ import com.allubie.nana.util.CategoryIcons
 import com.allubie.nana.util.ColorUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 
 // ViewModel
 class LabelsViewModel(private val repository: LabelRepository) : ViewModel() {
@@ -103,10 +106,10 @@ fun LabelsAndCategoriesScreen(
         factory = LabelsViewModel.Factory(database)
     )
     
-    val noteLabels by viewModel.noteLabels.collectAsState()
-    val eventLabels by viewModel.eventLabels.collectAsState()
-    val expenseCategories by viewModel.expenseCategories.collectAsState()
-    val incomeCategories by viewModel.incomeCategories.collectAsState()
+    val noteLabels by viewModel.noteLabels.collectAsStateWithLifecycle()
+    val eventLabels by viewModel.eventLabels.collectAsStateWithLifecycle()
+    val expenseCategories by viewModel.expenseCategories.collectAsStateWithLifecycle()
+    val incomeCategories by viewModel.incomeCategories.collectAsStateWithLifecycle()
     
     var showAddDialog by remember { mutableStateOf(false) }
     var editingLabel by remember { mutableStateOf<Label?>(null) }
@@ -117,13 +120,13 @@ fun LabelsAndCategoriesScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        "Labels & Categories",
+                        stringResource(R.string.title_labels_categories),
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBackIosNew, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBackIosNew, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -142,7 +145,7 @@ fun LabelsAndCategoriesScreen(
             // Note Labels
             item {
                 LabelSection(
-                    title = "Note Labels",
+                    title = stringResource(R.string.section_note_labels),
                     labels = noteLabels,
                     showIcon = false,
                     onAddClick = {
@@ -156,7 +159,7 @@ fun LabelsAndCategoriesScreen(
             // Schedule Labels
             item {
                 LabelSection(
-                    title = "Schedule Labels",
+                    title = stringResource(R.string.section_schedule_labels),
                     labels = eventLabels,
                     showIcon = true,
                     onAddClick = {
@@ -170,7 +173,7 @@ fun LabelsAndCategoriesScreen(
             // Expense Categories
             item {
                 LabelSection(
-                    title = "Expense Categories",
+                    title = stringResource(R.string.section_expense_categories),
                     labels = expenseCategories,
                     showIcon = true,
                     onAddClick = {
@@ -184,7 +187,7 @@ fun LabelsAndCategoriesScreen(
             // Income Categories
             item {
                 LabelSection(
-                    title = "Income Categories",
+                    title = stringResource(R.string.section_income_categories),
                     labels = incomeCategories,
                     showIcon = true,
                     onAddClick = {
@@ -299,7 +302,7 @@ private fun LabelSection(
                 
                 // Add button
                 AddLabelChip(
-                    text = if (showIcon) "Add Category" else "Add Label",
+                    text = if (showIcon) stringResource(R.string.status_add_category) else stringResource(R.string.dialog_add_label),
                     onClick = onAddClick
                 )
             }
@@ -406,8 +409,8 @@ private fun LabelEditorDialog(
     val showIconPicker = labelType != LabelType.NOTE
     val isEditing = existingLabel != null
     val title = when {
-        isEditing -> "Edit ${if (labelType == LabelType.NOTE) "Label" else "Category"}"
-        else -> "Add ${if (labelType == LabelType.NOTE) "Label" else "Category"}"
+        isEditing -> if (labelType == LabelType.NOTE) stringResource(R.string.dialog_edit_label) else stringResource(R.string.dialog_edit_category)
+        else -> if (labelType == LabelType.NOTE) stringResource(R.string.dialog_add_label) else stringResource(R.string.dialog_add_category)
     }
     
     Dialog(onDismissRequest = onDismiss) {
@@ -433,7 +436,7 @@ private fun LabelEditorDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -444,7 +447,7 @@ private fun LabelEditorDialog(
                     Spacer(modifier = Modifier.height(20.dp))
                     
                     Text(
-                        text = "Icon",
+                        text = stringResource(R.string.label_icon),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 12.dp)
@@ -514,14 +517,14 @@ private fun LabelEditorDialog(
                                 contentColor = MaterialTheme.colorScheme.error
                             )
                         ) {
-                            Text("Delete")
+                            Text(stringResource(R.string.action_delete))
                         }
                     }
                     
                     Spacer(modifier = Modifier.weight(1f))
                     
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                     
                     Button(
@@ -533,7 +536,7 @@ private fun LabelEditorDialog(
                         enabled = name.isNotBlank(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.action_save))
                     }
                 }
             }

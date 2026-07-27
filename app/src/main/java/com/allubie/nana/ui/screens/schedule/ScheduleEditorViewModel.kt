@@ -8,9 +8,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.EventDao
 import com.allubie.nana.data.model.Event
+import com.allubie.nana.data.repository.EventRepository
 import com.allubie.nana.notification.ReminderScheduler
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +37,7 @@ data class ScheduleEditorUiState(
 )
 
 class ScheduleEditorViewModel(
-    private val eventDao: EventDao,
+    private val eventRepository: EventRepository,
     private val applicationContext: Context,
     preferencesManager: PreferencesManager
 ) : ViewModel() {
@@ -43,13 +45,16 @@ class ScheduleEditorViewModel(
     val use24HourFormat: StateFlow<Boolean> = preferencesManager.use24HourFormat
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     
+    private val _navigateBack = MutableSharedFlow<Unit>()
+    val navigateBack = _navigateBack.asSharedFlow()
+
     private val _uiState = MutableStateFlow(ScheduleEditorUiState())
     val uiState: StateFlow<ScheduleEditorUiState> = _uiState.asStateFlow()
     
     fun loadEvent(eventId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val event = eventDao.getEventById(eventId)
+            val event = eventRepository.getEventById(eventId)
             if (event != null) {
                 _uiState.update {
                     it.copy(
@@ -136,11 +141,12 @@ class ScheduleEditorViewModel(
                 recurrenceRule = state.recurrenceRule,
                 updatedAt = System.currentTimeMillis()
             )
-            val insertedId = eventDao.insertEvent(event)
+            val insertedId = eventRepository.insertEvent(event)
             
             // Schedule reminders for the event
             val savedEvent = if (state.id != null) event else event.copy(id = insertedId)
             ReminderScheduler.scheduleAllEventReminders(applicationContext, savedEvent)
+            _navigateBack.emit(Unit)
         }
     }
     
@@ -148,8 +154,9 @@ class ScheduleEditorViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val eventRepository = EventRepository(application.database.eventDao())
                 ScheduleEditorViewModel(
-                    application.database.eventDao(),
+                    eventRepository,
                     application.applicationContext,
                     application.preferencesManager
                 )

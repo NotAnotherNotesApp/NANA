@@ -7,11 +7,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.RoutineCompletionDao
-import com.allubie.nana.data.dao.RoutineDao
 import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.model.RoutineCompletion
 import com.allubie.nana.data.model.RoutineType
+import com.allubie.nana.data.repository.RoutineRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -28,34 +27,38 @@ data class TimerState(
 )
 
 class RoutinesViewModel(
-    private val routineDao: RoutineDao,
-    private val completionDao: RoutineCompletionDao,
+    private val routineRepository: RoutineRepository,
     preferencesManager: PreferencesManager
 ) : ViewModel() {
     
-    val use24HourFormat: StateFlow<Boolean> = preferencesManager.use24HourFormat
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    data class RoutinesUiState(
+        val use24HourFormat: Boolean = false,
+        val selectedDate: Date = Date(),
+        val isLoading: Boolean = true,
+        val routines: List<Routine> = emptyList(),
+        val completedTodayIds: Set<Long> = emptySet(),
+        val todayCompletions: Map<Long, RoutineCompletion> = emptyMap(),
+        val timerState: TimerState = TimerState()
+    )
+    
+    private val _use24HourFormat = preferencesManager.use24HourFormat
     
     private val _selectedDate = MutableStateFlow(Date())
-    val selectedDate: StateFlow<Date> = _selectedDate.asStateFlow()
     
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     
-    val routines: StateFlow<List<Routine>> = routineDao.getActiveRoutines()
+    private val _routines = routineRepository.getActiveRoutines()
         .onStart { _isLoading.value = true }
         .onEach { _isLoading.value = false }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
-    // Filter completedTodayIds to only include IDs of currently active routines
     @OptIn(ExperimentalCoroutinesApi::class)
-    val completedTodayIds: StateFlow<Set<Long>> = _selectedDate.flatMapLatest { date ->
+    private val _completedTodayIds = _selectedDate.flatMapLatest { date ->
         val dateString = dateFormat.format(date)
         combine(
-            completionDao.getCompletionsForDate(dateString),
-            routines
+            routineRepository.getCompletionsForDate(dateString),
+            _routines
         ) { completions, activeRoutines ->
             val activeIds = activeRoutines.map { it.id }.toSet()
             completions
@@ -63,20 +66,32 @@ class RoutinesViewModel(
                 .map { it.routineId }
                 .toSet()
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+    }
     
-    // Track counter values for today
     @OptIn(ExperimentalCoroutinesApi::class)
-    val todayCompletions: StateFlow<Map<Long, RoutineCompletion>> = _selectedDate.flatMapLatest { date ->
+    private val _todayCompletions = _selectedDate.flatMapLatest { date ->
         val dateString = dateFormat.format(date)
-        completionDao.getCompletionsForDate(dateString).map { completions ->
+        routineRepository.getCompletionsForDate(dateString).map { completions ->
             completions.associateBy { it.routineId }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }
     
-    // Timer state
     private val _timerState = MutableStateFlow(TimerState())
-    val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
+    
+    val uiState: StateFlow<RoutinesUiState> = combine(
+        _use24HourFormat, _selectedDate, _isLoading, _routines, 
+        _completedTodayIds, _todayCompletions, _timerState
+    ) { args: Array<Any> ->
+        RoutinesUiState(
+            use24HourFormat = args[0] as Boolean,
+            selectedDate = args[1] as Date,
+            isLoading = args[2] as Boolean,
+            routines = args[3] as List<Routine>,
+            completedTodayIds = args[4] as Set<Long>,
+            todayCompletions = args[5] as Map<Long, RoutineCompletion>,
+            timerState = args[6] as TimerState
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RoutinesUiState())
     
     fun selectDate(date: Date) {
         _selectedDate.value = date
@@ -98,11 +113,11 @@ class RoutinesViewModel(
         
         viewModelScope.launch {
             val dateString = dateFormat.format(_selectedDate.value)
-            val existing = completionDao.getCompletionForDate(routine.id, dateString)
+            val existing = routineRepository.getCompletionForDate(routine.id, dateString)
             if (existing != null) {
-                completionDao.deleteCompletion(existing)
+                routineRepository.deleteCompletion(existing)
             } else {
-                completionDao.insertCompletion(
+                routineRepository.insertCompletion(
                     RoutineCompletion(
                         routineId = routine.id,
                         date = dateString,
@@ -119,7 +134,7 @@ class RoutinesViewModel(
         
         viewModelScope.launch {
             val dateString = dateFormat.format(_selectedDate.value)
-            val existing = completionDao.getCompletionForDate(routine.id, dateString)
+            val existing = routineRepository.getCompletionForDate(routine.id, dateString)
             val currentCount = existing?.currentCount ?: 0
             
             // Don't increment beyond target count
@@ -128,7 +143,7 @@ class RoutinesViewModel(
             val newCount = currentCount + 1
             val isCompleted = newCount >= routine.targetCount
             
-            completionDao.insertCompletion(
+            routineRepository.insertCompletion(
                 RoutineCompletion(
                     id = existing?.id ?: 0,
                     routineId = routine.id,
@@ -146,14 +161,14 @@ class RoutinesViewModel(
         
         viewModelScope.launch {
             val dateString = dateFormat.format(_selectedDate.value)
-            val existing = completionDao.getCompletionForDate(routine.id, dateString)
+            val existing = routineRepository.getCompletionForDate(routine.id, dateString)
             val currentCount = existing?.currentCount ?: 0
             if (currentCount > 0) {
                 val newCount = currentCount - 1
                 if (newCount == 0) {
-                    existing?.let { completionDao.deleteCompletion(it) }
+                    existing?.let { routineRepository.deleteCompletion(it) }
                 } else {
-                    completionDao.insertCompletion(
+                    routineRepository.insertCompletion(
                         RoutineCompletion(
                             id = existing?.id ?: 0,
                             routineId = routine.id,
@@ -174,7 +189,7 @@ class RoutinesViewModel(
         
         viewModelScope.launch {
             val dateString = dateFormat.format(_selectedDate.value)
-            val existing = completionDao.getCompletionForDate(routine.id, dateString)
+            val existing = routineRepository.getCompletionForDate(routine.id, dateString)
             val startSeconds = existing?.elapsedSeconds ?: 0
             val targetSeconds = routine.durationMinutes * 60
             
@@ -219,16 +234,16 @@ class RoutinesViewModel(
         viewModelScope.launch {
             _timerState.value = TimerState()
             val dateString = dateFormat.format(_selectedDate.value)
-            val existing = completionDao.getCompletionForDate(routine.id, dateString)
-            existing?.let { completionDao.deleteCompletion(it) }
+            val existing = routineRepository.getCompletionForDate(routine.id, dateString)
+            existing?.let { routineRepository.deleteCompletion(it) }
         }
     }
     
     private suspend fun saveTimerProgress(routineId: Long, elapsedSeconds: Int, targetSeconds: Int) {
         // Use the date when timer was started, not the currently selected date
         val dateString = _timerState.value.startedOnDate.ifEmpty { dateFormat.format(_selectedDate.value) }
-        val existing = completionDao.getCompletionForDate(routineId, dateString)
-        completionDao.insertCompletion(
+        val existing = routineRepository.getCompletionForDate(routineId, dateString)
+        routineRepository.insertCompletion(
             RoutineCompletion(
                 id = existing?.id ?: 0,
                 routineId = routineId,
@@ -241,13 +256,13 @@ class RoutinesViewModel(
     
     fun togglePin(routine: Routine) {
         viewModelScope.launch {
-            routineDao.updateRoutine(routine.copy(isPinned = !routine.isPinned))
+            routineRepository.updateRoutine(routine.copy(isPinned = !routine.isPinned))
         }
     }
     
     fun deleteRoutine(routine: Routine) {
         viewModelScope.launch {
-            routineDao.deleteRoutine(routine)
+            routineRepository.deleteRoutine(routine)
         }
     }
     
@@ -255,9 +270,12 @@ class RoutinesViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                RoutinesViewModel(
+                val routineRepository = RoutineRepository(
                     application.database.routineDao(),
-                    application.database.routineCompletionDao(),
+                    application.database.routineCompletionDao()
+                )
+                RoutinesViewModel(
+                    routineRepository,
                     application.preferencesManager
                 )
             }

@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.allubie.nana.MainActivity
@@ -96,7 +97,7 @@ object NotificationHelper {
             NotificationManagerCompat.from(context).notify(notificationId, notification)
         } catch (e: SecurityException) {
             // Permission not granted
-            e.printStackTrace()
+            Log.e("NotificationHelper", "Failed to show event notification", e)
         }
     }
     
@@ -153,7 +154,7 @@ object NotificationHelper {
         try {
             NotificationManagerCompat.from(context).notify(notificationId, notification)
         } catch (e: SecurityException) {
-            e.printStackTrace()
+            Log.e("NotificationHelper", "Failed to show routine notification", e)
         }
     }
     

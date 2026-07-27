@@ -23,10 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.util.CurrencyFormatter
 import kotlin.math.roundToInt
 import java.text.NumberFormat
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,8 +37,8 @@ fun FinancesOverviewScreen(
     onNavigateBack: () -> Unit,
     viewModel: FinancesOverviewViewModel = viewModel(factory = FinancesOverviewViewModel.Factory)
 ) {
-    val overview by viewModel.overview.collectAsState()
-    val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val overview by viewModel.overview.collectAsStateWithLifecycle()
+    val currencySymbol by viewModel.currencySymbol.collectAsStateWithLifecycle()
     
     // Format currency with symbol from settings
     fun formatCurrency(amount: Double): String {
@@ -45,12 +48,12 @@ fun FinancesOverviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Overview") },
+                title = { Text(stringResource(R.string.title_overview)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -82,7 +85,7 @@ fun FinancesOverviewScreen(
                             .padding(20.dp)
                     ) {
                         Text(
-                            text = "Cash Flow Summary",
+                            text = stringResource(R.string.section_cash_flow),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -94,7 +97,7 @@ fun FinancesOverviewScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "Income",
+                                    text = stringResource(R.string.label_income),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
@@ -107,7 +110,7 @@ fun FinancesOverviewScreen(
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "Expenses",
+                                    text = stringResource(R.string.status_expenses),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                 )
@@ -131,7 +134,7 @@ fun FinancesOverviewScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Net Savings",
+                                text = stringResource(R.string.status_net_savings),
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
@@ -150,7 +153,7 @@ fun FinancesOverviewScreen(
             // Spending by Category
             item {
                 Text(
-                    text = "Spending by Category",
+                    text = stringResource(R.string.section_spending_by_category),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -176,12 +179,11 @@ fun FinancesOverviewScreen(
                 )
             }
             
-            // Budget vs Actual (if budgets exist)
             if (overview.budgetComparisons.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Budget vs Actual",
+                        text = stringResource(R.string.section_budget_vs_actual),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -272,7 +274,7 @@ private fun BudgetComparisonItem(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = category.ifEmpty { "Overall" },
+                    text = category.ifEmpty { stringResource(R.string.label_overall) },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -358,7 +360,7 @@ private fun SpendingDonutChart(
                 // Center text
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Total",
+                        text = stringResource(R.string.status_total),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -48,7 +48,7 @@ private object BudgetWidgetRefreshCoordinator {
                             }
                             .isSuccess
                         if (!retried) {
-                            // A fallback one-time WorkManager refresh has already been enqueued on request.
+                            scheduleFallbackWork(context)
                         }
                     }
                 }

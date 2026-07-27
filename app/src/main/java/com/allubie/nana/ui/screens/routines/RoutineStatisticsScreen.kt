@@ -15,6 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,17 +25,23 @@ fun RoutineStatisticsScreen(
     onNavigateBack: () -> Unit,
     viewModel: RoutineStatisticsViewModel = viewModel(factory = RoutineStatisticsViewModel.Factory)
 ) {
-    val stats by viewModel.statistics.collectAsState()
+    val stats by viewModel.statistics.collectAsStateWithLifecycle()
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistics") },
+                title = { 
+                    Text(
+                        text = stringResource(R.string.title_routine_statistics),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_arrow_back)
                         )
                     }
                 },
@@ -56,12 +65,12 @@ fun RoutineStatisticsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     StatCard(
-                        title = "This Week",
+                        title = stringResource(R.string.stat_this_week),
                         value = "${stats.weeklyCompletionRate}%",
                         modifier = Modifier.weight(1f)
                     )
                     StatCard(
-                        title = "This Month",
+                        title = stringResource(R.string.stat_this_month),
                         value = "${stats.monthlyCompletionRate}%",
                         modifier = Modifier.weight(1f)
                     )
@@ -86,7 +95,7 @@ fun RoutineStatisticsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Current Streak",
+                                text = stringResource(R.string.current_streak),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -99,7 +108,7 @@ fun RoutineStatisticsScreen(
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "Best Streak",
+                                text = stringResource(R.string.best_streak),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -117,7 +126,7 @@ fun RoutineStatisticsScreen(
             // Weekly bar chart
             item {
                 Text(
-                    text = "Weekly Overview",
+                    text = stringResource(R.string.section_overview),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -166,7 +175,7 @@ fun RoutineStatisticsScreen(
             // Per-routine stats
             item {
                 Text(
-                    text = "By Routine",
+                    text = stringResource(R.string.section_by_routine),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -192,7 +201,7 @@ fun RoutineStatisticsScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "${routineStat.streak} day streak",
+                                text = stringResource(R.string.template_day_streak, routineStat.streak),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

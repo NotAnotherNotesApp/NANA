@@ -22,6 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.data.model.RoutineType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,13 +35,19 @@ fun RoutineEditorScreen(
     onNavigateBack: () -> Unit,
     viewModel: RoutineEditorViewModel = viewModel(factory = RoutineEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var reminderEnabled by remember { mutableStateOf(true) }
     var selectedHour by remember { mutableIntStateOf(7) }
     var selectedMinute by remember { mutableIntStateOf(30) }
     var isAm by remember { mutableStateOf(true) }
     var showIconPicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collectLatest {
+            onNavigateBack()
+        }
+    }
     
     // Icon mapping for display
     val iconOptions = listOf(
@@ -142,7 +152,7 @@ fun RoutineEditorScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (routineId == null) "New Routine" else "Edit Routine",
+                        text = if (routineId == null) stringResource(R.string.title_new_routine) else stringResource(R.string.title_edit_routine),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -151,29 +161,15 @@ fun RoutineEditorScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            contentDescription = stringResource(R.string.cd_arrow_back)
                         )
                     }
                 },
                 actions = {
-                    Surface(
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable {
-                                viewModel.saveRoutine()
-                                onNavigateBack()
-                            },
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
+                    TextButton(onClick = { viewModel.saveRoutine() }) {
                         Text(
-                            text = "Save",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            text = stringResource(R.string.action_save),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 },
@@ -224,7 +220,7 @@ fun RoutineEditorScreen(
                 // Name input
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "ROUTINE NAME",
+                        text = stringResource(R.string.section_routine_name),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
@@ -236,7 +232,7 @@ fun RoutineEditorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
-                                text = "e.g. Morning Run",
+                                text = stringResource(R.string.hint_routine_name),
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -261,7 +257,7 @@ fun RoutineEditorScreen(
             
             // Routine Type Section
             Text(
-                text = "Routine Type",
+                text = stringResource(R.string.label_routine_type),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 4.dp)
@@ -272,8 +268,8 @@ fun RoutineEditorScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     // Type selection chips
@@ -289,9 +285,9 @@ fun RoutineEditorScreen(
                                 label = {
                                     Text(
                                         text = when (type) {
-                                            RoutineType.SIMPLE -> "Simple"
-                                            RoutineType.COUNTER -> "Counter"
-                                            RoutineType.TIMER -> "Timer"
+                                            RoutineType.SIMPLE -> stringResource(R.string.type_simple)
+                                            RoutineType.COUNTER -> stringResource(R.string.type_counter)
+                                            RoutineType.TIMER -> stringResource(R.string.type_timer)
                                         }
                                     )
                                 },
@@ -305,12 +301,7 @@ fun RoutineEditorScreen(
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp)
                                     )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = Color.White,
-                                    selectedLeadingIconColor = Color.White
-                                )
+                                }
                             )
                         }
                     }
@@ -323,7 +314,7 @@ fun RoutineEditorScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             
                             Text(
-                                text = "Target count per day",
+                                text = stringResource(R.string.label_target_count),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -342,7 +333,7 @@ fun RoutineEditorScreen(
                                             CircleShape
                                         )
                                 ) {
-                                    Icon(Icons.Outlined.Remove, contentDescription = "Decrease")
+                                    Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.cd_decrease))
                                 }
                                 Text(
                                     text = "${uiState.targetCount}",
@@ -358,7 +349,7 @@ fun RoutineEditorScreen(
                                             CircleShape
                                         )
                                 ) {
-                                    Icon(Icons.Outlined.Add, contentDescription = "Increase")
+                                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.cd_increase))
                                 }
                             }
                         }
@@ -368,7 +359,7 @@ fun RoutineEditorScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             
                             Text(
-                                text = "Duration (minutes)",
+                                text = stringResource(R.string.label_duration_minutes),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -387,10 +378,10 @@ fun RoutineEditorScreen(
                                             CircleShape
                                         )
                                 ) {
-                                    Icon(Icons.Outlined.Remove, contentDescription = "Decrease")
+                                    Icon(Icons.Outlined.Remove, contentDescription = stringResource(R.string.cd_decrease))
                                 }
                                 Text(
-                                    text = "${uiState.durationMinutes} min",
+                                    text = "${uiState.durationMinutes} ${stringResource(R.string.unit_minutes)}",
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -403,7 +394,7 @@ fun RoutineEditorScreen(
                                             CircleShape
                                         )
                                 ) {
-                                    Icon(Icons.Outlined.Add, contentDescription = "Increase")
+                                    Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.cd_increase))
                                 }
                             }
                         }
@@ -416,7 +407,7 @@ fun RoutineEditorScreen(
             
             // Frequency Section
             Text(
-                text = "Frequency",
+                text = stringResource(R.string.label_frequency),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 4.dp)
@@ -427,8 +418,8 @@ fun RoutineEditorScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     // Day toggles
@@ -446,18 +437,18 @@ fun RoutineEditorScreen(
                                     .size(40.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        if (isSelected) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.surfaceVariant
+                                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                                     )
                                     .clickable { viewModel.toggleDay(dayNumber) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = day,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = 14.sp,
-                                    color = if (isSelected) Color.White 
-                                           else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
+                                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 )
                             }
                         }
@@ -472,10 +463,10 @@ fun RoutineEditorScreen(
                     
                     // Determine current selection label
                     val repeatLabel = when {
-                        uiState.selectedDays == setOf(1, 2, 3, 4, 5, 6, 7) -> "Every Day"
-                        uiState.selectedDays == setOf(1, 2, 3, 4, 5) -> "Weekdays"
-                        uiState.selectedDays == setOf(6, 7) -> "Weekends"
-                        else -> "Custom"
+                        uiState.selectedDays == setOf(1, 2, 3, 4, 5, 6, 7) -> stringResource(R.string.repeat_every_day)
+                        uiState.selectedDays == setOf(1, 2, 3, 4, 5) -> stringResource(R.string.repeat_weekdays)
+                        uiState.selectedDays == setOf(6, 7) -> stringResource(R.string.repeat_weekends)
+                        else -> stringResource(R.string.repeat_custom)
                     }
                     
                     Box {
@@ -487,7 +478,7 @@ fun RoutineEditorScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Repeat",
+                                text = stringResource(R.string.label_repeat),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp
@@ -516,56 +507,33 @@ fun RoutineEditorScreen(
                             onDismissRequest = { showRepeatMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Every Day") },
+                                text = { Text(stringResource(R.string.repeat_every_day)) },
                                 onClick = {
-                                    // Select all days
                                     listOf(1, 2, 3, 4, 5, 6, 7).forEach { day ->
-                                        if (!uiState.selectedDays.contains(day)) {
-                                            viewModel.toggleDay(day)
-                                        }
+                                        if (!uiState.selectedDays.contains(day)) viewModel.toggleDay(day)
                                     }
                                     showRepeatMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Weekdays (Mon-Fri)") },
+                                text = { Text(stringResource(R.string.repeat_weekdays)) },
                                 onClick = {
-                                    // Clear all then select weekdays
-                                    listOf(6, 7).forEach { day ->
-                                        if (uiState.selectedDays.contains(day)) {
-                                            viewModel.toggleDay(day)
-                                        }
-                                    }
-                                    listOf(1, 2, 3, 4, 5).forEach { day ->
-                                        if (!uiState.selectedDays.contains(day)) {
-                                            viewModel.toggleDay(day)
-                                        }
-                                    }
+                                    listOf(6, 7).forEach { if (uiState.selectedDays.contains(it)) viewModel.toggleDay(it) }
+                                    listOf(1, 2, 3, 4, 5).forEach { if (!uiState.selectedDays.contains(it)) viewModel.toggleDay(it) }
                                     showRepeatMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Weekends (Sat-Sun)") },
+                                text = { Text(stringResource(R.string.repeat_weekends)) },
                                 onClick = {
-                                    // Clear weekdays then select weekends
-                                    listOf(1, 2, 3, 4, 5).forEach { day ->
-                                        if (uiState.selectedDays.contains(day)) {
-                                            viewModel.toggleDay(day)
-                                        }
-                                    }
-                                    listOf(6, 7).forEach { day ->
-                                        if (!uiState.selectedDays.contains(day)) {
-                                            viewModel.toggleDay(day)
-                                        }
-                                    }
+                                    listOf(1, 2, 3, 4, 5).forEach { if (uiState.selectedDays.contains(it)) viewModel.toggleDay(it) }
+                                    listOf(6, 7).forEach { if (!uiState.selectedDays.contains(it)) viewModel.toggleDay(it) }
                                     showRepeatMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Custom") },
-                                onClick = {
-                                    showRepeatMenu = false
-                                }
+                                text = { Text(stringResource(R.string.repeat_custom)) },
+                                onClick = { showRepeatMenu = false }
                             )
                         }
                     }
@@ -576,7 +544,7 @@ fun RoutineEditorScreen(
             
             // Reminder Section
             Text(
-                text = "Reminder",
+                text = stringResource(R.string.label_reminder),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 4.dp)
@@ -587,8 +555,8 @@ fun RoutineEditorScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     // Toggle row
@@ -616,11 +584,11 @@ fun RoutineEditorScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Enable Reminders",
+                                    text = stringResource(R.string.label_enable_reminders),
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Get notified on scheduled days",
+                                    text = stringResource(R.string.desc_enable_reminders),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -733,7 +701,7 @@ fun RoutineEditorScreen(
             
             // Motivation Section
             Text(
-                text = "Motivation",
+                text = stringResource(R.string.label_motivation),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 4.dp)
@@ -744,8 +712,8 @@ fun RoutineEditorScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 TextField(
                     value = uiState.description,
@@ -753,7 +721,7 @@ fun RoutineEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Why is this habit important to you? e.g. To ace my finals...",
+                            text = stringResource(R.string.hint_description_optional),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                     },
@@ -775,7 +743,7 @@ fun RoutineEditorScreen(
     if (showIconPicker) {
         AlertDialog(
             onDismissRequest = { showIconPicker = false },
-            title = { Text("Choose Icon", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_choose_icon), fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)

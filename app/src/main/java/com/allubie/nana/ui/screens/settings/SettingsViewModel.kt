@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.BackupManager
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.NoteDao
+import com.allubie.nana.data.repository.NoteRepository
 import com.allubie.nana.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +25,7 @@ data class BackupState(
 
 class SettingsViewModel(
     private val preferencesManager: PreferencesManager,
-    private val noteDao: NoteDao,
+    private val noteRepository: NoteRepository,
     private val backupManager: BackupManager
 ) : ViewModel() {
     
@@ -134,7 +134,7 @@ class SettingsViewModel(
     
     fun emptyTrash() {
         viewModelScope.launch {
-            noteDao.emptyTrash()
+            noteRepository.emptyTrash()
             _backupState.value = BackupState(
                 message = "Trash emptied successfully",
                 isSuccess = true
@@ -146,9 +146,15 @@ class SettingsViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
                 SettingsViewModel(
                     application.preferencesManager,
-                    application.database.noteDao(),
+                    noteRepository,
                     application.backupManager
                 )
             }

@@ -28,7 +28,7 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getNoteById(id: Long): Note?
     
-    @Query("SELECT * FROM notes WHERE (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') AND isDeleted = 0")
+    @Query("SELECT notes.* FROM notes JOIN notes_fts ON notes.rowid = notes_fts.docid WHERE notes_fts MATCH :query AND notes.isDeleted = 0 ORDER BY notes.isPinned DESC, notes.updatedAt DESC")
     fun searchNotes(query: String): Flow<List<Note>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)

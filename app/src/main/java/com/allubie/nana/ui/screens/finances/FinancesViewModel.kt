@@ -8,12 +8,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.BudgetDao
-import com.allubie.nana.data.dao.LabelDao
-import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
+import com.allubie.nana.data.repository.LabelRepository
+import com.allubie.nana.data.repository.TransactionRepository
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,64 +22,74 @@ import java.util.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FinancesViewModel(
-    private val transactionDao: TransactionDao,
-    private val budgetDao: BudgetDao,
-    private val labelDao: LabelDao,
+    private val transactionRepository: TransactionRepository,
+    private val labelRepository: LabelRepository,
     private val preferencesManager: PreferencesManager,
     private val application: NanaApplication
 ) : ViewModel() {
     
+    data class FinancesUiState(
+        val selectedMonth: Calendar = Calendar.getInstance(),
+        val isLoading: Boolean = true,
+        val totalBudget: Double = 0.0,
+        val hasBudget: Boolean = false,
+        val currencySymbol: String = "$",
+        val expenseLabels: List<Label> = emptyList(),
+        val incomeLabels: List<Label> = emptyList(),
+        val filteredTransactions: List<Transaction> = emptyList(),
+        val totalIncome: Double = 0.0,
+        val totalExpenses: Double = 0.0
+    )
+    
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance())
-    val selectedMonth: StateFlow<Calendar> = _selectedMonth.asStateFlow()
-    
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     
-    // Budget: prefer user-set total limit from preferences, fallback to sum of category allocations
-    private val totalBudgetLimit: StateFlow<Double> = preferencesManager.totalBudget
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
-    
-    private val totalAllocated: StateFlow<Double> = budgetDao.getAllBudgets()
+    private val totalBudgetLimit = preferencesManager.totalBudget
+    private val totalAllocated = transactionRepository.getAllBudgets()
         .map { budgets -> budgets.sumOf { it.amount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
     
-    val totalBudget: StateFlow<Double> = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
+    private val _totalBudget = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
         if (limit > 0) limit else allocated
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    }
     
-    val hasBudget: StateFlow<Boolean> = totalBudget
-        .map { it > 0 }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    private val _hasBudget = _totalBudget.map { it > 0 }
     
-    val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
+    private val _currencySymbol = preferencesManager.currencySymbol
     
-    // Labels from database
-    val expenseLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EXPENSE)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _expenseLabels = labelRepository.getLabelsByType(LabelType.EXPENSE)
+    private val _incomeLabels = labelRepository.getLabelsByType(LabelType.INCOME)
     
-    val incomeLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.INCOME)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    
-    val filteredTransactions: StateFlow<List<Transaction>> = _selectedMonth.flatMapLatest { calendar ->
+    private val _filteredTransactions = _selectedMonth.flatMapLatest { calendar ->
         val (startOfMonth, endOfMonth) = getMonthRange(calendar)
-        transactionDao.getTransactionsInRange(startOfMonth, endOfMonth)
+        transactionRepository.getTransactionsInRange(startOfMonth, endOfMonth)
     }.onStart { _isLoading.value = true }
      .onEach { _isLoading.value = false }
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    // Reactively derived from filtered transactions — updates instantly when transactions change
-    val totalIncome: StateFlow<Double> = filteredTransactions
-        .map { transactions ->
-            transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    private val _totalIncome = _filteredTransactions.map { transactions ->
+        transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+    }
     
-    val totalExpenses: StateFlow<Double> = filteredTransactions
-        .map { transactions ->
-            transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    private val _totalExpenses = _filteredTransactions.map { transactions ->
+        transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    }
+
+    val uiState: StateFlow<FinancesUiState> = combine(
+        _selectedMonth, _isLoading, _totalBudget, _hasBudget, _currencySymbol,
+        _expenseLabels, _incomeLabels, _filteredTransactions, _totalIncome, _totalExpenses
+    ) { args: Array<Any> ->
+        FinancesUiState(
+            selectedMonth = args[0] as Calendar,
+            isLoading = args[1] as Boolean,
+            totalBudget = args[2] as Double,
+            hasBudget = args[3] as Boolean,
+            currencySymbol = args[4] as String,
+            expenseLabels = (args[5] as List<*>).filterIsInstance<Label>(),
+            incomeLabels = (args[6] as List<*>).filterIsInstance<Label>(),
+            filteredTransactions = (args[7] as List<*>).filterIsInstance<Transaction>(),
+            totalIncome = args[8] as Double,
+            totalExpenses = args[9] as Double
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FinancesUiState())
     
     fun setSelectedMonth(year: Int, month: Int) {
         val calendar = Calendar.getInstance().apply {
@@ -108,7 +117,7 @@ class FinancesViewModel(
     
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
-            transactionDao.deleteTransaction(transaction)
+            transactionRepository.deleteTransaction(transaction)
             requestBudgetWidgetRefresh(application)
         }
     }
@@ -117,10 +126,14 @@ class FinancesViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as NanaApplication
-                FinancesViewModel(
+                val transactionRepository = TransactionRepository(
                     application.database.transactionDao(),
-                    application.database.budgetDao(),
-                    application.database.labelDao(),
+                    application.database.budgetDao()
+                )
+                val labelRepository = LabelRepository(application.database.labelDao())
+                FinancesViewModel(
+                    transactionRepository,
+                    labelRepository,
                     application.preferencesManager,
                     application
                 )

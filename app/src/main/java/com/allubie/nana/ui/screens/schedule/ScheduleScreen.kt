@@ -7,15 +7,19 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.*
 import com.allubie.nana.ui.theme.NanaIcons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Event
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
@@ -40,10 +45,11 @@ fun ScheduleScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: ScheduleViewModel = viewModel(factory = ScheduleViewModel.Factory)
 ) {
-    val events by viewModel.eventsForSelectedDay.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
-    val use24HourFormat by viewModel.use24HourFormat.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val events = uiState.eventsForSelectedDay
+    val isLoading = uiState.isLoading
+    val selectedDate = Date(uiState.selectedDate)
+    val use24HourFormat = uiState.use24HourFormat
 
     val dayNameFormat = SimpleDateFormat("EEE", Locale.getDefault())
     val dayNumberFormat = SimpleDateFormat("d", Locale.getDefault())
@@ -67,12 +73,12 @@ fun ScheduleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Schedule") },
+                title = { Text(stringResource(R.string.nav_schedule)) },
                 actions = {
                     // Today button
                     TextButton(onClick = { viewModel.selectDate(Date()) }) {
                         Text(
-                            text = "Today",
+                            text = stringResource(R.string.status_today),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -80,7 +86,7 @@ fun ScheduleScreen(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.cd_more_options)
                             )
                         }
                         DropdownMenu(
@@ -88,7 +94,7 @@ fun ScheduleScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text(stringResource(R.string.menu_settings)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
@@ -118,7 +124,7 @@ fun ScheduleScreen(
             ) {
                 Icon(
                     Icons.Default.Add,
-                    contentDescription = "Add Event",
+                    contentDescription = stringResource(R.string.cd_add_event),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -182,13 +188,13 @@ fun ScheduleScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No events for today",
+                            text = stringResource(R.string.empty_events_today),
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Tap + to add an event",
+                            text = stringResource(R.string.empty_events_hint),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
@@ -228,7 +234,7 @@ fun ScheduleScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "No more events for today",
+                                text = stringResource(R.string.empty_events_remaining),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                             )
@@ -358,9 +364,9 @@ private fun TimelineEventCard(
                 onDelete()
                 showDeleteConfirmation = false
             },
-            title = "Delete Event",
-            message = "Are you sure you want to delete \"${event.title}\"? This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(R.string.dialog_delete_event),
+            message = stringResource(R.string.template_delete_confirm, event.title),
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -369,6 +375,7 @@ private fun TimelineEventCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
             .alpha(contentAlpha)
             .height(IntrinsicSize.Min)
     ) {
@@ -458,7 +465,7 @@ private fun TimelineEventCard(
                             if (isPinned) {
                                 Icon(
                                     imageVector = NanaIcons.KeepFilled,
-                                    contentDescription = "Pinned",
+                                    contentDescription = stringResource(R.string.cd_pinned),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -470,7 +477,7 @@ private fun TimelineEventCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.MoreVert,
-                                        contentDescription = "More",
+                                        contentDescription = stringResource(R.string.cd_more),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -479,7 +486,7 @@ private fun TimelineEventCard(
                                     onDismissRequest = { showMoreOptions = false }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text(if (isPinned) "Unpin" else "Pin") },
+                                        text = { Text(if (isPinned) stringResource(R.string.menu_unpin_short) else stringResource(R.string.menu_pin)) },
                                         leadingIcon = {
                                             Icon(NanaIcons.Keep, contentDescription = null)
                                         },
@@ -489,7 +496,7 @@ private fun TimelineEventCard(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Edit") },
+                                        text = { Text(stringResource(R.string.action_edit)) },
                                         leadingIcon = {
                                             Icon(Icons.Outlined.Edit, contentDescription = null)
                                         },
@@ -499,7 +506,7 @@ private fun TimelineEventCard(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Delete") },
+                                        text = { Text(stringResource(R.string.action_delete)) },
                                         leadingIcon = {
                                             Icon(
                                                 Icons.Outlined.Delete,
@@ -557,7 +564,7 @@ private fun TimelineEventCard(
                             )
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Has reminder",
+                                contentDescription = stringResource(R.string.cd_has_reminder),
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -566,7 +573,7 @@ private fun TimelineEventCard(
                         if (event.recurrenceRule != null && event.recurrenceRule != "pinned") {
                             Icon(
                                 imageVector = Icons.Outlined.Repeat,
-                                contentDescription = "Recurring",
+                                contentDescription = stringResource(R.string.cd_recurring),
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

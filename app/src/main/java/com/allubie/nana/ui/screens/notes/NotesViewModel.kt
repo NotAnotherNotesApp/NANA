@@ -6,31 +6,43 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.NoteDao
 import com.allubie.nana.data.model.Note
+import com.allubie.nana.data.repository.NoteRepository
 import com.allubie.nana.widget.updateNotesWidgets
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class NotesViewModel(private val noteDao: NoteDao, private val application: NanaApplication) : ViewModel() {
+data class NotesUiState(
+    val searchQuery: String = "",
+    val isLoading: Boolean = true,
+    val notes: List<Note> = emptyList()
+)
+
+class NotesViewModel(private val noteRepository: NoteRepository, private val application: NanaApplication) : ViewModel() {
     
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-    
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     
     @OptIn(ExperimentalCoroutinesApi::class)
-    val notes: StateFlow<List<Note>> = _searchQuery.flatMapLatest { query ->
+    private val _notes = _searchQuery.flatMapLatest { query ->
         if (query.isBlank()) {
-            noteDao.getAllNotes()
+            noteRepository.getAllNotes()
         } else {
-            noteDao.searchNotes(query)
+            noteRepository.searchNotes(query)
         }
     }.onStart { _isLoading.value = true }
      .onEach { _isLoading.value = false }
-     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+     
+    val uiState: StateFlow<NotesUiState> = combine(
+        _searchQuery, _isLoading, _notes
+    ) { query, loading, notesList ->
+        NotesUiState(
+            searchQuery = query,
+            isLoading = loading,
+            notes = notesList
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NotesUiState())
     
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -38,21 +50,21 @@ class NotesViewModel(private val noteDao: NoteDao, private val application: Nana
     
     fun togglePin(note: Note) {
         viewModelScope.launch {
-            noteDao.updatePinStatus(note.id, !note.isPinned)
+            noteRepository.updatePinStatus(note.id, !note.isPinned)
             updateNotesWidgets(application)
         }
     }
     
     fun archiveNote(note: Note) {
         viewModelScope.launch {
-            noteDao.updateArchiveStatus(note.id, true)
+            noteRepository.updateArchiveStatus(note.id, true)
             updateNotesWidgets(application)
         }
     }
     
     fun deleteNote(note: Note) {
         viewModelScope.launch {
-            noteDao.updateDeleteStatus(note.id, true)
+            noteRepository.updateDeleteStatus(note.id, true)
             updateNotesWidgets(application)
         }
     }
@@ -61,7 +73,13 @@ class NotesViewModel(private val noteDao: NoteDao, private val application: Nana
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                NotesViewModel(application.database.noteDao(), application)
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
+                NotesViewModel(noteRepository, application)
             }
         }
     }

@@ -7,11 +7,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.BudgetDao
-import com.allubie.nana.data.dao.LabelDao
-import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
+import com.allubie.nana.data.repository.LabelRepository
+import com.allubie.nana.data.repository.TransactionRepository
 import com.allubie.nana.data.model.TransactionType
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -39,9 +38,8 @@ data class BudgetComparison(
 )
 
 class FinancesOverviewViewModel(
-    private val transactionDao: TransactionDao,
-    private val budgetDao: BudgetDao,
-    private val labelDao: LabelDao,
+    private val transactionRepository: TransactionRepository,
+    private val labelRepository: LabelRepository,
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
@@ -52,7 +50,7 @@ class FinancesOverviewViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
     
     // Labels for overview
-    val expenseLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EXPENSE)
+    val expenseLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.EXPENSE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Standard category colors as fallbacks
@@ -85,9 +83,9 @@ class FinancesOverviewViewModel(
     private fun observeOverview() {
         viewModelScope.launch {
             combine(
-                transactionDao.getAllTransactions(), 
-                budgetDao.getAllBudgets(),
-                labelDao.getLabelsByType(LabelType.EXPENSE)
+                transactionRepository.getAllTransactions(), 
+                transactionRepository.getAllBudgets(),
+                labelRepository.getLabelsByType(LabelType.EXPENSE)
             ) { transactions, budgets, labels ->
                 Triple(transactions, budgets, labels)
             }.collect { (transactions, budgets, labels) ->
@@ -170,10 +168,14 @@ class FinancesOverviewViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                FinancesOverviewViewModel(
+                val transactionRepository = TransactionRepository(
                     application.database.transactionDao(),
-                    application.database.budgetDao(),
-                    application.database.labelDao(),
+                    application.database.budgetDao()
+                )
+                val labelRepository = LabelRepository(application.database.labelDao())
+                FinancesOverviewViewModel(
+                    transactionRepository,
+                    labelRepository,
                     application.preferencesManager
                 )
             }

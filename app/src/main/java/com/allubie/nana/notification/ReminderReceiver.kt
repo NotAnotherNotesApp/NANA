@@ -3,6 +3,7 @@ package com.allubie.nana.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -122,7 +123,7 @@ class ReminderReceiver : BroadcastReceiver() {
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("ReminderReceiver", "Failed to mark routine done", e)
                 } finally {
                     pendingResult.finish()
                 }
@@ -140,7 +141,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     ReminderScheduler.rescheduleAllReminders(context, it.database)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("ReminderReceiver", "Failed to reschedule reminders on boot", e)
             } finally {
                 pendingResult.finish()
             }

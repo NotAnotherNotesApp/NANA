@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.semantics.semantics
 import com.allubie.nana.ui.theme.NanaIcons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,9 +41,13 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.data.model.Note
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
+import com.allubie.nana.util.stripHtml
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,8 +60,9 @@ fun NotesScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
 ) {
-    val notes by viewModel.notes.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val notes = uiState.notes
+    val isLoading = uiState.isLoading
     var showMenu by remember { mutableStateOf(false) }
     var showFabMenu by remember { mutableStateOf(false) }
     
@@ -66,13 +72,13 @@ fun NotesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notes") },
+                title = { Text(stringResource(R.string.nav_notes)) },
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.cd_more_options)
                             )
                         }
                         DropdownMenu(
@@ -80,7 +86,7 @@ fun NotesScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Archived Notes") },
+                                text = { Text(stringResource(R.string.menu_archived_notes)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToArchive()
@@ -93,7 +99,7 @@ fun NotesScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Trash") },
+                                text = { Text(stringResource(R.string.menu_trash)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToTrash()
@@ -107,7 +113,7 @@ fun NotesScreen(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text(stringResource(R.string.nav_settings)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
@@ -166,7 +172,7 @@ fun NotesScreen(
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Column {
                         Text(
-                            text = "PINNED",
+                            text = stringResource(R.string.section_pinned),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
@@ -206,7 +212,7 @@ fun NotesScreen(
             if (otherNotes.isNotEmpty()) {
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Text(
-                        text = "RECENT",
+                        text = stringResource(R.string.section_recent),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold,
@@ -253,13 +259,13 @@ fun NotesScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "No notes yet",
+                                text = stringResource(R.string.empty_notes),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tap + to create your first note",
+                                text = stringResource(R.string.empty_notes_hint),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
@@ -277,103 +283,7 @@ fun NotesScreen(
     }
 }
 
-// Helper function to strip HTML tags and get plain text, preserving list markers
-private fun stripHtml(html: String): String {
-    var result = html
-    
-    // Track list context for ordered lists
-    var listCounter = 0
-    var inOrderedList = false
-    
-    // Handle ordered lists - replace <ol> tags and number list items
-    result = result.replace(Regex("<ol[^>]*>")) { 
-        inOrderedList = true
-        listCounter = 0
-        ""
-    }
-    result = result.replace(Regex("</ol>")) {
-        inOrderedList = false
-        ""
-    }
-    
-    // Handle unordered lists
-    result = result.replace(Regex("<ul[^>]*>"), "")
-    result = result.replace(Regex("</ul>"), "")
-    
-    // Replace list items with appropriate markers
-    // For simplicity, use bullet for unordered and dash for ordered (since we can't track state in single regex)
-    result = result.replace(Regex("<li[^>]*>"), "\n- ")
-    result = result.replace(Regex("</li>"), "")
-    
-    // Handle paragraphs and line breaks
-    result = result.replace(Regex("<p[^>]*>"), "\n")
-    result = result.replace(Regex("</p>"), "")
-    result = result.replace(Regex("<br[^>]*>"), "\n")
-    result = result.replace(Regex("<div[^>]*>"), "\n")
-    result = result.replace(Regex("</div>"), "")
-    
-    // Remove remaining HTML tags
-    result = result.replace(Regex("<[^>]*>"), "")
-    
-    // Handle HTML entities
-    result = result
-        .replace("&nbsp;", " ")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&apos;", "'")
-        .replace("&period;", ".")
-        .replace("&comma;", ",")
-        .replace("&colon;", ":")
-        .replace("&semi;", ";")
-        .replace("&excl;", "!")
-        .replace("&quest;", "?")
-        .replace("&hyphen;", "-")
-        .replace("&dash;", "-")
-        .replace("&ndash;", "-")
-        .replace("&mdash;", "-")
-        .replace("&lpar;", "(")
-        .replace("&rpar;", ")")
-        .replace("&lsqb;", "[")
-        .replace("&rsqb;", "]")
-        .replace("&lcub;", "{")
-        .replace("&rcub;", "}")
-        .replace("&num;", "#")
-        .replace("&dollar;", "$")
-        .replace("&percnt;", "%")
-        .replace("&ast;", "*")
-        .replace("&plus;", "+")
-        .replace("&equals;", "=")
-        .replace("&commat;", "@")
-        .replace("&sol;", "/")
-        .replace("&bsol;", "\\")
-        .replace("&verbar;", "|")
-        .replace("&tilde;", "~")
-        .replace("&circ;", "^")
-        .replace("&grave;", "`")
-        .replace(Regex("&#(\\d+);")) { matchResult ->
-            val code = matchResult.groupValues[1].toIntOrNull()
-            if (code != null) code.toChar().toString() else matchResult.value
-        }
-        .replace(Regex("&#x([0-9a-fA-F]+);")) { matchResult ->
-            val code = matchResult.groupValues[1].toIntOrNull(16)
-            if (code != null) code.toChar().toString() else matchResult.value
-        }
-    
-    // Clean up multiple newlines and spaces
-    result = result.replace(Regex("\\n{3,}"), "\n\n")
-    result = result.replace(Regex(" +"), " ")
-    result = result.trim()
-    
-    // Remove leading newline if present
-    if (result.startsWith("\n")) {
-        result = result.substring(1)
-    }
-    
-    return result
-}
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -398,9 +308,9 @@ private fun PinnedNoteCard(
                 onDelete()
                 showDeleteConfirmation = false
             },
-            title = "Delete this note?",
-            message = "\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.",
-            confirmText = "Delete",
+            title = stringResource(R.string.dialog_delete_note),
+            message = "\"${note.title.ifEmpty { stringResource(R.string.status_untitled) }}\" ${stringResource(R.string.dialog_msg_delete_note)}",
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -422,6 +332,7 @@ private fun PinnedNoteCard(
     Box(modifier = modifier) {
         Surface(
             modifier = Modifier
+                .semantics(mergeDescendants = true) {}
                 .clip(RoundedCornerShape(16.dp))
                 .combinedClickable(
                     onClick = onClick,
@@ -459,12 +370,12 @@ private fun PinnedNoteCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Checklist,
-                                    contentDescription = "Checklist",
+                                    contentDescription = stringResource(R.string.cd_checklist),
                                     modifier = Modifier.size(14.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "LIST",
+                                    text = stringResource(R.string.status_list_upper),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
@@ -477,7 +388,7 @@ private fun PinnedNoteCard(
                         
                         Icon(
                             imageVector = NanaIcons.KeepFilled,
-                            contentDescription = "Pinned",
+                            contentDescription = stringResource(R.string.cd_pinned),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(20.dp)
@@ -489,7 +400,7 @@ private fun PinnedNoteCard(
                     
                     // Title - bold, leading-tight
                     Text(
-                        text = note.title.ifEmpty { "Untitled" },
+                        text = note.title.ifEmpty { stringResource(R.string.status_untitled) },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -548,7 +459,7 @@ private fun PinnedNoteCard(
             offset = DpOffset(x = 8.dp, y = 0.dp)
         ) {
             DropdownMenuItem(
-                text = { Text("Unpin Note") },
+                text = { Text(stringResource(R.string.menu_unpin)) },
                 onClick = { 
                     showMenu = false
                     onPinClick()
@@ -561,7 +472,7 @@ private fun PinnedNoteCard(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Archive") },
+                text = { Text(stringResource(R.string.menu_archive)) },
                 onClick = { 
                     showMenu = false
                     onArchive()
@@ -575,7 +486,7 @@ private fun PinnedNoteCard(
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                 onClick = { 
                     showMenu = false
                     showDeleteConfirmation = true
@@ -616,9 +527,9 @@ fun NoteCard(
                 onDelete()
                 showDeleteConfirmation = false
             },
-            title = "Delete this note?",
-            message = "\"${note.title.ifEmpty { "Untitled" }}\" will be moved to trash.",
-            confirmText = "Delete",
+            title = stringResource(R.string.dialog_delete_note),
+            message = "\"${note.title.ifEmpty { stringResource(R.string.status_untitled) }}\" ${stringResource(R.string.dialog_msg_delete_note)}",
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -634,6 +545,7 @@ fun NoteCard(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {}
                 .clip(RoundedCornerShape(16.dp))
                 .combinedClickable(
                     onClick = onClick,
@@ -733,7 +645,7 @@ fun NoteCard(
             if (isArchived) {
                 // Archive screen menu: Unarchive and Delete
                 DropdownMenuItem(
-                    text = { Text("Unarchive") },
+                    text = { Text(stringResource(R.string.menu_unarchive)) },
                     onClick = { 
                         showMenu = false
                         onArchive() // onArchive is used as unarchive in archive screen
@@ -747,7 +659,7 @@ fun NoteCard(
                 )
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                     onClick = { 
                         showMenu = false
                         showDeleteConfirmation = true
@@ -763,7 +675,7 @@ fun NoteCard(
             } else {
                 // Normal notes screen menu: Pin, Archive, Delete
                 DropdownMenuItem(
-                    text = { Text(if (note.isPinned) "Unpin Note" else "Pin Note") },
+                    text = { Text(if (note.isPinned) stringResource(R.string.menu_unpin) else stringResource(R.string.menu_pin_note)) },
                     onClick = { 
                         showMenu = false
                         onPinClick()
@@ -776,7 +688,7 @@ fun NoteCard(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Archive") },
+                    text = { Text(stringResource(R.string.menu_archive)) },
                     onClick = { 
                         showMenu = false
                         onArchive()
@@ -790,7 +702,7 @@ fun NoteCard(
                 )
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                     onClick = { 
                         showMenu = false
                         showDeleteConfirmation = true
@@ -889,7 +801,7 @@ private fun ExpandableFab(
                         shadowElevation = 4.dp
                     ) {
                         Text(
-                            text = "List",
+                            text = stringResource(R.string.status_list),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Medium
@@ -903,7 +815,7 @@ private fun ExpandableFab(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Checklist,
-                            contentDescription = "New List",
+                            contentDescription = stringResource(R.string.cd_new_list),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -920,7 +832,7 @@ private fun ExpandableFab(
                         shadowElevation = 4.dp
                     ) {
                         Text(
-                            text = "Note",
+                            text = stringResource(R.string.status_note),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Medium
@@ -934,7 +846,7 @@ private fun ExpandableFab(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Edit,
-                            contentDescription = "New Note",
+                            contentDescription = stringResource(R.string.cd_new_note),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -952,7 +864,7 @@ private fun ExpandableFab(
         ) {
             Icon(
                 Icons.Default.Add,
-                contentDescription = if (expanded) "Close" else "Add",
+                contentDescription = if (expanded) stringResource(R.string.action_close) else stringResource(R.string.action_add),
                 modifier = Modifier
                     .size(28.dp)
                     .graphicsLayer { rotationZ = rotation }

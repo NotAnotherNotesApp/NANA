@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.BuildConfig
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.components.NanaSearchableListDialog
@@ -23,6 +24,8 @@ import com.allubie.nana.ui.components.NanaSelectionDialog
 import com.allubie.nana.ui.components.SectionHeader
 import com.allubie.nana.ui.components.SettingsCard
 import com.allubie.nana.ui.components.SettingsItem
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.ui.components.SettingsItemWithSwitch
 import com.allubie.nana.ui.theme.ThemeMode
 import java.util.TimeZone
@@ -34,12 +37,12 @@ fun SettingsScreen(
     onNavigateToLabels: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
 ) {
-    val themeMode by viewModel.themeMode.collectAsState()
-    val currencyCode by viewModel.currencyCode.collectAsState()
-    val currencySymbol by viewModel.currencySymbol.collectAsState()
-    val timezone by viewModel.timezone.collectAsState()
-    val use24HourFormat by viewModel.use24HourFormat.collectAsState()
-    val backupState by viewModel.backupState.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val currencyCode by viewModel.currencyCode.collectAsStateWithLifecycle()
+    val currencySymbol by viewModel.currencySymbol.collectAsStateWithLifecycle()
+    val timezone by viewModel.timezone.collectAsStateWithLifecycle()
+    val use24HourFormat by viewModel.use24HourFormat.collectAsStateWithLifecycle()
+    val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val appVersion = BuildConfig.VERSION_NAME
@@ -80,15 +83,15 @@ fun SettingsScreen(
     if (showThemeDialog) {
         NanaSelectionDialog(
             onDismiss = { showThemeDialog = false },
-            title = "Choose Theme",
+            title = stringResource(R.string.dialog_choose_theme),
             options = ThemeMode.entries.toList(),
             selectedOption = themeMode,
             optionLabel = { mode ->
                 when (mode) {
-                    ThemeMode.LIGHT -> "Light"
-                    ThemeMode.DARK -> "Dark"
-                    ThemeMode.AMOLED -> "AMOLED"
-                    ThemeMode.SYSTEM -> "System default"
+                    ThemeMode.LIGHT -> context.getString(R.string.theme_light)
+                    ThemeMode.DARK -> context.getString(R.string.theme_dark)
+                    ThemeMode.AMOLED -> context.getString(R.string.theme_amoled)
+                    ThemeMode.SYSTEM -> context.getString(R.string.theme_system)
                 }
             },
             onSelect = { mode ->
@@ -153,10 +156,10 @@ fun SettingsScreen(
 
         NanaSearchableListDialog(
             onDismiss = { showCurrencyDialog = false; currencySearch = "" },
-            title = "Choose Currency",
+            title = stringResource(R.string.dialog_choose_currency),
             searchQuery = currencySearch,
             onSearchQueryChange = { currencySearch = it },
-            searchPlaceholder = "Search currencies...",
+            searchPlaceholder = stringResource(R.string.hint_search_currencies),
             items = filteredCurrencies,
             isSelected = { it.first == currencyCode },
             itemLabel = { (code, symbol, name) -> "$code ($symbol) - $name" },
@@ -238,10 +241,10 @@ fun SettingsScreen(
 
         NanaSearchableListDialog(
             onDismiss = { showTimezoneDialog = false; timezoneSearch = "" },
-            title = "Select Timezone",
+            title = stringResource(R.string.dialog_select_timezone),
             searchQuery = timezoneSearch,
             onSearchQueryChange = { timezoneSearch = it },
-            searchPlaceholder = "Search timezones...",
+            searchPlaceholder = stringResource(R.string.hint_search_timezones),
             items = filteredTimezones,
             isSelected = { it.first == timezone },
             itemLabel = { (id, name) -> "$name  ${formatUtcOffset(id)}" },
@@ -257,13 +260,13 @@ fun SettingsScreen(
     if (showLicensesDialog) {
         AlertDialog(
             onDismissRequest = { showLicensesDialog = false },
-            title = { Text("Open Source Licenses") },
+            title = { Text(stringResource(R.string.dialog_open_source_licenses)) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "This app uses the following open source libraries:",
+                        text = stringResource(R.string.dialog_msg_open_source),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     listOf(
@@ -298,7 +301,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showLicensesDialog = false }) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
             }
         )
@@ -311,9 +314,9 @@ fun SettingsScreen(
                 viewModel.emptyTrash()
                 showEmptyTrashDialog = false
             },
-            title = "Empty Trash",
-            message = "This will permanently delete all notes in trash. This action cannot be undone.",
-            confirmText = "Delete All",
+            title = stringResource(R.string.dialog_empty_trash),
+            message = stringResource(R.string.dialog_msg_empty_trash),
+            confirmText = stringResource(R.string.action_delete_all),
             isDestructive = true
         )
     }
@@ -322,12 +325,12 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.nav_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -346,29 +349,29 @@ fun SettingsScreen(
         ) {
             // General Section
             item {
-                SectionHeader(title = "GENERAL", isFirst = true)
+                SectionHeader(title = stringResource(R.string.section_general), isFirst = true)
             }
             
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.AttachMoney,
-                        title = "Currency",
+                        title = stringResource(R.string.label_currency),
                         subtitle = "$currencyCode - $currencySymbol",
                         onClick = { showCurrencyDialog = true }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.Schedule,
-                        title = "Timezone",
+                        title = stringResource(R.string.label_timezone),
                         subtitle = java.util.TimeZone.getTimeZone(timezone).displayName,
                         onClick = { showTimezoneDialog = true }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItemWithSwitch(
                         icon = Icons.Outlined.AccessTime,
-                        title = "24-hour format",
-                        subtitle = if (use24HourFormat) "Using 24-hour time (14:00)" else "Using 12-hour time (2:00 PM)",
+                        title = stringResource(R.string.label_24_hour_format),
+                        subtitle = if (use24HourFormat) stringResource(R.string.template_using_24_hour) else stringResource(R.string.template_using_12_hour),
                         checked = use24HourFormat,
                         onCheckedChange = { viewModel.setUse24HourFormat(it) }
                     )
@@ -377,15 +380,15 @@ fun SettingsScreen(
             
             // Labels & Categories Section
             item {
-                SectionHeader(title = "LABELS & CATEGORIES")
+                SectionHeader(title = stringResource(R.string.section_labels_categories))
             }
             
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Label,
-                        title = "Manage Labels",
-                        subtitle = "Note labels, expense & income categories",
+                        title = stringResource(R.string.settings_manage_labels),
+                        subtitle = stringResource(R.string.settings_manage_labels_desc),
                         onClick = onNavigateToLabels
                     )
                 }
@@ -393,19 +396,19 @@ fun SettingsScreen(
             
             // Appearance Section
             item {
-                SectionHeader(title = "APPEARANCE")
+                SectionHeader(title = stringResource(R.string.section_appearance))
             }
             
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Palette,
-                        title = "Theme",
+                        title = stringResource(R.string.label_theme),
                         subtitle = when (themeMode) {
-                            ThemeMode.LIGHT -> "Light"
-                            ThemeMode.DARK -> "Dark"
-                            ThemeMode.AMOLED -> "AMOLED"
-                            ThemeMode.SYSTEM -> "System default"
+                            ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                            ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                            ThemeMode.AMOLED -> stringResource(R.string.theme_amoled)
+                            ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
                         },
                         onClick = { showThemeDialog = true }
                     )
@@ -414,15 +417,15 @@ fun SettingsScreen(
             
             // Data Management Section
             item {
-                SectionHeader(title = "DATA MANAGEMENT")
+                SectionHeader(title = stringResource(R.string.section_data_management))
             }
             
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Backup,
-                        title = "Backup Data",
-                        subtitle = "Export your data",
+                        title = stringResource(R.string.label_backup_data),
+                        subtitle = stringResource(R.string.settings_export_data),
                         onClick = {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 viewModel.backupData()
@@ -434,15 +437,15 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.Restore,
-                        title = "Restore Data",
-                        subtitle = "Import from backup",
+                        title = stringResource(R.string.label_restore_data),
+                        subtitle = stringResource(R.string.settings_import_backup),
                         onClick = { filePicker.launch(arrayOf("application/json")) }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.DeleteForever,
-                        title = "Empty Trash",
-                        subtitle = "Permanently delete trashed notes",
+                        title = stringResource(R.string.dialog_empty_trash),
+                        subtitle = stringResource(R.string.settings_delete_trash),
                         onClick = { showEmptyTrashDialog = true },
                         isDestructive = true
                     )
@@ -451,49 +454,45 @@ fun SettingsScreen(
             
             // About Section
             item {
-                SectionHeader(title = "ABOUT")
+                SectionHeader(title = stringResource(R.string.section_about))
             }
             
             item {
                 SettingsCard {
                     SettingsItem(
                         icon = Icons.Outlined.Info,
-                        title = "Version",
+                        title = stringResource(R.string.label_version),
                         subtitle = appVersion,
                         onClick = { }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.Public,
-                        title = "About app",
-                        subtitle = "Visit the github repository",
+                        title = stringResource(R.string.settings_about_app),
+                        subtitle = stringResource(R.string.settings_about_app_desc),
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.NewReleases,
-                        title = "Latest Release",
-                        subtitle = "Check for latest release",
+                        title = stringResource(R.string.settings_latest_release),
+                        subtitle = stringResource(R.string.settings_latest_release_desc),
                         onClick = { uriHandler.openUri("https://github.com/allubie/NANA/releases") }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.BugReport,
-                        title = "Report a Bug",
-                        subtitle = "Send feedback or report issues",
+                        title = stringResource(R.string.settings_report_bug),
+                        subtitle = stringResource(R.string.settings_report_bug_desc),
                         onClick = {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-                                data = android.net.Uri.parse("mailto:istiaque.ahmed@outlook.sa")
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Nana Bug Report (v$appVersion)")
-                            }
-                            context.startActivity(intent)
+                            com.allubie.nana.util.BugReportUtils.sendBugReportWithLogs(context, appVersion)
                         }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItem(
                         icon = Icons.Outlined.Description,
-                        title = "Licenses",
-                        subtitle = "Open source licenses",
+                        title = stringResource(R.string.label_licenses),
+                        subtitle = stringResource(R.string.settings_open_source),
                         onClick = { showLicensesDialog = true }
                     )
                 }

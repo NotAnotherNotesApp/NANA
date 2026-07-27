@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -37,6 +38,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.data.model.ChecklistItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,9 +50,15 @@ fun ChecklistEditorScreen(
     onNavigateBack: () -> Unit,
     viewModel: ChecklistEditorViewModel = viewModel(factory = ChecklistEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var newItemText by remember { mutableStateOf("") }
     val newItemFocusRequester = remember { FocusRequester() }
+    
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collectLatest {
+            onNavigateBack()
+        }
+    }
     
     LaunchedEffect(noteId) {
         if (noteId != null && noteId > 0) {
@@ -92,7 +102,7 @@ fun ChecklistEditorScreen(
                             Box {
                                 if (uiState.title.isEmpty()) {
                                     Text(
-                                        text = "Checklist Title",
+                                        text = stringResource(R.string.hint_checklist_title),
                                         style = TextStyle(
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
@@ -118,7 +128,6 @@ fun ChecklistEditorScreen(
                     Button(
                         onClick = {
                             viewModel.saveChecklist()
-                            onNavigateBack()
                         },
                         shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -128,7 +137,7 @@ fun ChecklistEditorScreen(
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
-                            text = "Done",
+                            text = stringResource(R.string.action_done),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -221,7 +230,7 @@ fun ChecklistEditorScreen(
                                     ) {
                                         if (newItemText.isEmpty()) {
                                             Text(
-                                                text = "Add a new item...",
+                                                text = stringResource(R.string.hint_add_new_item),
                                                 style = TextStyle(
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.Medium,
@@ -255,7 +264,7 @@ fun ChecklistEditorScreen(
                                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                             )
                             Text(
-                                text = "${checkedItems.size} completed",
+                                text = stringResource(R.string.template_completed, checkedItems.size),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 16.dp)

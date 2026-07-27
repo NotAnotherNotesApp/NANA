@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.TimeZone
 
 class NanaApplication : Application() {
@@ -52,8 +53,8 @@ class NanaApplication : Application() {
         // Create notification channels
         NotificationHelper.createNotificationChannels(this)
         
-        // Restore saved timezone
-        applicationScope.launch {
+        // Restore saved timezone synchronously to ensure correct time display from first frame
+        runBlocking(Dispatchers.IO) {
             val savedTimezone = preferencesManager.timezone.first()
             TimeZone.setDefault(TimeZone.getTimeZone(savedTimezone))
         }

@@ -15,6 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.data.model.Note
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,12 +27,12 @@ fun NotesArchiveScreen(
     onNavigateToEditor: (Long) -> Unit,
     viewModel: NotesArchiveViewModel = viewModel(factory = NotesArchiveViewModel.Factory)
 ) {
-    val notes by viewModel.archivedNotes.collectAsState(initial = emptyList())
+    val notes by viewModel.archivedNotes.collectAsStateWithLifecycle(initialValue = emptyList())
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Archive") },
+                title = { Text(stringResource(R.string.title_archive)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -60,12 +63,12 @@ fun NotesArchiveScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "No archived notes",
+                        text = stringResource(R.string.empty_archive),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = "Archived notes will appear here",
+                        text = stringResource(R.string.empty_archive_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     )

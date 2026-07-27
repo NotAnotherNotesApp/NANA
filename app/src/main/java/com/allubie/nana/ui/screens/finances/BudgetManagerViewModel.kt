@@ -8,10 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.BudgetDao
-import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
+import com.allubie.nana.data.repository.TransactionRepository
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.flow.*
@@ -19,79 +18,81 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class BudgetManagerViewModel(
-    private val budgetDao: BudgetDao,
-    private val transactionDao: TransactionDao,
+    private val transactionRepository: TransactionRepository,
     private val preferencesManager: PreferencesManager,
     private val application: NanaApplication
 ) : ViewModel() {
     
+    data class BudgetManagerUiState(
+        val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH),
+        val currencySymbol: String = "$",
+        val totalBudgetLimit: Double = 0.0,
+        val budgets: List<Budget> = emptyList(),
+        val totalAllocated: Double = 0.0,
+        val totalBudget: Double = 0.0,
+        val categorySpending: Map<String, Double> = emptyMap(),
+        val totalSpent: Double = 0.0
+    )
+    
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance().get(Calendar.MONTH))
-    val selectedMonth: StateFlow<Int> = _selectedMonth.asStateFlow()
     
-    val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
+    private val _currencySymbol = preferencesManager.currencySymbol
     
-    // Total budget from preferences (user-set overall limit)
-    val totalBudgetLimit: StateFlow<Double> = preferencesManager.totalBudget
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    private val _totalBudgetLimit = preferencesManager.totalBudget
     
-    val budgets: StateFlow<List<Budget>> = budgetDao.getAllBudgets()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _budgets = transactionRepository.getAllBudgets()
     
-    // Sum of all category allocations
-    val totalAllocated: StateFlow<Double> = budgets.map { budgetList ->
+    private val _totalAllocated = _budgets.map { budgetList ->
         budgetList.sumOf { it.amount }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0.0
-    )
+    }
     
-    // Effective total budget: use user-set limit if > 0, otherwise sum of allocations
-    val totalBudget: StateFlow<Double> = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
+    private val _totalBudget = combine(_totalBudgetLimit, _totalAllocated) { limit, allocated ->
         if (limit > 0) limit else allocated
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0.0
-    )
+    }
     
-    // Calculate spending per category for the selected month
-    val categorySpending: StateFlow<Map<String, Double>> = combine(
-        transactionDao.getAllTransactions(),
-        _selectedMonth
-    ) { transactions, month ->
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val _categorySpending = _selectedMonth.flatMapLatest { month ->
         val calendar = Calendar.getInstance()
-        val year = calendar.get(Calendar.YEAR)
+        calendar.set(Calendar.MONTH, month)
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val startOfMonth = calendar.timeInMillis
         
-        // Filter transactions for selected month and calculate per category
-        transactions
-            .filter { transaction ->
-                transaction.type == TransactionType.EXPENSE &&
-                Calendar.getInstance().apply { timeInMillis = transaction.date }.let {
-                    it.get(Calendar.MONTH) == month && it.get(Calendar.YEAR) == year
-                }
-            }
-            .groupBy { it.category }
-            .mapValues { (_, categoryTransactions) ->
-                categoryTransactions.sumOf { it.amount }
-            }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyMap()
-    )
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+        calendar.set(Calendar.HOUR_OF_DAY, 23)
+        calendar.set(Calendar.MINUTE, 59)
+        calendar.set(Calendar.SECOND, 59)
+        calendar.set(Calendar.MILLISECOND, 999)
+        val endOfMonth = calendar.timeInMillis
+        
+        transactionRepository.getCategorySpending(startOfMonth, endOfMonth)
+    }
     
-    val totalSpent: StateFlow<Double> = categorySpending.map { spending ->
+    private val _totalSpent = _categorySpending.map { spending ->
         spending.values.sum()
+    }
+    
+    val uiState: StateFlow<BudgetManagerUiState> = combine(
+        _selectedMonth, _currencySymbol, _totalBudgetLimit, _budgets,
+        _totalAllocated, _totalBudget, _categorySpending, _totalSpent
+    ) { args: Array<Any> ->
+        BudgetManagerUiState(
+            selectedMonth = args[0] as Int,
+            currencySymbol = args[1] as String,
+            totalBudgetLimit = args[2] as Double,
+            budgets = (args[3] as List<*>).filterIsInstance<Budget>(),
+            totalAllocated = args[4] as Double,
+            totalBudget = args[5] as Double,
+            categorySpending = args[6] as Map<String, Double>,
+            totalSpent = args[7] as Double
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0.0
+        initialValue = BudgetManagerUiState()
     )
     
     fun selectMonth(month: Int) {
@@ -107,19 +108,19 @@ class BudgetManagerViewModel(
                 startDate = System.currentTimeMillis(),
                 iconName = iconName
             )
-            budgetDao.insertBudget(budget)
+            transactionRepository.insertBudget(budget)
         }
     }
     
     fun updateBudget(budget: Budget) {
         viewModelScope.launch {
-            budgetDao.updateBudget(budget)
+            transactionRepository.updateBudget(budget)
         }
     }
     
     fun deleteBudget(budget: Budget) {
         viewModelScope.launch {
-            budgetDao.deleteBudget(budget)
+            transactionRepository.deleteBudget(budget)
         }
     }
     
@@ -135,9 +136,12 @@ class BudgetManagerViewModel(
             initializer {
                 val application = (this[APPLICATION_KEY] as NanaApplication)
                 val database = application.database
+                val transactionRepository = TransactionRepository(
+                    database.transactionDao(),
+                    database.budgetDao()
+                )
                 BudgetManagerViewModel(
-                    budgetDao = database.budgetDao(),
-                    transactionDao = database.transactionDao(),
+                    transactionRepository = transactionRepository,
                     preferencesManager = application.preferencesManager,
                     application = application
                 )

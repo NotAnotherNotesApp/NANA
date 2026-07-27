@@ -8,15 +8,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
-import com.allubie.nana.data.dao.BudgetDao
-import com.allubie.nana.data.dao.LabelDao
-import com.allubie.nana.data.dao.TransactionDao
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
+import com.allubie.nana.data.repository.TransactionRepository
 import com.allubie.nana.widget.requestBudgetWidgetRefresh
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,9 +39,8 @@ data class TransactionEditorUiState(
 )
 
 class TransactionEditorViewModel(
-    private val transactionDao: TransactionDao,
-    private val budgetDao: BudgetDao,
-    private val labelDao: LabelDao,
+    private val transactionRepository: TransactionRepository,
+    private val labelRepository: LabelRepository,
     private val preferencesManager: PreferencesManager,
     private val application: NanaApplication
 ) : ViewModel() {
@@ -61,10 +58,10 @@ class TransactionEditorViewModel(
     val customBudgets: StateFlow<List<Budget>> = _customBudgets.asStateFlow()
     
     // Labels from database
-    val expenseLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.EXPENSE)
+    val expenseLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.EXPENSE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
-    val incomeLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.INCOME)
+    val incomeLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.INCOME)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
@@ -73,7 +70,6 @@ class TransactionEditorViewModel(
     val currencyCode: StateFlow<String> = preferencesManager.currencyCode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "USD")
     
-    private val labelRepository = LabelRepository(labelDao)
 
     init {
         loadCustomBudgets()
@@ -88,7 +84,7 @@ class TransactionEditorViewModel(
     
     private fun loadCustomBudgets() {
         viewModelScope.launch {
-            budgetDao.getAllBudgets().collect { budgets ->
+            transactionRepository.getAllBudgets().collect { budgets ->
                 // Filter for custom categories (non-empty category that's not a preset)
                 val presetCategories = listOf("Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Education", "Other", "")
                 _customBudgets.value = budgets.filter { it.category !in presetCategories }
@@ -99,7 +95,7 @@ class TransactionEditorViewModel(
     fun loadTransaction(transactionId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val transaction = transactionDao.getTransactionById(transactionId)
+            val transaction = transactionRepository.getTransactionById(transactionId)
             if (transaction != null) {
                 _uiState.update {
                     it.copy(
@@ -177,7 +173,7 @@ class TransactionEditorViewModel(
                 date = state.date,
                 updatedAt = System.currentTimeMillis()
             )
-            transactionDao.insertTransaction(transaction)
+            transactionRepository.insertTransaction(transaction)
             requestBudgetWidgetRefresh(application)
             _saveComplete.emit(true)
         }
@@ -186,7 +182,7 @@ class TransactionEditorViewModel(
     fun deleteTransaction() {
         viewModelScope.launch {
             _uiState.value.id?.let { id ->
-                transactionDao.deleteTransactionById(id)
+                transactionRepository.deleteTransactionById(id)
                 requestBudgetWidgetRefresh(application)
             }
         }
@@ -196,10 +192,14 @@ class TransactionEditorViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as NanaApplication
-                TransactionEditorViewModel(
+                val transactionRepository = TransactionRepository(
                     application.database.transactionDao(),
-                    application.database.budgetDao(),
-                    application.database.labelDao(),
+                    application.database.budgetDao()
+                )
+                val labelRepository = LabelRepository(application.database.labelDao())
+                TransactionEditorViewModel(
+                    transactionRepository,
+                    labelRepository,
                     application.preferencesManager,
                     application
                 )

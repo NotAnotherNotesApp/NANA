@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import com.allubie.nana.widget.NanaWidgetColorProviders
+import com.allubie.nana.util.stripHtml
 
 class RecentNotesWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -146,9 +147,7 @@ private fun NoteCard(context: Context, note: Note) {
     }
 }
 
-private fun stripHtml(html: String): String {
-    return Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT).toString().trim()
-}
+
 
 class RecentNotesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget = RecentNotesWidget()

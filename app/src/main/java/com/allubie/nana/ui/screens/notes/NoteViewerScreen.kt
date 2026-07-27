@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.allubie.nana.data.model.NoteImage
 import com.allubie.nana.ui.components.NanaConfirmationDialog
@@ -42,6 +43,10 @@ import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import com.mohamedrejeb.richeditor.ui.material3.RichText
 import java.text.SimpleDateFormat
 import java.util.*
+import com.allubie.nana.util.stripHtml
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
+import android.content.Context
 
 private fun getLabelIcon(label: String): ImageVector {
     return when (label.lowercase()) {
@@ -59,20 +64,20 @@ private fun getLabelIcon(label: String): ImageVector {
     }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
+private fun formatTimestamp(timestamp: Long, context: Context): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000} min ago"
+        diff < 60_000 -> context.getString(R.string.status_edited_just_now)
+        diff < 3600_000 -> context.getString(R.string.time_min_ago, diff / 60_000)
         diff < 86400_000 -> {
             val hours = diff / 3600_000
-            if (hours == 1L) "1 hour ago" else "$hours hours ago"
+            if (hours == 1L) context.getString(R.string.time_one_hour_ago) else context.getString(R.string.time_hours_ago, hours)
         }
         diff < 604800_000 -> {
             val days = diff / 86400_000
-            if (days == 1L) "Yesterday" else "$days days ago"
+            if (days == 1L) context.getString(R.string.time_yesterday) else context.getString(R.string.time_days_ago, days)
         }
         else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(timestamp))
     }
@@ -86,7 +91,7 @@ fun NoteViewerScreen(
     onNavigateToEditor: () -> Unit,
     viewModel: NoteEditorViewModel = viewModel(factory = NoteEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -100,22 +105,17 @@ fun NoteViewerScreen(
                 appendLine()
             }
             // Strip HTML tags for plain text sharing
-            val plainContent = uiState.content
-                .replace(Regex("<[^>]*>"), "")
-                .replace("&nbsp;", " ")
-                .replace("&amp;", "&")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
+            val plainContent = stripHtml(uiState.content)
             append(plainContent)
         }
         
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, shareText)
-            putExtra(Intent.EXTRA_SUBJECT, uiState.title.ifEmpty { "Shared Note" })
+            putExtra(Intent.EXTRA_SUBJECT, uiState.title.ifEmpty { context.getString(R.string.default_share_subject) })
             type = "text/plain"
         }
-        val shareIntent = Intent.createChooser(sendIntent, "Share Note")
+        val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_note_chooser))
         context.startActivity(shareIntent)
     }
     
@@ -154,7 +154,7 @@ fun NoteViewerScreen(
                     IconButton(onClick = { shareNote() }) {
                         Icon(
                             imageVector = Icons.Outlined.Share,
-                            contentDescription = "Share"
+                            contentDescription = stringResource(R.string.cd_share)
                         )
                     }
                     Box {
@@ -171,7 +171,7 @@ fun NoteViewerScreen(
                             // Pin/Unpin option
                             DropdownMenuItem(
                                 text = { 
-                                    Text(if (uiState.isPinned) "Unpin" else "Pin") 
+                                    Text(if (uiState.isPinned) stringResource(R.string.menu_unpin_short) else stringResource(R.string.menu_pin)) 
                                 },
                                 onClick = {
                                     viewModel.togglePin()
@@ -187,15 +187,10 @@ fun NoteViewerScreen(
                             HorizontalDivider()
                             // Copy content option
                             DropdownMenuItem(
-                                text = { Text("Copy text") },
+                                text = { Text(stringResource(R.string.menu_copy_text)) },
                                 onClick = {
                                     val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
-                                    val plainContent = uiState.content
-                                        .replace(Regex("<[^>]*>"), "")
-                                        .replace("&nbsp;", " ")
-                                        .replace("&amp;", "&")
-                                        .replace("&lt;", "<")
-                                        .replace("&gt;", ">")
+                                    val plainContent = stripHtml(uiState.content)
                                     val fullText = if (uiState.title.isNotEmpty()) {
                                         "${uiState.title}\n\n$plainContent"
                                     } else {
@@ -267,12 +262,12 @@ fun NoteViewerScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit",
+                    contentDescription = stringResource(R.string.cd_edit),
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Edit Note",
+                    text = stringResource(R.string.menu_edit_note),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -320,7 +315,7 @@ fun NoteViewerScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = "Edited ${formatTimestamp(uiState.updatedAt)}",
+                            text = stringResource(R.string.template_edited, formatTimestamp(uiState.updatedAt, context)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = textSecondary
                         )
@@ -406,12 +401,12 @@ fun NoteViewerScreen(
                     onNavigateBack()
                 }
             },
-            title = "Delete this note?",
+            title = stringResource(R.string.dialog_delete_note),
             message = if (uiState.title.isNotEmpty())
-                "\"${uiState.title}\" will be moved to trash."
+                "\"${uiState.title}\" ${stringResource(R.string.dialog_msg_delete_note)}"
             else
-                "This note will be moved to trash.",
-            confirmText = "Delete",
+                stringResource(R.string.dialog_msg_delete_note_empty),
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -443,7 +438,7 @@ private fun NoteImageCard(
         Box {
             AsyncImage(
                 model = image.imagePath,
-                contentDescription = "Note image",
+                contentDescription = stringResource(R.string.cd_note_image),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -478,7 +473,7 @@ private fun NoteImageCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.ZoomOutMap,
-                    contentDescription = "Expand",
+                    contentDescription = stringResource(R.string.cd_expand),
                     tint = Color.White,
                     modifier = Modifier
                         .padding(8.dp)
@@ -488,7 +483,7 @@ private fun NoteImageCard(
             
             // Caption at bottom
             Text(
-                text = "Figure ${image.position + 1}",
+                text = stringResource(R.string.template_figure, image.position + 1),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = Color.White,
@@ -518,7 +513,7 @@ private fun FullscreenImageViewer(
     ) {
         AsyncImage(
             model = image.imagePath,
-            contentDescription = "Full screen image",
+            contentDescription = stringResource(R.string.cd_full_screen_image),
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
@@ -555,7 +550,7 @@ private fun FullscreenImageViewer(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.cd_close),
                 tint = Color.White,
                 modifier = Modifier
                     .padding(12.dp)
@@ -565,7 +560,7 @@ private fun FullscreenImageViewer(
         
         // Caption at bottom
         Text(
-            text = "Figure ${image.position + 1}",
+            text = stringResource(R.string.template_figure, image.position + 1),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
             color = Color.White,

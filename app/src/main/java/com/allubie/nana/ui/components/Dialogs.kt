@@ -13,15 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/**
- * Material 3 confirmation dialog for destructive and non-destructive actions.
- *
- * Follows M3 guidelines:
- * - Optional hero icon above title
- * - Dismiss button on the left, confirm on the right
- * - Destructive confirm button uses error color
- * - Shape: RoundedCornerShape(28.dp) (M3 default)
- */
+
 @Composable
 fun NanaConfirmationDialog(
     onDismiss: () -> Unit,
@@ -70,11 +62,6 @@ fun NanaConfirmationDialog(
     )
 }
 
-/**
- * Material 3 single-selection dialog with radio buttons.
- *
- * Follows M3 guidelines for simple dialogs with list items.
- */
 @Composable
 fun <T> NanaSelectionDialog(
     onDismiss: () -> Unit,
@@ -120,11 +107,6 @@ fun <T> NanaSelectionDialog(
     )
 }
 
-/**
- * Material 3 searchable list dialog with radio-button items.
- *
- * Includes an OutlinedTextField for filtering and a scrollable list below.
- */
 @Composable
 fun <T> NanaSearchableListDialog(
     onDismiss: () -> Unit,

@@ -24,6 +24,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -39,8 +43,8 @@ fun ScheduleEditorScreen(
     onNavigateBack: () -> Unit,
     viewModel: ScheduleEditorViewModel = viewModel(factory = ScheduleEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val use24HourFormat by viewModel.use24HourFormat.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val use24HourFormat by viewModel.use24HourFormat.collectAsStateWithLifecycle()
     
     // Picker states
     var showStartDatePicker by remember { mutableStateOf(false) }
@@ -49,6 +53,12 @@ fun ScheduleEditorScreen(
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showRepeatPicker by remember { mutableStateOf(false) }
     var showReminderPicker by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collectLatest {
+            onNavigateBack()
+        }
+    }
     
     val startDatePickerState = rememberDatePickerState(
         initialSelectedDateMillis = uiState.startTime
@@ -114,7 +124,7 @@ fun ScheduleEditorScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (eventId == null) "New Event" else "Edit Event",
+                        text = if (eventId == null) stringResource(R.string.title_new_event) else stringResource(R.string.title_edit_event),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -123,7 +133,7 @@ fun ScheduleEditorScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_arrow_back)
                         )
                     }
                 },
@@ -131,11 +141,10 @@ fun ScheduleEditorScreen(
                     TextButton(
                         onClick = {
                             viewModel.saveEvent()
-                            onNavigateBack()
                         }
                     ) {
                         Text(
-                            text = "Save",
+                            text = stringResource(R.string.action_save),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
@@ -165,7 +174,7 @@ fun ScheduleEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Add Title",
+                            text = stringResource(R.string.hint_add_title),
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -214,7 +223,7 @@ fun ScheduleEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Add Description",
+                            text = stringResource(R.string.hint_add_description),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
                     },
@@ -263,7 +272,7 @@ fun ScheduleEditorScreen(
                                 )
                             }
                             Text(
-                                text = "All-day",
+                                text = stringResource(R.string.label_all_day),
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -285,7 +294,7 @@ fun ScheduleEditorScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Starts",
+                            text = stringResource(R.string.label_starts),
                             fontWeight = FontWeight.Medium
                         )
                         Surface(
@@ -330,7 +339,7 @@ fun ScheduleEditorScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Ends",
+                            text = stringResource(R.string.label_ends),
                             fontWeight = FontWeight.Medium
                         )
                         Surface(
@@ -391,7 +400,7 @@ fun ScheduleEditorScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Repeat",
+                                text = stringResource(R.string.label_repeat),
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -400,7 +409,7 @@ fun ScheduleEditorScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = uiState.recurrenceRule ?: "Never",
+                                text = uiState.recurrenceRule ?: stringResource(R.string.status_never),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
@@ -434,7 +443,7 @@ fun ScheduleEditorScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Reminders",
+                                text = stringResource(R.string.label_reminders),
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -443,7 +452,7 @@ fun ScheduleEditorScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "${uiState.reminderMinutes.firstOrNull() ?: 10} min before",
+                                text = stringResource(R.string.template_min_before, uiState.reminderMinutes.firstOrNull() ?: 10),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
@@ -477,7 +486,7 @@ fun ScheduleEditorScreen(
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = {
                                 Text(
-                                    text = "Add Location",
+                                    text = stringResource(R.string.hint_add_location),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                 )
                             },
@@ -519,12 +528,12 @@ fun ScheduleEditorScreen(
                         showStartTimePicker = true
                     }
                 ) {
-                    Text("Next")
+                    Text(stringResource(R.string.action_next))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         ) {
@@ -536,7 +545,7 @@ fun ScheduleEditorScreen(
     if (showStartTimePicker) {
         AlertDialog(
             onDismissRequest = { showStartTimePicker = false },
-            title = { Text("Select Start Time", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_select_start_time), fontWeight = FontWeight.Bold) },
             text = {
                 TimePicker(state = startTimePickerState)
             },
@@ -552,12 +561,12 @@ fun ScheduleEditorScreen(
                         showStartTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -586,12 +595,12 @@ fun ScheduleEditorScreen(
                         showEndTimePicker = true
                     }
                 ) {
-                    Text("Next")
+                    Text(stringResource(R.string.action_next))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         ) {
@@ -603,7 +612,7 @@ fun ScheduleEditorScreen(
     if (showEndTimePicker) {
         AlertDialog(
             onDismissRequest = { showEndTimePicker = false },
-            title = { Text("Select End Time", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_select_end_time), fontWeight = FontWeight.Bold) },
             text = {
                 TimePicker(state = endTimePickerState)
             },
@@ -620,12 +629,12 @@ fun ScheduleEditorScreen(
                         showEndTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -636,7 +645,7 @@ fun ScheduleEditorScreen(
         val repeatOptions = listOf("Never", "Daily", "Weekly", "Monthly", "Yearly")
         AlertDialog(
             onDismissRequest = { showRepeatPicker = false },
-            title = { Text("Repeat", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_repeat), fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -681,7 +690,7 @@ fun ScheduleEditorScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showRepeatPicker = false }) {
-                    Text("Done")
+                    Text(stringResource(R.string.action_done))
                 }
             }
         )
@@ -700,7 +709,7 @@ fun ScheduleEditorScreen(
         )
         AlertDialog(
             onDismissRequest = { showReminderPicker = false },
-            title = { Text("Reminder", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_reminder), fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -750,7 +759,7 @@ fun ScheduleEditorScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showReminderPicker = false }) {
-                    Text("Done")
+                    Text(stringResource(R.string.action_done))
                 }
             }
         )

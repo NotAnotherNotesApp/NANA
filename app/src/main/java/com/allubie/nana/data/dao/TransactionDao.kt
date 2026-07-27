@@ -6,6 +6,11 @@ import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 
+data class CategoryTotal(
+    val category: String,
+    val total: Double
+)
+
 @Dao
 interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY date DESC")
@@ -31,6 +36,9 @@ interface TransactionDao {
     
     @Query("SELECT SUM(amount) FROM transactions WHERE type = :type AND category = :category AND date >= :startDate AND date < :endDate")
     suspend fun getTotalByCategoryInRange(type: TransactionType, category: String, startDate: Long, endDate: Long): Double?
+    
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE type = :type AND date >= :startDate AND date < :endDate GROUP BY category")
+    fun getCategoryTotalsInRange(type: TransactionType, startDate: Long, endDate: Long): Flow<List<CategoryTotal>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: Transaction): Long

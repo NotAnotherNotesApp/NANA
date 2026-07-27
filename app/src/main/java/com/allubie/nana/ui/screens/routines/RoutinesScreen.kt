@@ -8,9 +8,11 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -37,9 +39,12 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.model.RoutineCompletion
 import com.allubie.nana.data.model.RoutineType
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import java.text.SimpleDateFormat
 import java.util.*
@@ -72,13 +77,14 @@ fun RoutinesScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: RoutinesViewModel = viewModel(factory = RoutinesViewModel.Factory)
 ) {
-    val routines by viewModel.routines.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val completedToday by viewModel.completedTodayIds.collectAsState()
-    val todayCompletions by viewModel.todayCompletions.collectAsState()
-    val timerState by viewModel.timerState.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
-    val use24HourFormat by viewModel.use24HourFormat.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val routines = uiState.routines
+    val isLoading = uiState.isLoading
+    val completedToday = uiState.completedTodayIds
+    val todayCompletions = uiState.todayCompletions
+    val timerState = uiState.timerState
+    val selectedDate = uiState.selectedDate
+    val use24HourFormat = uiState.use24HourFormat
     
     val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
     val dayNumberFormat = SimpleDateFormat("d", Locale.getDefault())
@@ -110,12 +116,15 @@ fun RoutinesScreen(
         }
     }
     
+    val greetingMorning = stringResource(R.string.greeting_morning)
+    val greetingAfternoon = stringResource(R.string.greeting_afternoon)
+    val greetingEvening = stringResource(R.string.greeting_evening)
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when {
-            hour < 12 -> "Good Morning"
-            hour < 17 -> "Good Afternoon"
-            else -> "Good Evening"
+            hour < 12 -> greetingMorning
+            hour < 17 -> greetingAfternoon
+            else -> greetingEvening
         }
     }
     
@@ -184,7 +193,7 @@ fun RoutinesScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Routines",
+                            text = stringResource(R.string.nav_routines),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -194,7 +203,7 @@ fun RoutinesScreen(
                     // Today button
                     TextButton(onClick = { viewModel.selectDate(Date()) }) {
                         Text(
-                            text = "Today",
+                            text = stringResource(R.string.status_today),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -202,7 +211,7 @@ fun RoutinesScreen(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.cd_more_options)
                             )
                         }
                         DropdownMenu(
@@ -210,7 +219,7 @@ fun RoutinesScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Statistics") },
+                                text = { Text(stringResource(R.string.menu_statistics)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToStatistics()
@@ -224,7 +233,7 @@ fun RoutinesScreen(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text(stringResource(R.string.menu_settings)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
@@ -254,7 +263,7 @@ fun RoutinesScreen(
             ) {
                 Icon(
                     Icons.Default.Add, 
-                    contentDescription = "Add Routine",
+                    contentDescription = stringResource(R.string.cd_add_routine),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -314,7 +323,7 @@ fun RoutinesScreen(
             if (morningRoutines.isNotEmpty()) {
                 item {
                     Text(
-                        text = "MORNING",
+                        text = stringResource(R.string.section_morning),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -348,7 +357,7 @@ fun RoutinesScreen(
             if (afternoonRoutines.isNotEmpty()) {
                 item {
                     Text(
-                        text = "AFTERNOON",
+                        text = stringResource(R.string.section_afternoon),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -382,7 +391,7 @@ fun RoutinesScreen(
             if (eveningRoutines.isNotEmpty()) {
                 item {
                     Text(
-                        text = "EVENING",
+                        text = stringResource(R.string.section_evening),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -431,13 +440,13 @@ fun RoutinesScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "No routines yet",
+                                text = stringResource(R.string.empty_routines),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tap + to create your first habit",
+                                text = stringResource(R.string.empty_routines_hint),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
@@ -533,15 +542,16 @@ private fun ProgressCard(
 ) {
     val isToday = isSameDay(selectedDate, Date())
     val dateLabel = if (isToday) {
-        "Today's Progress"
+        stringResource(R.string.today_progress)
     } else {
         val dayName = SimpleDateFormat("EEEE", Locale.getDefault()).format(selectedDate)
-        "$dayName's Progress"
+        stringResource(R.string.template_day_progress, dayName)
     }
-    val habitsSuffix = if (isToday) "today" else "on this day"
+    val habitsSuffix = if (isToday) stringResource(R.string.template_habits_today) else stringResource(R.string.template_habits_on_this_day)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
             .padding(16.dp),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surface,
@@ -580,9 +590,7 @@ private fun ProgressCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = buildString {
-                            append("You've completed ")
-                        },
+                        text = stringResource(R.string.you_ve_completed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -594,7 +602,7 @@ private fun ProgressCard(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = " of your habits $habitsSuffix.",
+                            text = habitsSuffix,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -612,7 +620,7 @@ private fun ProgressCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "View Stats",
+                                text = stringResource(R.string.action_view_stats),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
@@ -701,9 +709,9 @@ private fun RoutineCard(
                 onDelete()
                 showDeleteConfirmation = false
             },
-            title = "Delete this routine?",
-            message = "\"${routine.title}\" will be permanently deleted. This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(R.string.dialog_delete_routine),
+            message = stringResource(R.string.template_delete_confirm, routine.title),
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -713,6 +721,7 @@ private fun RoutineCard(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {}
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .combinedClickable(
@@ -743,7 +752,7 @@ private fun RoutineCard(
                 if (routine.isPinned) {
                     Icon(
                         imageVector = NanaIcons.KeepFilled,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.cd_pinned),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .size(16.dp)

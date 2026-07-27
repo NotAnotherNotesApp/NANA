@@ -243,7 +243,7 @@ class BudgetStatusWidget : GlanceAppWidget() {
     }
 
     private fun formatAmount(amount: Double, symbol: String): String {
-        return if (amount == amount.toLong().toDouble()) {
+        return if (amount % 1.0 == 0.0) {
             "$symbol${amount.toLong()}"
         } else {
             "$symbol${"%.2f".format(amount)}"

@@ -51,12 +51,6 @@ import kotlinx.coroutines.withContext
 
 private val ChecklistItemIdKey = ActionParameters.Key<Long>("checklist_item_id")
 
-/**
- * A checklist home screen widget following the Android platform-samples reference pattern.
- *
- * Uses [SizeMode.Exact] for precise rendering control, [Scaffold] + [TitleBar] for proper
- * Material 3 widget structure, and reactive [collectAsState] for live data updates.
- */
 class ChecklistWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Exact
 

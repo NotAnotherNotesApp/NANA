@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.filled.Add
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.Transaction
 import com.allubie.nana.data.model.TransactionType
@@ -41,6 +43,8 @@ import com.allubie.nana.util.CurrencyFormatter
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,16 +56,17 @@ fun FinancesScreen(
     onNavigateToSettings: () -> Unit,
     viewModel: FinancesViewModel = viewModel(factory = FinancesViewModel.Factory)
 ) {
-    val transactions by viewModel.filteredTransactions.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState()
-    val totalIncome by viewModel.totalIncome.collectAsState()
-    val totalExpenses by viewModel.totalExpenses.collectAsState()
-    val selectedMonth by viewModel.selectedMonth.collectAsState()
-    val currencySymbol by viewModel.currencySymbol.collectAsState()
-    val hasBudget by viewModel.hasBudget.collectAsState()
-    val totalBudget by viewModel.totalBudget.collectAsState()
-    val expenseLabels by viewModel.expenseLabels.collectAsState()
-    val incomeLabels by viewModel.incomeLabels.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val transactions = uiState.filteredTransactions
+    val isLoading = uiState.isLoading
+    val totalIncome = uiState.totalIncome
+    val totalExpenses = uiState.totalExpenses
+    val selectedMonth = uiState.selectedMonth
+    val currencySymbol = uiState.currencySymbol
+    val hasBudget = uiState.hasBudget
+    val totalBudget = uiState.totalBudget
+    val expenseLabels = uiState.expenseLabels
+    val incomeLabels = uiState.incomeLabels
     
     // Create label lookup map for quick access
     val labelMap = remember(expenseLabels, incomeLabels) {
@@ -74,7 +79,7 @@ fun FinancesScreen(
     val hasEffectiveBudget = hasBudget && totalBudget > 0
     val balance = totalIncome - totalExpenses
     val displayedTotal = if (hasEffectiveBudget) totalBudget - totalExpenses else balance
-    val totalLabel = if (hasEffectiveBudget) "Remaining Budget" else "Total Balance"
+    val totalLabel = if (hasEffectiveBudget) stringResource(R.string.status_remaining_budget) else stringResource(R.string.section_total_balance)
     val isOnTrack = if (hasEffectiveBudget) displayedTotal >= 0 else balance >= 0
     val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val dayFormat = SimpleDateFormat("MMM d", Locale.getDefault())
@@ -91,13 +96,13 @@ fun FinancesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Finances") },
+                title = { Text(stringResource(R.string.nav_finances)) },
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.cd_more_options)
                             )
                         }
                         DropdownMenu(
@@ -105,7 +110,7 @@ fun FinancesScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Budget Manager") },
+                                text = { Text(stringResource(R.string.title_budget_manager)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToBudgetManager()
@@ -119,7 +124,7 @@ fun FinancesScreen(
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text(stringResource(R.string.menu_settings)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
@@ -149,7 +154,7 @@ fun FinancesScreen(
             ) {
                 Icon(
                     Icons.Default.Add, 
-                    contentDescription = "Add Transaction",
+                    contentDescription = stringResource(R.string.cd_add_transaction),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -251,7 +256,7 @@ fun FinancesScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isOnTrack) "On track" else "Over budget",
+                                text = if (isOnTrack) stringResource(R.string.status_on_track) else stringResource(R.string.status_over_budget),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (isOnTrack) MaterialTheme.colorScheme.primary else Expense,
                                 fontWeight = FontWeight.SemiBold
@@ -270,14 +275,14 @@ fun FinancesScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FinanceCard(
-                        title = "Income",
+                        title = stringResource(R.string.label_income),
                         amount = formatCurrency(totalIncome),
                         icon = Icons.Outlined.ArrowDownward,
                         isIncome = true,
                         modifier = Modifier.weight(1f)
                     )
                     FinanceCard(
-                        title = "Expenses",
+                        title = stringResource(R.string.status_expenses),
                         amount = formatCurrency(totalExpenses),
                         icon = Icons.Outlined.ArrowUpward,
                         isIncome = false,
@@ -325,13 +330,13 @@ fun FinancesScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Set up your budget",
+                                    text = stringResource(R.string.status_setup_budget),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Track spending and reach your goals",
+                                    text = stringResource(R.string.status_track_spending),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -358,7 +363,7 @@ fun FinancesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "RECENT TRANSACTIONS",
+                        text = stringResource(R.string.section_recent_transactions),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -366,7 +371,7 @@ fun FinancesScreen(
                     )
                     TextButton(onClick = onNavigateToOverview) {
                         Text(
-                            text = "Budget Overview",
+                            text = stringResource(R.string.action_budget_overview),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -400,13 +405,13 @@ fun FinancesScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "No transactions yet",
+                                text = stringResource(R.string.empty_transactions),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Tap + to add your first transaction",
+                                text = stringResource(R.string.empty_transactions_hint),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
@@ -452,7 +457,7 @@ private fun FinanceCard(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {},
         shape = RoundedCornerShape(24.dp),
         color = if (isIncome) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         border = if (!isIncome) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)) else null
@@ -556,12 +561,12 @@ private fun TransactionItem(
                 onDelete()
                 showDeleteConfirmation = false
             },
-            title = "Delete this transaction?",
+            title = stringResource(R.string.dialog_delete_transaction),
             message = if (transaction.title.isNotEmpty())
-                "\"${transaction.title}\" will be permanently deleted."
+                stringResource(R.string.dialog_msg_delete_transaction_named, transaction.title)
             else
-                "This transaction will be permanently deleted.",
-            confirmText = "Delete",
+                stringResource(R.string.dialog_msg_delete_transaction_unnamed),
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -571,6 +576,7 @@ private fun TransactionItem(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {}
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .combinedClickable(
@@ -581,7 +587,7 @@ private fun TransactionItem(
                     }
                 ),
             shape = RoundedCornerShape(24.dp),
-            color = CardSurfaceDark,
+            color = MaterialTheme.colorScheme.surfaceVariant,
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
         ) {
         Row(
@@ -639,7 +645,7 @@ private fun TransactionItem(
             offset = DpOffset(x = 8.dp, y = 0.dp)
         ) {
             DropdownMenuItem(
-                text = { Text("Edit") },
+                text = { Text(stringResource(R.string.action_edit)) },
                 onClick = {
                     showMenu = false
                     onClick()
@@ -653,7 +659,7 @@ private fun TransactionItem(
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                 onClick = {
                     showMenu = false
                     showDeleteConfirmation = true
@@ -686,7 +692,7 @@ private fun MonthYearPickerDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Month") },
+        title = { Text(stringResource(R.string.dialog_select_month)) },
         text = {
             Column {
                 // Year selector
@@ -696,7 +702,7 @@ private fun MonthYearPickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { selectedYear-- }) {
-                        Icon(Icons.Outlined.ChevronLeft, contentDescription = "Previous Year")
+                        Icon(Icons.Outlined.ChevronLeft, contentDescription = stringResource(R.string.cd_previous_year))
                     }
                     Text(
                         text = selectedYear.toString(),
@@ -704,7 +710,7 @@ private fun MonthYearPickerDialog(
                         fontWeight = FontWeight.Bold
                     )
                     IconButton(onClick = { selectedYear++ }) {
-                        Icon(Icons.Outlined.ChevronRight, contentDescription = "Next Year")
+                        Icon(Icons.Outlined.ChevronRight, contentDescription = stringResource(R.string.cd_next_year))
                     }
                 }
                 
@@ -751,12 +757,12 @@ private fun MonthYearPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedYear, selectedMonth) }) {
-                Text("OK")
+                Text(stringResource(R.string.action_ok))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )

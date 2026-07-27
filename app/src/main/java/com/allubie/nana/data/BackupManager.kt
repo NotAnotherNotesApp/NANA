@@ -49,17 +49,32 @@ class BackupManager(
     
     suspend fun exportBackup(): Result<File> = withContext(Dispatchers.IO) {
         try {
-            val notes = database.noteDao().getAllNotesSync()
-            val noteImages = database.noteImageDao().getAllImagesSync()
-            val checklistItems = database.checklistItemDao().getAllItemsSync()
-            val events = database.eventDao().getAllEventsSync()
-            val routines = database.routineDao().getAllRoutinesSync()
-            val routineCompletions = database.routineCompletionDao().getAllCompletionsSync()
-            val transactions = database.transactionDao().getAllTransactionsSync()
-            val budgets = database.budgetDao().getAllBudgetsSync()
-            val labels = database.labelDao().getAllLabelsSync()
+            // Read all data in a single transaction for a consistent snapshot
+            val backupData = database.withTransaction {
+                val notes = database.noteDao().getAllNotesSync()
+                val noteImages = database.noteImageDao().getAllImagesSync()
+                val checklistItems = database.checklistItemDao().getAllItemsSync()
+                val events = database.eventDao().getAllEventsSync()
+                val routines = database.routineDao().getAllRoutinesSync()
+                val routineCompletions = database.routineCompletionDao().getAllCompletionsSync()
+                val transactions = database.transactionDao().getAllTransactionsSync()
+                val budgets = database.budgetDao().getAllBudgetsSync()
+                val labels = database.labelDao().getAllLabelsSync()
+
+                BackupData(
+                    notes = notes,
+                    noteImages = noteImages,
+                    checklistItems = checklistItems,
+                    events = events,
+                    routines = routines,
+                    routineCompletions = routineCompletions,
+                    transactions = transactions,
+                    budgets = budgets,
+                    labels = labels
+                )
+            }
             
-            // Export preferences
+            // Export preferences (outside transaction — DataStore is separate)
             val prefs = BackupPreferences(
                 themeMode = preferencesManager.themeMode.first().name.lowercase(),
                 currencyCode = preferencesManager.currencyCode.first(),
@@ -67,21 +82,9 @@ class BackupManager(
                 timezone = preferencesManager.timezone.first(),
                 use24HourFormat = preferencesManager.use24HourFormat.first()
             )
+            val backupDataWithPrefs = backupData.copy(preferences = prefs)
             
-            val backupData = BackupData(
-                notes = notes,
-                noteImages = noteImages,
-                checklistItems = checklistItems,
-                events = events,
-                routines = routines,
-                routineCompletions = routineCompletions,
-                transactions = transactions,
-                budgets = budgets,
-                labels = labels,
-                preferences = prefs
-            )
-            
-            val json = gson.toJson(backupData)
+            val json = gson.toJson(backupDataWithPrefs)
             
             val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
             val fileName = "nana_backup_${dateFormat.format(Date())}.json"

@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.allubie.nana.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,8 +32,8 @@ fun ScheduleViewerScreen(
     onNavigateToEditor: () -> Unit,
     viewModel: ScheduleEditorViewModel = viewModel(factory = ScheduleEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val use24HourFormat by viewModel.use24HourFormat.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val use24HourFormat by viewModel.use24HourFormat.collectAsStateWithLifecycle()
     
     LaunchedEffect(eventId) {
         viewModel.loadEvent(eventId)
@@ -53,12 +56,13 @@ fun ScheduleViewerScreen(
     }
     
     // Parse recurrence rule for display
+    @Composable
     fun parseRecurrenceDisplay(): Pair<String, String?>? {
         val rule = uiState.recurrenceRule ?: return null
         if (rule.isEmpty()) return null
         
         val frequency = when {
-            rule.contains("FREQ=DAILY") -> "Daily"
+            rule.contains("FREQ=DAILY") -> stringResource(R.string.status_daily)
             rule.contains("FREQ=WEEKLY") -> {
                 val dayMatch = Regex("BYDAY=([A-Z,]+)").find(rule)
                 val days = dayMatch?.groupValues?.get(1) ?: ""
@@ -75,13 +79,13 @@ fun ScheduleViewerScreen(
                     }
                 }
                 if (dayNames.size == 1) {
-                    "Weekly on ${dayNames.first()}s"
+                    stringResource(R.string.template_weekly_on, "${dayNames.first()}s")
                 } else {
-                    "Weekly on ${dayNames.joinToString(", ")}"
+                    stringResource(R.string.template_weekly_on, dayNames.joinToString(", "))
                 }
             }
-            rule.contains("FREQ=MONTHLY") -> "Monthly"
-            rule.contains("FREQ=YEARLY") -> "Yearly"
+            rule.contains("FREQ=MONTHLY") -> stringResource(R.string.status_monthly)
+            rule.contains("FREQ=YEARLY") -> stringResource(R.string.status_yearly)
             else -> return null
         }
         
@@ -100,20 +104,21 @@ fun ScheduleViewerScreen(
             }
         }
         
-        return Pair(frequency, untilDate?.let { "Until $it" })
+        return Pair(frequency, untilDate?.let { stringResource(R.string.template_until, it) })
     }
     
     // Parse reminder minutes for display
+    @Composable
     fun parseReminderDisplay(): String? {
         if (uiState.reminderMinutes.isEmpty()) return null
         val minutes = uiState.reminderMinutes.firstOrNull() ?: return null
         return when {
-            minutes == 0 -> "At time of event"
-            minutes < 60 -> "$minutes minutes before"
-            minutes == 60 -> "1 hour before"
-            minutes < 1440 -> "${minutes / 60} hours before"
-            minutes == 1440 -> "1 day before"
-            else -> "${minutes / 1440} days before"
+            minutes == 0 -> stringResource(R.string.reminder_at_time)
+            minutes < 60 -> stringResource(R.string.template_min_before, minutes)
+            minutes == 60 -> stringResource(R.string.reminder_1_hour_before)
+            minutes < 1440 -> stringResource(R.string.template_hours_before, minutes / 60)
+            minutes == 1440 -> stringResource(R.string.reminder_1_day_before)
+            else -> stringResource(R.string.template_days_before, minutes / 1440)
         }
     }
     
@@ -135,7 +140,7 @@ fun ScheduleViewerScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_arrow_back)
                         )
                     }
                 },
@@ -143,7 +148,7 @@ fun ScheduleViewerScreen(
                     IconButton(onClick = onNavigateToEditor) {
                         Icon(
                             imageVector = Icons.Outlined.Edit,
-                            contentDescription = "Edit"
+                            contentDescription = stringResource(R.string.cd_edit)
                         )
                     }
                 },
@@ -184,7 +189,7 @@ fun ScheduleViewerScreen(
                 if (uiState.isPinned) {
                     Icon(
                         imageVector = Icons.Outlined.PushPin,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.cd_pinned),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                         modifier = Modifier.size(20.dp)
                     )
@@ -193,7 +198,7 @@ fun ScheduleViewerScreen(
             
             // Event title
             Text(
-                text = uiState.title.ifEmpty { "Untitled Event" },
+                text = uiState.title.ifEmpty { stringResource(R.string.status_untitled_event) },
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -229,7 +234,7 @@ fun ScheduleViewerScreen(
                     
                     Text(
                         text = if (uiState.isAllDay) {
-                            "All Day"
+                            stringResource(R.string.status_all_day)
                         } else if (endTime != null) {
                             "${timeFormat.format(startTime)} - ${timeFormat.format(endTime)}"
                         } else {
@@ -420,7 +425,7 @@ fun ScheduleViewerScreen(
                     
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "NOTES",
+                            text = stringResource(R.string.section_notes),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

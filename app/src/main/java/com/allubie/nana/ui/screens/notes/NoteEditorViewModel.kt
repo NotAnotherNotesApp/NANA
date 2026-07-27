@@ -8,15 +8,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.LabelDao
-import com.allubie.nana.data.dao.NoteDao
-import com.allubie.nana.data.dao.NoteImageDao
-import com.allubie.nana.widget.updateNotesWidgets
 import com.allubie.nana.data.model.Label
 import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.Note
 import com.allubie.nana.data.model.NoteImage
 import com.allubie.nana.data.repository.LabelRepository
+import com.allubie.nana.data.repository.NoteRepository
+import com.allubie.nana.widget.updateNotesWidgets
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,20 +41,20 @@ data class NoteEditorUiState(
 )
 
 class NoteEditorViewModel(
-    private val noteDao: NoteDao,
-    private val noteImageDao: NoteImageDao,
-    private val labelDao: LabelDao,
+    private val noteRepository: NoteRepository,
+    private val labelRepository: LabelRepository,
     private val application: NanaApplication
 ) : ViewModel() {
     
+    private val _navigateBack = MutableSharedFlow<Unit>()
+    val navigateBack = _navigateBack.asSharedFlow()
+
     private val _uiState = MutableStateFlow(NoteEditorUiState())
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
     
     // Available note labels from database
-    val availableLabels: StateFlow<List<Label>> = labelDao.getLabelsByType(LabelType.NOTE)
+    val availableLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.NOTE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    
-    private val labelRepository = LabelRepository(labelDao)
     
     init {
         viewModelScope.launch {
@@ -65,8 +65,8 @@ class NoteEditorViewModel(
     fun loadNote(noteId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val note = noteDao.getNoteById(noteId)
-            val images = noteImageDao.getImagesForNoteSync(noteId)
+            val note = noteRepository.getNoteById(noteId)
+            val images = noteRepository.getImagesForNoteSync(noteId)
             if (note != null) {
                 _uiState.update {
                     it.copy(
@@ -121,15 +121,16 @@ class NoteEditorViewModel(
                 isPinned = state.isPinned,
                 updatedAt = System.currentTimeMillis()
             )
-            val noteId = noteDao.insertNote(note)
+            val noteId = noteRepository.insertNote(note)
             
             // Save images for new notes
             if (state.id == null) {
                 state.images.forEach { image ->
-                    noteImageDao.insertImage(image.copy(noteId = noteId))
+                    noteRepository.insertImage(image.copy(noteId = noteId))
                 }
             }
             updateNotesWidgets(application)
+            _navigateBack.emit(Unit)
         }
     }
     
@@ -157,7 +158,7 @@ class NoteEditorViewModel(
                 
                 // If note already exists, save immediately
                 if (noteId > 0) {
-                    noteImageDao.insertImage(newImage)
+                    noteRepository.insertImage(newImage)
                 }
                 
                 _uiState.update { it.copy(images = it.images + newImage) }
@@ -176,7 +177,7 @@ class NoteEditorViewModel(
         viewModelScope.launch {
             // Delete from database if exists
             if (image.id > 0) {
-                noteImageDao.deleteImage(image)
+                noteRepository.deleteImage(image)
             }
             
             // Delete file
@@ -191,7 +192,7 @@ class NoteEditorViewModel(
         viewModelScope.launch {
             val noteId = _uiState.value.id
             if (noteId != null) {
-                noteDao.updateArchiveStatus(noteId, true)
+                noteRepository.updateArchiveStatus(noteId, true)
                 updateNotesWidgets(application)
                 onComplete()
             }
@@ -202,7 +203,7 @@ class NoteEditorViewModel(
         viewModelScope.launch {
             val noteId = _uiState.value.id
             if (noteId != null) {
-                noteDao.updateArchiveStatus(noteId, false)
+                noteRepository.updateArchiveStatus(noteId, false)
                 updateNotesWidgets(application)
                 onComplete()
             }
@@ -213,7 +214,7 @@ class NoteEditorViewModel(
         viewModelScope.launch {
             val noteId = _uiState.value.id
             if (noteId != null) {
-                noteDao.updateDeleteStatus(noteId, true)
+                noteRepository.updateDeleteStatus(noteId, true)
                 updateNotesWidgets(application)
                 onComplete()
             }
@@ -225,7 +226,7 @@ class NoteEditorViewModel(
             val noteId = _uiState.value.id
             val newPinState = !_uiState.value.isPinned
             if (noteId != null) {
-                noteDao.updatePinStatus(noteId, newPinState)
+                noteRepository.updatePinStatus(noteId, newPinState)
                 _uiState.update { it.copy(isPinned = newPinState) }
                 updateNotesWidgets(application)
             }
@@ -236,10 +237,16 @@ class NoteEditorViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
+                val database = application.database
+                val noteRepository = NoteRepository(
+                    database.noteDao(),
+                    database.noteImageDao(),
+                    database.checklistItemDao()
+                )
+                val labelRepository = LabelRepository(database.labelDao())
                 NoteEditorViewModel(
-                    application.database.noteDao(),
-                    application.database.noteImageDao(),
-                    application.database.labelDao(),
+                    noteRepository,
+                    labelRepository,
                     application
                 )
             }

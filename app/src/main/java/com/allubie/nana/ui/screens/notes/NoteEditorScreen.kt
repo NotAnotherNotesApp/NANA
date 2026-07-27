@@ -34,10 +34,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.allubie.nana.data.model.Label
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
 import com.allubie.nana.ui.theme.*
@@ -49,13 +53,19 @@ fun NoteEditorScreen(
     onNavigateBack: () -> Unit,
     viewModel: NoteEditorViewModel = viewModel(factory = NoteEditorViewModel.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val availableLabels by viewModel.availableLabels.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val availableLabels by viewModel.availableLabels.collectAsStateWithLifecycle()
     val richTextState = rememberRichTextState()
     val context = LocalContext.current
     
     // State for label picker dialog
     var showLabelPicker by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collectLatest {
+            onNavigateBack()
+        }
+    }
     
     // Image picker
     val imagePicker = rememberLauncherForActivityResult(
@@ -147,7 +157,7 @@ fun NoteEditorScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Last edited just now",
+                        text = stringResource(R.string.status_edited_just_now),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -156,7 +166,7 @@ fun NoteEditorScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -165,7 +175,6 @@ fun NoteEditorScreen(
                         onClick = {
                             viewModel.updateContent(richTextState.toHtml())
                             viewModel.saveNote()
-                            onNavigateBack()
                         },
                         shape = RoundedCornerShape(24.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -175,7 +184,7 @@ fun NoteEditorScreen(
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
-                            text = "Save",
+                            text = stringResource(R.string.action_save),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -204,7 +213,7 @@ fun NoteEditorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Title",
+                            text = stringResource(R.string.hint_title),
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -290,7 +299,7 @@ fun NoteEditorScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Add Label",
+                                text = stringResource(R.string.dialog_add_label),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp
@@ -318,7 +327,7 @@ fun NoteEditorScreen(
                                         .data(image.imagePath)
                                         .crossfade(true)
                                         .build(),
-                                    contentDescription = "Attached image",
+                                    contentDescription = stringResource(R.string.cd_attached_image),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -334,7 +343,7 @@ fun NoteEditorScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Close,
-                                        contentDescription = "Remove image",
+                                        contentDescription = stringResource(R.string.cd_remove_image),
                                         modifier = Modifier.size(16.dp),
                                         tint = MaterialTheme.colorScheme.onErrorContainer
                                     )
@@ -353,7 +362,7 @@ fun NoteEditorScreen(
                         .defaultMinSize(minHeight = 300.dp),
                     placeholder = {
                         Text(
-                            text = "Start typing...",
+                            text = stringResource(R.string.hint_start_typing),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Normal
@@ -400,21 +409,21 @@ fun NoteEditorScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         HeaderButton(
-                            text = "H1",
+                            text = stringResource(R.string.heading_h1),
                             isActive = isH1,
                             onClick = { 
                                 richTextState.toggleSpanStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold))
                             }
                         )
                         HeaderButton(
-                            text = "H2",
+                            text = stringResource(R.string.heading_h2),
                             isActive = isH2,
                             onClick = { 
                                 richTextState.toggleSpanStyle(SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold))
                             }
                         )
                         HeaderButton(
-                            text = "H3",
+                            text = stringResource(R.string.heading_h3),
                             isActive = isH3,
                             onClick = { 
                                 richTextState.toggleSpanStyle(SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.SemiBold))
@@ -425,25 +434,25 @@ fun NoteEditorScreen(
                         
                         FormattingButton(
                             icon = Icons.Outlined.FormatBold,
-                            description = "Bold",
+                            description = stringResource(R.string.cd_format_bold),
                             isActive = isBold,
                             onClick = { richTextState.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) }
                         )
                         FormattingButton(
                             icon = Icons.Outlined.FormatItalic,
-                            description = "Italic",
+                            description = stringResource(R.string.cd_format_italic),
                             isActive = isItalic,
                             onClick = { richTextState.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) }
                         )
                         FormattingButton(
                             icon = Icons.Outlined.FormatUnderlined,
-                            description = "Underline",
+                            description = stringResource(R.string.cd_format_underline),
                             isActive = isUnderline,
                             onClick = { richTextState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) }
                         )
                         FormattingButton(
                             icon = Icons.Outlined.FormatStrikethrough,
-                            description = "Strikethrough",
+                            description = stringResource(R.string.cd_format_strikethrough),
                             isActive = isStrikethrough,
                             onClick = { richTextState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) }
                         )
@@ -452,7 +461,7 @@ fun NoteEditorScreen(
                         
                         FormattingButton(
                             icon = Icons.Outlined.BorderColor,
-                            description = "Highlight",
+                            description = stringResource(R.string.cd_format_highlight),
                             isActive = isHighlight,
                             onClick = { 
                                 if (isHighlight) {
@@ -464,7 +473,7 @@ fun NoteEditorScreen(
                         )
                         FormattingButton(
                             icon = Icons.Outlined.Code,
-                            description = "Code",
+                            description = stringResource(R.string.cd_format_code),
                             isActive = isCode,
                             onClick = { richTextState.toggleCodeSpan() }
                         )
@@ -473,13 +482,13 @@ fun NoteEditorScreen(
                         
                         FormattingButton(
                             icon = Icons.AutoMirrored.Outlined.FormatListBulleted,
-                            description = "Bullet List",
+                            description = stringResource(R.string.cd_format_bullet_list),
                             isActive = isUnorderedList,
                             onClick = { richTextState.toggleUnorderedList() }
                         )
                         FormattingButton(
                             icon = Icons.Outlined.FormatListNumbered,
-                            description = "Numbered List",
+                            description = stringResource(R.string.cd_format_numbered_list),
                             isActive = isOrderedList,
                             onClick = { richTextState.toggleOrderedList() }
                         )
@@ -488,7 +497,7 @@ fun NoteEditorScreen(
                         
                         FormattingButton(
                             icon = Icons.Outlined.Image,
-                            description = "Add Image",
+                            description = stringResource(R.string.cd_add_image),
                             isActive = false,
                             onClick = { imagePicker.launch("image/*") }
                         )
@@ -592,20 +601,20 @@ private fun LabelPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Label", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.dialog_add_label), fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (availableLabels.isEmpty()) {
                     Text(
-                        text = "No labels available. Create labels in Settings.",
+                        text = stringResource(R.string.msg_no_labels),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
-                        text = "Select Labels",
+                        text = stringResource(R.string.label_select_labels),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -630,7 +639,7 @@ private fun LabelPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done")
+                Text(stringResource(R.string.action_done))
             }
         }
     )

@@ -21,9 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Note
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import java.util.concurrent.TimeUnit
+import com.allubie.nana.util.stripHtml
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,8 +35,8 @@ fun NotesTrashScreen(
     onNavigateBack: () -> Unit,
     viewModel: NotesTrashViewModel = viewModel(factory = NotesTrashViewModel.Factory)
 ) {
-    val notes by viewModel.deletedNotes.collectAsState(initial = emptyList())
-    val message by viewModel.message.collectAsState()
+    val notes by viewModel.deletedNotes.collectAsStateWithLifecycle(initialValue = emptyList())
+    val message by viewModel.message.collectAsStateWithLifecycle()
     var showEmptyDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
     
@@ -51,9 +55,9 @@ fun NotesTrashScreen(
                 viewModel.emptyTrash()
                 showEmptyDialog = false
             },
-            title = "Empty Trash",
-            message = "This will permanently delete all notes in trash. This action cannot be undone.",
-            confirmText = "Delete All",
+            title = stringResource(R.string.dialog_empty_trash),
+            message = stringResource(R.string.dialog_msg_empty_trash),
+            confirmText = stringResource(R.string.action_delete_all),
             isDestructive = true
         )
     }
@@ -65,9 +69,9 @@ fun NotesTrashScreen(
                 viewModel.permanentlyDeleteNote(note)
                 noteToDelete = null
             },
-            title = "Delete Note",
-            message = "Permanently delete \"${note.title.ifEmpty { "Untitled" }}\"? This action cannot be undone.",
-            confirmText = "Delete",
+            title = stringResource(R.string.dialog_delete_note),
+            message = stringResource(R.string.dialog_msg_permanently_delete_note, note.title.ifEmpty { stringResource(R.string.status_untitled) }),
+            confirmText = stringResource(R.string.action_delete),
             isDestructive = true,
             icon = Icons.Outlined.Delete
         )
@@ -79,7 +83,7 @@ fun NotesTrashScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = "Trash",
+                        text = stringResource(R.string.title_trash),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -96,7 +100,7 @@ fun NotesTrashScreen(
                     if (notes.isNotEmpty()) {
                         TextButton(onClick = { showEmptyDialog = true }) {
                             Text(
-                                text = "Empty",
+                                text = stringResource(R.string.action_empty),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
@@ -125,12 +129,12 @@ fun NotesTrashScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Trash is empty",
+                        text = stringResource(R.string.empty_trash),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = "Deleted notes will appear here",
+                        text = stringResource(R.string.empty_trash_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     )
@@ -166,7 +170,7 @@ fun NotesTrashScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
-                                text = "Items in the trash are automatically deleted forever after 30 days.",
+                                text = stringResource(R.string.dialog_msg_trash_auto_delete),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -239,7 +243,7 @@ private fun TrashNoteItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = note.title.ifEmpty { "Untitled" },
+                    text = note.title.ifEmpty { stringResource(R.string.status_untitled) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -247,15 +251,10 @@ private fun TrashNoteItem(
                 )
                 
                 // Strip HTML for content preview
-                val plainContent = note.content
-                    .replace(Regex("<[^>]*>"), "")
-                    .replace("&nbsp;", " ")
-                    .replace("&amp;", "&")
-                    .replace("&lt;", "<")
-                    .replace("&gt;", ">")
+                val plainContent = stripHtml(note.content)
                     .replace("\n", " ")
                     .take(50)
-                    .ifEmpty { "No content" }
+                    .ifEmpty { stringResource(R.string.status_no_content) }
                 
                 Text(
                     text = plainContent,
@@ -275,7 +274,7 @@ private fun TrashNoteItem(
                     MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Text(
-                    text = "$daysLeft days left",
+                    text = stringResource(R.string.template_days_left, daysLeft),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = if (isUrgent) 

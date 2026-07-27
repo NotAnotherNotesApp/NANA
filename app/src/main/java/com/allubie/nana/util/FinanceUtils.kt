@@ -25,20 +25,20 @@ object CurrencyFormatter {
             val currency = Currency.getInstance(currencyCode)
             val format = NumberFormat.getCurrencyInstance().apply {
                 this.currency = currency
-                maximumFractionDigits = if (amount == amount.toLong().toDouble()) 0 else 2
+                maximumFractionDigits = if (amount % 1.0 == 0.0) 0 else 2
             }
             if (showSymbol) {
                 format.format(amount)
             } else {
                 // Format without symbol, just number with proper grouping
                 val numberFormat = NumberFormat.getNumberInstance().apply {
-                    maximumFractionDigits = if (amount == amount.toLong().toDouble()) 0 else 2
+                    maximumFractionDigits = if (amount % 1.0 == 0.0) 0 else 2
                 }
                 numberFormat.format(amount)
             }
         } catch (e: Exception) {
             // Fallback formatting
-            val formatted = if (amount == amount.toLong().toDouble()) {
+            val formatted = if (amount % 1.0 == 0.0) {
                 amount.toLong().toString()
             } else {
                 String.format("%.2f", amount)
@@ -62,7 +62,7 @@ object CurrencyFormatter {
      * Format with explicit symbol prefix.
      */
     fun formatWithSymbol(amount: Double, symbol: String): String {
-        val formatted = if (amount == amount.toLong().toDouble()) {
+        val formatted = if (amount % 1.0 == 0.0) {
             NumberFormat.getNumberInstance().format(amount.toLong())
         } else {
             String.format("%,.2f", amount)

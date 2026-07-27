@@ -2,12 +2,12 @@ package com.allubie.nana.ui.screens.routines
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
-import com.allubie.nana.data.dao.RoutineCompletionDao
-import com.allubie.nana.data.dao.RoutineDao
+import com.allubie.nana.data.repository.RoutineRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -29,8 +29,7 @@ data class RoutineStat(
 )
 
 class RoutineStatisticsViewModel(
-    private val routineDao: RoutineDao,
-    private val completionDao: RoutineCompletionDao
+    private val routineRepository: RoutineRepository
 ) : ViewModel() {
     
     private val _statistics = MutableStateFlow(RoutineStatistics())
@@ -57,9 +56,9 @@ class RoutineStatisticsViewModel(
             val startOfMonth = dateFormat.format(calendar.time)
             
             combine(
-                routineDao.getActiveRoutines(),
-                completionDao.getCompletionsInRange(startOfWeek, today),
-                completionDao.getCompletionsInRange(startOfMonth, today)
+                routineRepository.getActiveRoutines(),
+                routineRepository.getCompletionsInRange(startOfWeek, today),
+                routineRepository.getCompletionsInRange(startOfMonth, today)
             ) { routines, weekCompletions, monthCompletions ->
                 val totalRoutines = routines.size
                 if (totalRoutines == 0) return@combine RoutineStatistics()
@@ -186,10 +185,13 @@ class RoutineStatisticsViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
-                RoutineStatisticsViewModel(
+                val application = this[APPLICATION_KEY] as NanaApplication
+                val routineRepository = RoutineRepository(
                     application.database.routineDao(),
                     application.database.routineCompletionDao()
+                )
+                RoutineStatisticsViewModel(
+                    routineRepository
                 )
             }
         }

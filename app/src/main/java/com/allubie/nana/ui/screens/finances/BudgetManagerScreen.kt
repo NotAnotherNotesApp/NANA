@@ -34,12 +34,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Budget
 import com.allubie.nana.data.model.BudgetPeriod
 import com.allubie.nana.data.model.ExpenseCategories
 import com.allubie.nana.util.CurrencyFormatter
 import java.util.Calendar
 import com.allubie.nana.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import com.allubie.nana.R
 
 // Category colors - using theme colors
 private val CategoryColors = mapOf(
@@ -117,13 +120,14 @@ fun BudgetManagerScreen(
     onNavigateToSettings: () -> Unit = {},
     viewModel: BudgetManagerViewModel = viewModel(factory = BudgetManagerViewModel.Factory)
 ) {
-    val budgets by viewModel.budgets.collectAsState()
-    val totalBudget by viewModel.totalBudget.collectAsState()
-    val totalBudgetLimit by viewModel.totalBudgetLimit.collectAsState()
-    val totalSpent by viewModel.totalSpent.collectAsState()
-    val selectedMonth by viewModel.selectedMonth.collectAsState()
-    val categorySpending by viewModel.categorySpending.collectAsState()
-    val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val budgets = uiState.budgets
+    val totalBudget = uiState.totalBudget
+    val totalBudgetLimit = uiState.totalBudgetLimit
+    val totalSpent = uiState.totalSpent
+    val selectedMonth = uiState.selectedMonth
+    val categorySpending = uiState.categorySpending
+    val currencySymbol = uiState.currencySymbol
     
     var showAddBudgetDialog by remember { mutableStateOf(false) }
     var editingBudget by remember { mutableStateOf<Budget?>(null) }
@@ -192,7 +196,7 @@ fun BudgetManagerScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = "Monthly Budget",
+                        text = stringResource(R.string.title_monthly_budget),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -201,7 +205,7 @@ fun BudgetManagerScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -209,7 +213,7 @@ fun BudgetManagerScreen(
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             imageVector = Icons.Outlined.Settings,
-                            contentDescription = "Settings"
+                            contentDescription = stringResource(R.string.cd_settings)
                         )
                     }
                 },
@@ -314,7 +318,7 @@ fun BudgetManagerScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Text(
-                            text = "Remaining Budget",
+                            text = stringResource(R.string.status_remaining_budget),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -332,7 +336,7 @@ fun BudgetManagerScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "of ${formatCurrency(totalBudget)} Total Limit",
+                            text = stringResource(R.string.template_of_total_limit, formatCurrency(totalBudget)),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -353,7 +357,7 @@ fun BudgetManagerScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (totalBudgetLimit > 0) "Edit Budget Limit" else "Set Budget Limit",
+                                text = if (totalBudgetLimit > 0) stringResource(R.string.action_edit_budget_limit) else stringResource(R.string.action_set_budget_limit),
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -391,13 +395,13 @@ fun BudgetManagerScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Budget Alert",
+                                    text = stringResource(R.string.status_budget_alert),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isDark) AlertWarningTitle else Color(0xFFE65100)
                                 )
                                 Text(
-                                    text = "You've spent $usagePercentage% of your budget this month.",
+                                    text = stringResource(R.string.template_budget_spent, usagePercentage),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (isDark) AlertWarningText.copy(alpha = 0.8f) else Color(0xFFBF360C)
                                 )
@@ -417,7 +421,7 @@ fun BudgetManagerScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Allocations",
+                        text = stringResource(R.string.section_allocations),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -471,7 +475,7 @@ fun BudgetManagerScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Add Category",
+                            text = stringResource(R.string.status_add_category),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -551,7 +555,7 @@ private fun BudgetCategoryItem(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "$usagePercent% used",
+                            text = stringResource(R.string.template_percent_used, usagePercent),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -565,7 +569,7 @@ private fun BudgetCategoryItem(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "of ${formatCurrency(budgeted)}",
+                        text = stringResource(R.string.template_of_amount, formatCurrency(budgeted)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -618,8 +622,8 @@ private fun BudgetDialog(
     if (showDeleteConfirmation && budget != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Budget") },
-            text = { Text("Are you sure you want to delete the budget for \"${budget.category}\"? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.dialog_delete_budget)) },
+            text = { Text(stringResource(R.string.dialog_msg_delete_budget_named, budget.category)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -627,12 +631,12 @@ private fun BudgetDialog(
                         showDeleteConfirmation = false
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -641,7 +645,7 @@ private fun BudgetDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { 
-            Text(if (budget != null) "Edit Budget" else "Add Budget")
+            Text(if (budget != null) stringResource(R.string.dialog_edit_budget) else stringResource(R.string.dialog_add_budget))
         },
         text = {
             Column(
@@ -658,12 +662,12 @@ private fun BudgetDialog(
                         FilterChip(
                             selected = !useCustomCategory,
                             onClick = { useCustomCategory = false },
-                            label = { Text("Predefined") }
+                            label = { Text(stringResource(R.string.label_predefined)) }
                         )
                         FilterChip(
                             selected = useCustomCategory,
                             onClick = { useCustomCategory = true },
-                            label = { Text("Custom") }
+                            label = { Text(stringResource(R.string.label_custom)) }
                         )
                     }
                     
@@ -671,14 +675,14 @@ private fun BudgetDialog(
                         OutlinedTextField(
                             value = customCategory,
                             onValueChange = { customCategory = it },
-                            label = { Text("Custom Category Name") },
+                            label = { Text(stringResource(R.string.label_custom_category_name)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         
                         // Icon selector for custom category
                         Text(
-                            text = "Choose Icon",
+                            text = stringResource(R.string.dialog_choose_icon),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -724,7 +728,7 @@ private fun BudgetDialog(
                                 value = selectedCategory,
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Category") },
+                                label = { Text(stringResource(R.string.label_category)) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -766,7 +770,7 @@ private fun BudgetDialog(
                             if (useCustomCategory) customCategory = it 
                             else selectedCategory = it 
                         },
-                        label = { Text("Category Name") },
+                        label = { Text(stringResource(R.string.label_category_name)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -774,7 +778,7 @@ private fun BudgetDialog(
                     // Icon selector for existing custom category
                     if (budget.category !in ExpenseCategories.list || budget.iconName.isNotEmpty()) {
                         Text(
-                            text = "Choose Icon",
+                            text = stringResource(R.string.dialog_choose_icon),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -818,12 +822,12 @@ private fun BudgetDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Budget Amount") },
+                    label = { Text(stringResource(R.string.label_budget_amount)) },
                     prefix = { Text(currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    placeholder = { Text("0.00") }
+                    placeholder = { Text(stringResource(R.string.hint_amount)) }
                 )
             }
         },
@@ -852,18 +856,18 @@ private fun BudgetDialog(
                     finalCategory.isNotBlank()
                 }
             ) {
-                Text("Save")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             Row {
                 if (budget != null) {
                     TextButton(onClick = { showDeleteConfirmation = true }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         }
@@ -882,13 +886,13 @@ private fun TotalBudgetDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Total Budget Limit") },
+        title = { Text(stringResource(R.string.dialog_set_budget_limit)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Set your overall monthly budget limit. This overrides the sum of category allocations.",
+                    text = stringResource(R.string.dialog_msg_budget_limit),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -904,7 +908,7 @@ private fun TotalBudgetDialog(
                 )
                 
                 Text(
-                    text = "Set to 0 to use sum of category allocations instead.",
+                    text = stringResource(R.string.dialog_msg_budget_zero),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -917,12 +921,12 @@ private fun TotalBudgetDialog(
                     onSave(amountValue)
                 }
             ) {
-                Text("Save")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
