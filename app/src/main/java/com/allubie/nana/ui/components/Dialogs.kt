@@ -10,8 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.allubie.nana.R
 
 
 @Composable
@@ -20,13 +22,17 @@ fun NanaConfirmationDialog(
     onConfirm: () -> Unit,
     title: String,
     message: String,
-    confirmText: String = "Confirm",
-    dismissText: String = "Cancel",
+    confirmText: String = "",
+    dismissText: String = "",
     isDestructive: Boolean = false,
     icon: ImageVector? = null
 ) {
+    val resolvedConfirmText = confirmText.ifEmpty { stringResource(R.string.action_confirm) }
+    val resolvedDismissText = dismissText.ifEmpty { stringResource(R.string.action_cancel) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
         icon = icon?.let {
             {
                 Icon(
@@ -40,23 +46,49 @@ fun NanaConfirmationDialog(
         title = {
             Text(
                 text = title,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmall
             )
         },
-        text = { Text(message) },
+        text = {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = onConfirm,
-                colors = if (isDestructive) ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ) else ButtonDefaults.textButtonColors()
+                shape = RoundedCornerShape(50),
+                colors = if (isDestructive) ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ) else ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Text(confirmText)
+                Text(
+                    text = resolvedConfirmText,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(dismissText)
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(50),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
+            ) {
+                Text(
+                    text = resolvedDismissText,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     )
@@ -70,8 +102,10 @@ fun <T> NanaSelectionDialog(
     selectedOption: T,
     optionLabel: (T) -> String,
     onSelect: (T) -> Unit,
-    dismissText: String = "Cancel"
+    dismissText: String = ""
 ) {
+    val resolvedDismissText = dismissText.ifEmpty { stringResource(R.string.action_cancel) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -101,7 +135,7 @@ fun <T> NanaSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(dismissText)
+                Text(resolvedDismissText)
             }
         }
     )
@@ -113,13 +147,16 @@ fun <T> NanaSearchableListDialog(
     title: String,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    searchPlaceholder: String = "Search...",
+    searchPlaceholder: String = "",
     items: List<T>,
     isSelected: (T) -> Boolean,
     itemLabel: (T) -> String,
     onSelect: (T) -> Unit,
-    dismissText: String = "Cancel"
+    dismissText: String = ""
 ) {
+    val resolvedSearchPlaceholder = searchPlaceholder.ifEmpty { stringResource(R.string.hint_search) }
+    val resolvedDismissText = dismissText.ifEmpty { stringResource(R.string.action_cancel) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -133,7 +170,7 @@ fun <T> NanaSearchableListDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
-                    placeholder = { Text(searchPlaceholder) },
+                    placeholder = { Text(resolvedSearchPlaceholder) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -166,7 +203,7 @@ fun <T> NanaSearchableListDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(dismissText)
+                Text(resolvedDismissText)
             }
         }
     )

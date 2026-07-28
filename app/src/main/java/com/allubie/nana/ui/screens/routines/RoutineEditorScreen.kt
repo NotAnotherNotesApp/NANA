@@ -51,18 +51,18 @@ fun RoutineEditorScreen(
     
     // Icon mapping for display
     val iconOptions = listOf(
-        "reading" to (Icons.Outlined.AutoStories to "Reading"),
-        "fitness" to (Icons.Outlined.FitnessCenter to "Fitness"),
-        "running" to (Icons.AutoMirrored.Outlined.DirectionsRun to "Running"),
-        "meditation" to (Icons.Outlined.SelfImprovement to "Meditation"),
-        "water" to (Icons.Outlined.WaterDrop to "Water"),
-        "sleep" to (Icons.Outlined.Bedtime to "Sleep"),
-        "study" to (Icons.Outlined.School to "Study"),
-        "coding" to (Icons.Outlined.Code to "Coding"),
-        "writing" to (Icons.Outlined.Create to "Writing"),
-        "music" to (Icons.Outlined.MusicNote to "Music"),
-        "art" to (Icons.Outlined.Brush to "Art"),
-        "nutrition" to (Icons.Outlined.Restaurant to "Nutrition")
+        "reading" to (Icons.Outlined.AutoStories to stringResource(R.string.cd_icon_reading)),
+        "fitness" to (Icons.Outlined.FitnessCenter to stringResource(R.string.cd_icon_fitness)),
+        "running" to (Icons.AutoMirrored.Outlined.DirectionsRun to stringResource(R.string.cd_icon_running)),
+        "meditation" to (Icons.Outlined.SelfImprovement to stringResource(R.string.cd_icon_meditation)),
+        "water" to (Icons.Outlined.WaterDrop to stringResource(R.string.cd_icon_water)),
+        "sleep" to (Icons.Outlined.Bedtime to stringResource(R.string.cd_icon_sleep)),
+        "study" to (Icons.Outlined.School to stringResource(R.string.cd_icon_study)),
+        "coding" to (Icons.Outlined.Code to stringResource(R.string.cd_icon_coding)),
+        "writing" to (Icons.Outlined.Create to stringResource(R.string.cd_icon_writing)),
+        "music" to (Icons.Outlined.MusicNote to stringResource(R.string.cd_icon_music)),
+        "art" to (Icons.Outlined.Brush to stringResource(R.string.cd_icon_art)),
+        "nutrition" to (Icons.Outlined.Restaurant to stringResource(R.string.cd_icon_nutrition))
     )
     
     // Get current icon from uiState.iconName
@@ -145,7 +145,15 @@ fun RoutineEditorScreen(
     }
     
     // Days: S M T W T F S (starting with Sunday = 0)
-    val daysOfWeek = listOf("S", "M", "T", "W", "T", "F", "S")
+    val daysOfWeek = listOf(
+        stringResource(R.string.day_initial_sun),
+        stringResource(R.string.day_initial_mon),
+        stringResource(R.string.day_initial_tue),
+        stringResource(R.string.day_initial_wed),
+        stringResource(R.string.day_initial_thu),
+        stringResource(R.string.day_initial_fri),
+        stringResource(R.string.day_initial_sat)
+    )
     
     Scaffold(
         topBar = {
@@ -668,7 +676,7 @@ fun RoutineEditorScreen(
                                     modifier = Modifier.clickable { isAm = true }
                                 ) {
                                     Text(
-                                        text = "AM",
+                                        text = stringResource(R.string.time_am),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isAm) MaterialTheme.colorScheme.onSurface 
@@ -683,7 +691,7 @@ fun RoutineEditorScreen(
                                     modifier = Modifier.clickable { isAm = false }
                                 ) {
                                     Text(
-                                        text = "PM",
+                                        text = stringResource(R.string.time_pm),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (!isAm) MaterialTheme.colorScheme.onSurface 
@@ -796,7 +804,7 @@ fun RoutineEditorScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showIconPicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -806,7 +814,7 @@ fun RoutineEditorScreen(
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Select Reminder Time", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_select_reminder_time), fontWeight = FontWeight.Bold) },
             text = {
                 TimePicker(state = timePickerState)
             },
@@ -823,12 +831,12 @@ fun RoutineEditorScreen(
                         showTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.action_ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )

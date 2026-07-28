@@ -27,6 +27,16 @@ import com.allubie.nana.ui.components.SettingsItem
 import androidx.compose.ui.res.stringResource
 import com.allubie.nana.R
 import com.allubie.nana.ui.components.SettingsItemWithSwitch
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.allubie.nana.ui.theme.ThemeMode
 import java.util.TimeZone
 
@@ -49,11 +59,8 @@ fun SettingsScreen(
     
     var showThemeDialog by remember { mutableStateOf(false) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
-    var showTimezoneDialog by remember { mutableStateOf(false) }
     var showLicensesDialog by remember { mutableStateOf(false) }
-    var showEmptyTrashDialog by remember { mutableStateOf(false) }
     var currencySearch by remember { mutableStateOf("") }
-    var timezoneSearch by remember { mutableStateOf("") }
     
     // File picker for restore
     val filePicker = rememberLauncherForActivityResult(
@@ -73,6 +80,7 @@ fun SettingsScreen(
     
     // Show snackbar for backup messages
     val snackbarHostState = remember { SnackbarHostState() }
+    
     LaunchedEffect(backupState.message) {
         backupState.message?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -80,73 +88,74 @@ fun SettingsScreen(
         }
     }
     
+    // Theme Dialog
     if (showThemeDialog) {
+        val themes = listOf(
+            ThemeMode.SYSTEM to stringResource(R.string.theme_system),
+            ThemeMode.LIGHT to stringResource(R.string.theme_light),
+            ThemeMode.DARK to stringResource(R.string.theme_dark),
+            ThemeMode.AMOLED to stringResource(R.string.theme_amoled)
+        )
         NanaSelectionDialog(
             onDismiss = { showThemeDialog = false },
             title = stringResource(R.string.dialog_choose_theme),
-            options = ThemeMode.entries.toList(),
-            selectedOption = themeMode,
-            optionLabel = { mode ->
-                when (mode) {
-                    ThemeMode.LIGHT -> context.getString(R.string.theme_light)
-                    ThemeMode.DARK -> context.getString(R.string.theme_dark)
-                    ThemeMode.AMOLED -> context.getString(R.string.theme_amoled)
-                    ThemeMode.SYSTEM -> context.getString(R.string.theme_system)
-                }
-            },
-            onSelect = { mode ->
+            options = themes,
+            selectedOption = themes.find { it.first == themeMode } ?: themes[0],
+            optionLabel = { it.second },
+            onSelect = { (mode, _) ->
                 viewModel.setThemeMode(mode)
                 showThemeDialog = false
             }
         )
     }
     
+    // Currency Selector Dialog
     if (showCurrencyDialog) {
         val currencies = listOf(
-            Triple("USD", "$", "US Dollar"),
-            Triple("EUR", "€", "Euro"),
-            Triple("GBP", "£", "British Pound"),
-            Triple("JPY", "¥", "Japanese Yen"),
-            Triple("INR", "₹", "Indian Rupee"),
-            Triple("BDT", "৳", "Bangladeshi Taka"),
-            Triple("CNY", "¥", "Chinese Yuan"),
-            Triple("KRW", "₩", "Korean Won"),
-            Triple("AUD", "A$", "Australian Dollar"),
-            Triple("CAD", "C$", "Canadian Dollar"),
-            Triple("CHF", "Fr", "Swiss Franc"),
-            Triple("SEK", "kr", "Swedish Krona"),
-            Triple("NOK", "kr", "Norwegian Krone"),
-            Triple("DKK", "kr", "Danish Krone"),
-            Triple("PLN", "zł", "Polish Zloty"),
-            Triple("CZK", "Kč", "Czech Koruna"),
-            Triple("HUF", "Ft", "Hungarian Forint"),
-            Triple("TRY", "₺", "Turkish Lira"),
-            Triple("RUB", "₽", "Russian Ruble"),
-            Triple("BRL", "R$", "Brazilian Real"),
-            Triple("MXN", "$", "Mexican Peso"),
-            Triple("ARS", "$", "Argentine Peso"),
-            Triple("COP", "$", "Colombian Peso"),
-            Triple("CLP", "$", "Chilean Peso"),
-            Triple("ZAR", "R", "South African Rand"),
-            Triple("NGN", "₦", "Nigerian Naira"),
-            Triple("EGP", "E£", "Egyptian Pound"),
-            Triple("KES", "KSh", "Kenyan Shilling"),
-            Triple("GHS", "₵", "Ghanaian Cedi"),
-            Triple("AED", "د.إ", "UAE Dirham"),
-            Triple("SAR", "﷼", "Saudi Riyal"),
-            Triple("QAR", "﷼", "Qatari Riyal"),
-            Triple("KWD", "د.ك", "Kuwaiti Dinar"),
-            Triple("THB", "฿", "Thai Baht"),
-            Triple("MYR", "RM", "Malaysian Ringgit"),
-            Triple("SGD", "S$", "Singapore Dollar"),
-            Triple("IDR", "Rp", "Indonesian Rupiah"),
-            Triple("PHP", "₱", "Philippine Peso"),
-            Triple("VND", "₫", "Vietnamese Dong"),
-            Triple("PKR", "₨", "Pakistani Rupee"),
-            Triple("LKR", "₨", "Sri Lankan Rupee"),
-            Triple("TWD", "NT$", "Taiwan Dollar"),
-            Triple("HKD", "HK$", "Hong Kong Dollar"),
-            Triple("NZD", "NZ$", "New Zealand Dollar")
+            Triple("USD", "$", stringResource(R.string.currency_usd)),
+            Triple("EUR", "€", stringResource(R.string.currency_eur)),
+            Triple("GBP", "£", stringResource(R.string.currency_gbp)),
+            Triple("JPY", "¥", stringResource(R.string.currency_jpy)),
+            Triple("INR", "₹", stringResource(R.string.currency_inr)),
+            Triple("BDT", "৳", stringResource(R.string.currency_bdt)),
+            Triple("CNY", "¥", stringResource(R.string.currency_cny)),
+            Triple("KRW", "₩", stringResource(R.string.currency_krw)),
+            Triple("AUD", "A$", stringResource(R.string.currency_aud)),
+            Triple("CAD", "C$", stringResource(R.string.currency_cad)),
+            Triple("CHF", "Fr", stringResource(R.string.currency_chf)),
+            Triple("SEK", "kr", stringResource(R.string.currency_sek)),
+            Triple("NOK", "kr", stringResource(R.string.currency_nok)),
+            Triple("DKK", "kr", stringResource(R.string.currency_dkk)),
+            Triple("PLN", "zł", stringResource(R.string.currency_pln)),
+            Triple("CZK", "Kč", stringResource(R.string.currency_czk)),
+            Triple("HUF", "Ft", stringResource(R.string.currency_huf)),
+            Triple("TRY", "₺", stringResource(R.string.currency_try)),
+            Triple("RUB", "₽", stringResource(R.string.currency_rub)),
+            Triple("BRL", "R$", stringResource(R.string.currency_brl)),
+            Triple("MXN", "$", stringResource(R.string.currency_mxn)),
+            Triple("ARS", "$", stringResource(R.string.currency_ars)),
+            Triple("COP", "$", stringResource(R.string.currency_cop)),
+            Triple("CLP", "$", stringResource(R.string.currency_clp)),
+            Triple("ZAR", "R", stringResource(R.string.currency_zar)),
+            Triple("NGN", "₦", stringResource(R.string.currency_ngn)),
+            Triple("EGP", "E£", stringResource(R.string.currency_egp)),
+            Triple("KES", "KSh", stringResource(R.string.currency_kes)),
+            Triple("GHS", "₵", stringResource(R.string.currency_ghs)),
+            Triple("AED", "د.إ", stringResource(R.string.currency_aed)),
+            Triple("SAR", "﷼", stringResource(R.string.currency_sar)),
+            Triple("QAR", "﷼", stringResource(R.string.currency_qar)),
+            Triple("KWD", "د.ك", stringResource(R.string.currency_kwd)),
+            Triple("THB", "฿", stringResource(R.string.currency_thb)),
+            Triple("MYR", "RM", stringResource(R.string.currency_myr)),
+            Triple("SGD", "S$", stringResource(R.string.currency_sgd)),
+            Triple("IDR", "Rp", stringResource(R.string.currency_idr)),
+            Triple("PHP", "₱", stringResource(R.string.currency_php)),
+            Triple("VND", "₫", stringResource(R.string.currency_vnd)),
+            Triple("PKR", "₨", stringResource(R.string.currency_pkr)),
+            Triple("LKR", "₨", stringResource(R.string.currency_lkr)),
+            Triple("TWD", "NT$", stringResource(R.string.currency_twd)),
+            Triple("HKD", "HK$", stringResource(R.string.currency_hkd)),
+            Triple("NZD", "NZ$", stringResource(R.string.currency_nzd))
         )
         val filteredCurrencies = if (currencySearch.isBlank()) currencies
             else currencies.filter {
@@ -154,104 +163,122 @@ fun SettingsScreen(
                 it.third.contains(currencySearch, ignoreCase = true)
             }
 
-        NanaSearchableListDialog(
-            onDismiss = { showCurrencyDialog = false; currencySearch = "" },
-            title = stringResource(R.string.dialog_choose_currency),
-            searchQuery = currencySearch,
-            onSearchQueryChange = { currencySearch = it },
-            searchPlaceholder = stringResource(R.string.hint_search_currencies),
-            items = filteredCurrencies,
-            isSelected = { it.first == currencyCode },
-            itemLabel = { (code, symbol, name) -> "$code ($symbol) - $name" },
-            onSelect = { (code, symbol, _) ->
-                viewModel.setCurrency(code, symbol)
-                showCurrencyDialog = false
-                currencySearch = ""
-            }
-        )
-    }
-    
-    // Timezone Dialog
-    if (showTimezoneDialog) {
-        val commonTimezones = listOf(
-            "America/New_York" to "Eastern Time (US)",
-            "America/Chicago" to "Central Time (US)",
-            "America/Denver" to "Mountain Time (US)",
-            "America/Los_Angeles" to "Pacific Time (US)",
-            "America/Anchorage" to "Alaska Time (US)",
-            "Pacific/Honolulu" to "Hawaii Time (US)",
-            "America/Toronto" to "Toronto (EST)",
-            "America/Vancouver" to "Vancouver (PST)",
-            "America/Mexico_City" to "Mexico City (CST)",
-            "America/Sao_Paulo" to "São Paulo (BRT)",
-            "America/Argentina/Buenos_Aires" to "Buenos Aires (ART)",
-            "America/Bogota" to "Bogotá (COT)",
-            "America/Santiago" to "Santiago (CLT)",
-            "Europe/London" to "London (GMT)",
-            "Europe/Paris" to "Paris (CET)",
-            "Europe/Berlin" to "Berlin (CET)",
-            "Europe/Madrid" to "Madrid (CET)",
-            "Europe/Rome" to "Rome (CET)",
-            "Europe/Amsterdam" to "Amsterdam (CET)",
-            "Europe/Stockholm" to "Stockholm (CET)",
-            "Europe/Warsaw" to "Warsaw (CET)",
-            "Europe/Moscow" to "Moscow (MSK)",
-            "Europe/Istanbul" to "Istanbul (TRT)",
-            "Europe/Athens" to "Athens (EET)",
-            "Africa/Cairo" to "Cairo (EET)",
-            "Africa/Johannesburg" to "Johannesburg (SAST)",
-            "Africa/Lagos" to "Lagos (WAT)",
-            "Africa/Nairobi" to "Nairobi (EAT)",
-            "Asia/Dubai" to "Dubai (GST)",
-            "Asia/Riyadh" to "Riyadh (AST)",
-            "Asia/Karachi" to "Karachi (PKT)",
-            "Asia/Kolkata" to "India (IST)",
-            "Asia/Dhaka" to "Dhaka (BST)",
-            "Asia/Bangkok" to "Bangkok (ICT)",
-            "Asia/Jakarta" to "Jakarta (WIB)",
-            "Asia/Singapore" to "Singapore (SGT)",
-            "Asia/Kuala_Lumpur" to "Kuala Lumpur (MYT)",
-            "Asia/Manila" to "Manila (PHT)",
-            "Asia/Ho_Chi_Minh" to "Ho Chi Minh (ICT)",
-            "Asia/Shanghai" to "Shanghai (CST)",
-            "Asia/Hong_Kong" to "Hong Kong (HKT)",
-            "Asia/Taipei" to "Taipei (CST)",
-            "Asia/Tokyo" to "Tokyo (JST)",
-            "Asia/Seoul" to "Seoul (KST)",
-            "Australia/Sydney" to "Sydney (AEST)",
-            "Australia/Melbourne" to "Melbourne (AEST)",
-            "Australia/Perth" to "Perth (AWST)",
-            "Pacific/Auckland" to "Auckland (NZST)"
-        )
-        fun formatUtcOffset(timezoneId: String): String {
-            val tz = TimeZone.getTimeZone(timezoneId)
-            val offsetMs = tz.getOffset(System.currentTimeMillis())
-            val hours = offsetMs / 3600000
-            val minutes = Math.abs(offsetMs % 3600000) / 60000
-            return if (minutes == 0) "UTC${if (hours >= 0) "+" else ""}$hours"
-                   else "UTC${if (hours >= 0) "+" else ""}$hours:${String.format("%02d", minutes)}"
-        }
-        val filteredTimezones = if (timezoneSearch.isBlank()) commonTimezones
-            else commonTimezones.filter {
-                val offset = formatUtcOffset(it.first)
-                it.first.contains(timezoneSearch, ignoreCase = true) ||
-                it.second.contains(timezoneSearch, ignoreCase = true) ||
-                offset.contains(timezoneSearch, ignoreCase = true)
-            }
-
-        NanaSearchableListDialog(
-            onDismiss = { showTimezoneDialog = false; timezoneSearch = "" },
-            title = stringResource(R.string.dialog_select_timezone),
-            searchQuery = timezoneSearch,
-            onSearchQueryChange = { timezoneSearch = it },
-            searchPlaceholder = stringResource(R.string.hint_search_timezones),
-            items = filteredTimezones,
-            isSelected = { it.first == timezone },
-            itemLabel = { (id, name) -> "$name  ${formatUtcOffset(id)}" },
-            onSelect = { (id, _) ->
-                viewModel.setTimezone(id)
-                showTimezoneDialog = false
-                timezoneSearch = ""
+        AlertDialog(
+            onDismissRequest = { showCurrencyDialog = false; currencySearch = "" },
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = stringResource(R.string.dialog_choose_currency),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = currencySearch,
+                        onValueChange = { currencySearch = it },
+                        placeholder = { Text(stringResource(R.string.hint_search_currencies)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            focusedContainerColor = Color.Transparent
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 360.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        filteredCurrencies.forEach { (code, symbol, name) ->
+                            val isSelected = code == currencyCode
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        viewModel.setCurrency(code, symbol)
+                                        showCurrencyDialog = false
+                                        currencySearch = ""
+                                    },
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSelected) 
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                border = if (isSelected) 
+                                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
+                                    else null
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = symbol,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 16.sp,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "$code • $symbol",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                OutlinedButton(
+                    onClick = { showCurrencyDialog = false; currencySearch = "" },
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(stringResource(R.string.action_cancel), fontWeight = FontWeight.SemiBold)
+                }
             }
         )
     }
@@ -263,40 +290,15 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.dialog_open_source_licenses)) },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
                     Text(
                         text = stringResource(R.string.dialog_msg_open_source),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    listOf(
-                        "Jetpack Compose" to "Apache 2.0",
-                        "Material Design 3" to "Apache 2.0",
-                        "Room Database" to "Apache 2.0",
-                        "Kotlin Coroutines" to "Apache 2.0",
-                        "AndroidX Core KTX" to "Apache 2.0",
-                        "AndroidX Lifecycle" to "Apache 2.0",
-                        "AndroidX Navigation" to "Apache 2.0",
-                        "AndroidX DataStore" to "Apache 2.0",
-                        "AndroidX Glance" to "Apache 2.0",
-                        "Vico Charts" to "Apache 2.0",
-                        "RichEditor Compose" to "Apache 2.0",
-                        "Coil Image Loading" to "Apache 2.0",
-                        "Gson" to "Apache 2.0",
-                        "Google Fonts" to "Apache 2.0"
-                    ).forEach { (lib, license) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = lib, style = MaterialTheme.typography.bodySmall)
-                            Text(
-                                text = license,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
             },
             confirmButton = {
@@ -304,20 +306,6 @@ fun SettingsScreen(
                     Text(stringResource(R.string.action_close))
                 }
             }
-        )
-    }
-
-    if (showEmptyTrashDialog) {
-        NanaConfirmationDialog(
-            onDismiss = { showEmptyTrashDialog = false },
-            onConfirm = {
-                viewModel.emptyTrash()
-                showEmptyTrashDialog = false
-            },
-            title = stringResource(R.string.dialog_empty_trash),
-            message = stringResource(R.string.dialog_msg_empty_trash),
-            confirmText = stringResource(R.string.action_delete_all),
-            isDestructive = true
         )
     }
     
@@ -357,15 +345,8 @@ fun SettingsScreen(
                     SettingsItem(
                         icon = Icons.Outlined.AttachMoney,
                         title = stringResource(R.string.label_currency),
-                        subtitle = "$currencyCode - $currencySymbol",
+                        subtitle = "$currencyCode ($currencySymbol)",
                         onClick = { showCurrencyDialog = true }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsItem(
-                        icon = Icons.Outlined.Schedule,
-                        title = stringResource(R.string.label_timezone),
-                        subtitle = java.util.TimeZone.getTimeZone(timezone).displayName,
-                        onClick = { showTimezoneDialog = true }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     SettingsItemWithSwitch(
@@ -374,6 +355,27 @@ fun SettingsScreen(
                         subtitle = if (use24HourFormat) stringResource(R.string.template_using_24_hour) else stringResource(R.string.template_using_12_hour),
                         checked = use24HourFormat,
                         onCheckedChange = { viewModel.setUse24HourFormat(it) }
+                    )
+                }
+            }
+            
+            // Appearance Section
+            item {
+                SectionHeader(title = stringResource(R.string.section_appearance))
+            }
+            
+            item {
+                SettingsCard {
+                    SettingsItem(
+                        icon = Icons.Outlined.Palette,
+                        title = stringResource(R.string.label_theme),
+                        subtitle = when (themeMode) {
+                            ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                            ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                            ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                            ThemeMode.AMOLED -> stringResource(R.string.theme_amoled)
+                        },
+                        onClick = { showThemeDialog = true }
                     )
                 }
             }
@@ -390,27 +392,6 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_manage_labels),
                         subtitle = stringResource(R.string.settings_manage_labels_desc),
                         onClick = onNavigateToLabels
-                    )
-                }
-            }
-            
-            // Appearance Section
-            item {
-                SectionHeader(title = stringResource(R.string.section_appearance))
-            }
-            
-            item {
-                SettingsCard {
-                    SettingsItem(
-                        icon = Icons.Outlined.Palette,
-                        title = stringResource(R.string.label_theme),
-                        subtitle = when (themeMode) {
-                            ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-                            ThemeMode.DARK -> stringResource(R.string.theme_dark)
-                            ThemeMode.AMOLED -> stringResource(R.string.theme_amoled)
-                            ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-                        },
-                        onClick = { showThemeDialog = true }
                     )
                 }
             }
@@ -440,14 +421,6 @@ fun SettingsScreen(
                         title = stringResource(R.string.label_restore_data),
                         subtitle = stringResource(R.string.settings_import_backup),
                         onClick = { filePicker.launch(arrayOf("application/json")) }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsItem(
-                        icon = Icons.Outlined.DeleteForever,
-                        title = stringResource(R.string.dialog_empty_trash),
-                        subtitle = stringResource(R.string.settings_delete_trash),
-                        onClick = { showEmptyTrashDialog = true },
-                        isDestructive = true
                     )
                 }
             }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.FileProvider
+import com.allubie.nana.R
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,27 +23,27 @@ object BugReportUtils {
             val usableStorageMb = context.filesDir.usableSpace / (1024 * 1024)
 
             val logContent = buildString {
-                appendLine("Nana App Diagnostic Log")
-                appendLine("Generated: $timestamp")
-                appendLine("App Version: $appVersion")
-                appendLine("Package: ${context.packageName}")
+                appendLine(context.getString(R.string.diag_title))
+                appendLine(context.getString(R.string.diag_generated, timestamp))
+                appendLine(context.getString(R.string.diag_app_version, appVersion))
+                appendLine(context.getString(R.string.diag_package, context.packageName))
                 appendLine()
-                appendLine("Device Information")
-                appendLine("Manufacturer: ${Build.MANUFACTURER}")
-                appendLine("Model: ${Build.MODEL}")
-                appendLine("Brand: ${Build.BRAND}")
-                appendLine("Device: ${Build.DEVICE}")
-                appendLine("Hardware: ${Build.HARDWARE}")
-                appendLine("Android OS: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-                appendLine("Display Build: ${Build.DISPLAY}")
+                appendLine(context.getString(R.string.diag_device_info))
+                appendLine(context.getString(R.string.diag_manufacturer, Build.MANUFACTURER))
+                appendLine(context.getString(R.string.diag_model, Build.MODEL))
+                appendLine(context.getString(R.string.diag_brand, Build.BRAND))
+                appendLine(context.getString(R.string.diag_device, Build.DEVICE))
+                appendLine(context.getString(R.string.diag_hardware, Build.HARDWARE))
+                appendLine(context.getString(R.string.diag_android_os, Build.VERSION.RELEASE, Build.VERSION.SDK_INT))
+                appendLine(context.getString(R.string.diag_display_build, Build.DISPLAY))
                 appendLine()
-                appendLine("Environment & Metrics")
-                appendLine("Locale: ${Locale.getDefault()}")
-                appendLine("Timezone: ${TimeZone.getDefault().id}")
-                appendLine("Free Heap Mem: ${freeMemMb}MB")
-                appendLine("Max Heap Mem: ${maxMemMb}MB")
-                appendLine("Total Heap Mem: ${totalMemMb}MB")
-                appendLine("Usable Storage: ${usableStorageMb}MB")
+                appendLine(context.getString(R.string.diag_environment))
+                appendLine(context.getString(R.string.diag_locale, Locale.getDefault().toString()))
+                appendLine(context.getString(R.string.diag_timezone, TimeZone.getDefault().id))
+                appendLine(context.getString(R.string.diag_free_heap, freeMemMb))
+                appendLine(context.getString(R.string.diag_max_heap, maxMemMb))
+                appendLine(context.getString(R.string.diag_total_heap, totalMemMb))
+                appendLine(context.getString(R.string.diag_usable_storage, usableStorageMb))
             }
 
             val logFile = File(context.cacheDir, "nana_diagnostic_log.txt").apply {
@@ -52,25 +53,39 @@ object BugReportUtils {
             val authority = "${context.packageName}.fileprovider"
             val contentUri = FileProvider.getUriForFile(context, authority, logFile)
 
-            val emailIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "message/rfc822"
+            val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                data = android.net.Uri.parse("mailto:istiaque.ahmed@outlook.sa")
                 putExtra(Intent.EXTRA_EMAIL, arrayOf("istiaque.ahmed@outlook.sa"))
-                putExtra(Intent.EXTRA_SUBJECT, "Nana Bug Report (v$appVersion)")
+                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.template_bug_report_subject, appVersion))
                 putExtra(
                     Intent.EXTRA_TEXT,
-                    "Please describe the bug or issue you experienced below:\n\n\n\n[Diagnostic log nana_diagnostic_log.txt attached automatically]"
+                    context.getString(R.string.bug_report_email_body)
                 )
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
-            val chooser = Intent.createChooser(emailIntent, "Send Bug Report via...")
-            context.startActivity(chooser)
+            try {
+                context.startActivity(emailIntent)
+            } catch (e: Exception) {
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "message/rfc822"
+                    putExtra(Intent.EXTRA_EMAIL, arrayOf("istiaque.ahmed@outlook.sa"))
+                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.template_bug_report_subject, appVersion))
+                    putExtra(
+                        Intent.EXTRA_TEXT,
+                        context.getString(R.string.bug_report_email_body)
+                    )
+                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.dialog_send_bug_report_via)))
+            }
         } catch (e: Exception) {
             // Fallback to mailto intent if chooser/file provider fails
             val fallbackIntent = Intent(Intent.ACTION_SENDTO).apply {
                 data = android.net.Uri.parse("mailto:istiaque.ahmed@outlook.sa")
-                putExtra(Intent.EXTRA_SUBJECT, "Nana Bug Report (v$appVersion)")
+                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.template_bug_report_subject, appVersion))
             }
             context.startActivity(fallbackIntent)
         }

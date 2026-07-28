@@ -271,6 +271,40 @@
     <string name="currency_krw">Korean Won</string>
     <string name="currency_aud">Australian Dollar</string>
     <string name="currency_cad">Canadian Dollar</string>
+    <string name="currency_chf">Swiss Franc</string>
+    <string name="currency_sek">Swedish Krona</string>
+    <string name="currency_nok">Norwegian Krone</string>
+    <string name="currency_dkk">Danish Krone</string>
+    <string name="currency_pln">Polish Zloty</string>
+    <string name="currency_czk">Czech Koruna</string>
+    <string name="currency_huf">Hungarian Forint</string>
+    <string name="currency_try">Turkish Lira</string>
+    <string name="currency_rub">Russian Ruble</string>
+    <string name="currency_brl">Brazilian Real</string>
+    <string name="currency_mxn">Mexican Peso</string>
+    <string name="currency_ars">Argentine Peso</string>
+    <string name="currency_cop">Colombian Peso</string>
+    <string name="currency_clp">Chilean Peso</string>
+    <string name="currency_zar">South African Rand</string>
+    <string name="currency_ngn">Nigerian Naira</string>
+    <string name="currency_egp">Egyptian Pound</string>
+    <string name="currency_kes">Kenyan Shilling</string>
+    <string name="currency_ghs">Ghanaian Cedi</string>
+    <string name="currency_aed">UAE Dirham</string>
+    <string name="currency_sar">Saudi Riyal</string>
+    <string name="currency_qar">Qatari Riyal</string>
+    <string name="currency_kwd">Kuwaiti Dinar</string>
+    <string name="currency_thb">Thai Baht</string>
+    <string name="currency_myr">Malaysian Ringgit</string>
+    <string name="currency_sgd">Singapore Dollar</string>
+    <string name="currency_idr">Indonesian Rupiah</string>
+    <string name="currency_php">Philippine Peso</string>
+    <string name="currency_vnd">Vietnamese Dong</string>
+    <string name="currency_pkr">Pakistani Rupee</string>
+    <string name="currency_lkr">Sri Lankan Rupee</string>
+    <string name="currency_twd">Taiwan Dollar</string>
+    <string name="currency_hkd">Hong Kong Dollar</string>
+    <string name="currency_nzd">New Zealand Dollar</string>
 
     <!-- Timezone Names -->
     <string name="tz_eastern">Eastern Time (US)</string>
@@ -432,4 +466,57 @@
     <string name="stat_performance_time">Performance by Time of Day</string>
     <string name="current_streak">Current Streak</string>
     <string name="best_streak">Best Streak</string>
+
+    <!-- Dialog Defaults -->
+    <string name="action_confirm">Confirm</string>
+    <string name="hint_search">Search…</string>
+
+    <!-- Bug Report -->
+    <string name="template_bug_report_subject">Nana Bug Report (v%s)</string>
+    <string name="bug_report_email_body">I experienced an issue or bug:</string>
+    <string name="dialog_send_bug_report_via">Send Bug Report via…</string>
+
+    <!-- Diagnostic Log Labels -->
+    <string name="diag_title">Nana App Diagnostic Log</string>
+    <string name="diag_generated">Generated: %s</string>
+    <string name="diag_app_version">App Version: %s</string>
+    <string name="diag_package">Package: %s</string>
+    <string name="diag_device_info">Device Information</string>
+    <string name="diag_manufacturer">Manufacturer: %s</string>
+    <string name="diag_model">Model: %s</string>
+    <string name="diag_brand">Brand: %s</string>
+    <string name="diag_device">Device: %s</string>
+    <string name="diag_hardware">Hardware: %s</string>
+    <string name="diag_android_os">Android OS: %1$s (API %2$d)</string>
+    <string name="diag_display_build">Display Build: %s</string>
+    <string name="diag_environment">Environment &amp; Metrics</string>
+    <string name="diag_locale">Locale: %s</string>
+    <string name="diag_timezone">Timezone: %s</string>
+    <string name="diag_free_heap">Free Heap Mem: %dMB</string>
+    <string name="diag_max_heap">Max Heap Mem: %dMB</string>
+    <string name="diag_total_heap">Total Heap Mem: %dMB</string>
+    <string name="diag_usable_storage">Usable Storage: %dMB</string>
+
+    <!-- Routine Icon Content Descriptions -->
+    <string name="cd_icon_reading">Reading</string>
+    <string name="cd_icon_fitness">Fitness</string>
+    <string name="cd_icon_running">Running</string>
+    <string name="cd_icon_meditation">Meditation</string>
+    <string name="cd_icon_water">Water</string>
+    <string name="cd_icon_sleep">Sleep</string>
+    <string name="cd_icon_study">Study</string>
+    <string name="cd_icon_coding">Coding</string>
+    <string name="cd_icon_writing">Writing</string>
+    <string name="cd_icon_music">Music</string>
+    <string name="cd_icon_art">Art</string>
+    <string name="cd_icon_nutrition">Nutrition</string>
+
+    <!-- Day Initials (single letter for day-of-week selectors) -->
+    <string name="day_initial_sun">S</string>
+    <string name="day_initial_mon">M</string>
+    <string name="day_initial_tue">T</string>
+    <string name="day_initial_wed">W</string>
+    <string name="day_initial_thu">T</string>
+    <string name="day_initial_fri">F</string>
+    <string name="day_initial_sat">S</string>
 </resources>
