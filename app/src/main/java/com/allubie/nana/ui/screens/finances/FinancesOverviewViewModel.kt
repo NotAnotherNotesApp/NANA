@@ -47,7 +47,7 @@ class FinancesOverviewViewModel(
     val overview: StateFlow<FinancesOverviewData> = _overview.asStateFlow()
     
     val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
     
     // Labels for overview
     val expenseLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.EXPENSE)
@@ -82,9 +82,13 @@ class FinancesOverviewViewModel(
     
     private fun observeOverview() {
         viewModelScope.launch {
+            val currentCal = Calendar.getInstance()
+            val currentMonth = currentCal.get(Calendar.MONTH)
+            val currentYear = currentCal.get(Calendar.YEAR)
+            
             combine(
                 transactionRepository.getAllTransactions(), 
-                transactionRepository.getAllBudgets(),
+                transactionRepository.getBudgetsForMonth(currentMonth, currentYear),
                 labelRepository.getLabelsByType(LabelType.EXPENSE)
             ) { transactions, budgets, labels ->
                 Triple(transactions, budgets, labels)

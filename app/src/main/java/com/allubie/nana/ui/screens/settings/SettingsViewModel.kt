@@ -38,13 +38,13 @@ class SettingsViewModel(
     val currencyCode = preferencesManager.currencyCode.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        "USD"
+        ""
     )
     
     val currencySymbol = preferencesManager.currencySymbol.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        "$"
+        ""
     )
     
     val timezone = preferencesManager.timezone.stateIn(

@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.1 (Build 8)
+
+### Improvements
+- **Finance — Currency Fix**: Currency symbol no longer defaults to `$`; now loads the user's locale-aware symbol from DataStore without a hardcoded flash
+- **Finance — Spending Breakdown Redesign**: Replaced the legacy donut chart with a modern Material 3 gauge card (`CircularProgressIndicator`) matching the Budget Manager's premium visual style
+- **Finance — Per-Month Budgets**: Converted budgets from global to per-month scoping (Database schema v12). Each month and year now has its own independent budget allocation, and the month selector updates both budget targets and spending data.
+- **UI — Delete Note Dialog**: Improved dialog sizing and pill-shaped buttons for a more polished look
+- **Settings**: Removed timezone picker and delete-all option; improved currency selector typography
+- **Bug Report**: Added direct mail with attachment for bug reports
+- **Strings**: Externalized remaining hardcoded UI strings to `strings.xml`
+
 ## v1.0.0 (Build 7)
 
 ### Highlights

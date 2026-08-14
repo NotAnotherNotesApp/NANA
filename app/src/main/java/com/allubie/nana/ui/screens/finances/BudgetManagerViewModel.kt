@@ -25,7 +25,8 @@ class BudgetManagerViewModel(
     
     data class BudgetManagerUiState(
         val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH),
-        val currencySymbol: String = "$",
+        val selectedYear: Int = Calendar.getInstance().get(Calendar.YEAR),
+        val currencySymbol: String = "",
         val totalBudgetLimit: Double = 0.0,
         val budgets: List<Budget> = emptyList(),
         val totalAllocated: Double = 0.0,
@@ -35,12 +36,19 @@ class BudgetManagerViewModel(
     )
     
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance().get(Calendar.MONTH))
+    private val _selectedYear = MutableStateFlow(Calendar.getInstance().get(Calendar.YEAR))
     
     private val _currencySymbol = preferencesManager.currencySymbol
     
     private val _totalBudgetLimit = preferencesManager.totalBudget
     
-    private val _budgets = transactionRepository.getAllBudgets()
+    // Budgets scoped to selected month/year
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val _budgets = combine(_selectedMonth, _selectedYear) { month, year ->
+        Pair(month, year)
+    }.flatMapLatest { (month, year) ->
+        transactionRepository.getBudgetsForMonth(month, year)
+    }
     
     private val _totalAllocated = _budgets.map { budgetList ->
         budgetList.sumOf { it.amount }
@@ -51,8 +59,11 @@ class BudgetManagerViewModel(
     }
     
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private val _categorySpending = _selectedMonth.flatMapLatest { month ->
+    private val _categorySpending = combine(_selectedMonth, _selectedYear) { month, year ->
+        Pair(month, year)
+    }.flatMapLatest { (month, year) ->
         val calendar = Calendar.getInstance()
+        calendar.set(Calendar.YEAR, year)
         calendar.set(Calendar.MONTH, month)
         calendar.set(Calendar.DAY_OF_MONTH, 1)
         calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -76,18 +87,19 @@ class BudgetManagerViewModel(
     }
     
     val uiState: StateFlow<BudgetManagerUiState> = combine(
-        _selectedMonth, _currencySymbol, _totalBudgetLimit, _budgets,
+        _selectedMonth, _selectedYear, _currencySymbol, _totalBudgetLimit, _budgets,
         _totalAllocated, _totalBudget, _categorySpending, _totalSpent
     ) { args: Array<Any> ->
         BudgetManagerUiState(
             selectedMonth = args[0] as Int,
-            currencySymbol = args[1] as String,
-            totalBudgetLimit = args[2] as Double,
-            budgets = (args[3] as List<*>).filterIsInstance<Budget>(),
-            totalAllocated = args[4] as Double,
-            totalBudget = args[5] as Double,
-            categorySpending = args[6] as Map<String, Double>,
-            totalSpent = args[7] as Double
+            selectedYear = args[1] as Int,
+            currencySymbol = args[2] as String,
+            totalBudgetLimit = args[3] as Double,
+            budgets = (args[4] as List<*>).filterIsInstance<Budget>(),
+            totalAllocated = args[5] as Double,
+            totalBudget = args[6] as Double,
+            categorySpending = args[7] as Map<String, Double>,
+            totalSpent = args[8] as Double
         )
     }.stateIn(
         scope = viewModelScope,
@@ -99,6 +111,10 @@ class BudgetManagerViewModel(
         _selectedMonth.value = month
     }
     
+    fun selectYear(year: Int) {
+        _selectedYear.value = year
+    }
+    
     fun addBudget(category: String, amount: Double, iconName: String = "") {
         viewModelScope.launch {
             val budget = Budget(
@@ -106,7 +122,9 @@ class BudgetManagerViewModel(
                 amount = amount,
                 period = BudgetPeriod.MONTHLY,
                 startDate = System.currentTimeMillis(),
-                iconName = iconName
+                iconName = iconName,
+                budgetMonth = _selectedMonth.value,
+                budgetYear = _selectedYear.value
             )
             transactionRepository.insertBudget(budget)
         }

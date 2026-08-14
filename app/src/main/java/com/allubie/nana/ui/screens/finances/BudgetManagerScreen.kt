@@ -143,14 +143,18 @@ fun BudgetManagerScreen(
         return CurrencyFormatter.formatWithSymbol(kotlin.math.abs(amount), currencySymbol)
     }
     
-    // Generate months starting from current month
+    val selectedYear = uiState.selectedYear
+    
+    // Generate months starting from current month, tracking year
     val currentMonthIndex = Calendar.getInstance().get(Calendar.MONTH)
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
     val monthNames = listOf("January", "February", "March", "April", "May", "June", 
                            "July", "August", "September", "October", "November", "December")
-    // Reorder months to start from current month
+    // Reorder months to start from current month, track year for each
     val months = (0..11).map { offset ->
         val monthIndex = (currentMonthIndex + offset) % 12
-        Pair(monthIndex, monthNames[monthIndex])
+        val yearForMonth = currentYear + (currentMonthIndex + offset) / 12
+        Triple(monthIndex, monthNames[monthIndex], yearForMonth)
     }
     
     if (showAddBudgetDialog || editingBudget != null) {
@@ -224,8 +228,8 @@ fun BudgetManagerScreen(
         }
     ) { paddingValues ->
         // Find index of selected month in the reordered list
-        val selectedMonthListIndex = remember(selectedMonth) {
-            months.indexOfFirst { it.first == selectedMonth }.coerceAtLeast(0)
+        val selectedMonthListIndex = remember(selectedMonth, selectedYear) {
+            months.indexOfFirst { it.first == selectedMonth && it.third == selectedYear }.coerceAtLeast(0)
         }
         
         val monthListState = rememberLazyListState()
@@ -250,18 +254,21 @@ fun BudgetManagerScreen(
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(months.size, key = { index -> "month_${months[index].first}" }) { index ->
-                        val (monthValue, monthName) = months[index]
-                        val isSelected = monthValue == selectedMonth
+                    items(months.size, key = { index -> "month_${months[index].first}_${months[index].third}" }) { index ->
+                        val (monthValue, monthName, yearValue) = months[index]
+                        val isSelected = monthValue == selectedMonth && yearValue == selectedYear
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary 
                                     else MaterialTheme.colorScheme.surfaceVariant,
                             shadowElevation = if (isSelected) 8.dp else 0.dp,
-                            modifier = Modifier.clickable { viewModel.selectMonth(monthValue) }
+                            modifier = Modifier.clickable {
+                                viewModel.selectMonth(monthValue)
+                                viewModel.selectYear(yearValue)
+                            }
                         ) {
                             Text(
-                                text = monthName,
+                                text = if (yearValue != currentYear) "$monthName '${yearValue % 100}" else monthName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary 
@@ -299,7 +306,7 @@ fun BudgetManagerScreen(
                             CircularProgressIndicator(
                                 progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
                                 modifier = Modifier.size(180.dp),
-                                strokeWidth = 16.dp,
+                                strokeWidth = 10.dp,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 color = MaterialTheme.colorScheme.primary,
                                 strokeCap = StrokeCap.Round
@@ -341,6 +348,15 @@ fun BudgetManagerScreen(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
+                        if (budgets.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.template_allocated_categories, formatCurrency(budgets.sumOf { it.amount }), budgets.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
+                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         

@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import com.allubie.nana.R
 
 
+import androidx.compose.ui.text.style.TextAlign
+
 @Composable
 fun NanaConfirmationDialog(
     onDismiss: () -> Unit,
@@ -32,6 +34,9 @@ fun NanaConfirmationDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier
+            .fillMaxWidth(0.92f)
+            .widthIn(min = 320.dp, max = 560.dp),
         shape = RoundedCornerShape(28.dp),
         icon = icon?.let {
             {
@@ -39,7 +44,8 @@ fun NanaConfirmationDialog(
                     imageVector = it,
                     contentDescription = null,
                     tint = if (isDestructive) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
                 )
             }
         },
@@ -47,14 +53,18 @@ fun NanaConfirmationDialog(
             Text(
                 text = title,
                 fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         },
         text = {
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         },
         confirmButton = {
@@ -67,7 +77,8 @@ fun NanaConfirmationDialog(
                 ) else ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                ),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = resolvedConfirmText,
@@ -82,7 +93,8 @@ fun NanaConfirmationDialog(
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp, 
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
+                ),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = resolvedDismissText,

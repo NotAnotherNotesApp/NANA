@@ -12,8 +12,8 @@ android {
         applicationId = "com.allubie.nana"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.9.8"
+        versionCode = 8
+        versionName = "1.0.1"
 
         vectorDrawables {
             useSupportLibrary = true

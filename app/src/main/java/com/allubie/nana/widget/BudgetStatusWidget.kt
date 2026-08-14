@@ -70,8 +70,10 @@ class BudgetStatusWidget : GlanceAppWidget() {
             }
 
             val totalBudgetLimit = prefs.totalBudget.first()
+            val currentMonth = calendar.get(Calendar.MONTH)
+            val currentYear = calendar.get(Calendar.YEAR)
             val allBudgets = try {
-                db.budgetDao().getAllBudgets().first()
+                db.budgetDao().getBudgetsForMonth(currentMonth, currentYear).first()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to read budgets for widget", e)
                 emptyList()

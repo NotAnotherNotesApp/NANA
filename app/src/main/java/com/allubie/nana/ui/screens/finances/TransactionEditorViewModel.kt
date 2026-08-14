@@ -65,10 +65,10 @@ class TransactionEditorViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     val currencySymbol: StateFlow<String> = preferencesManager.currencySymbol
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "$")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
     
     val currencyCode: StateFlow<String> = preferencesManager.currencyCode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "USD")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
     
 
     init {

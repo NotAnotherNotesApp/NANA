@@ -22,7 +22,7 @@ import com.allubie.nana.data.model.*
         Budget::class,
         Label::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 abstract class NanaDatabase : RoomDatabase() {
@@ -145,6 +145,25 @@ abstract class NanaDatabase : RoomDatabase() {
                 database.execSQL("INSERT INTO notes_fts(notes_fts) VALUES ('rebuild')")
             }
         }
+        
+        // Migration from version 11 to 12 - Per-month budgets
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                val cal = java.util.Calendar.getInstance()
+                val currentMonth = cal.get(java.util.Calendar.MONTH)
+                val currentYear = cal.get(java.util.Calendar.YEAR)
+                
+                // Add budgetMonth and budgetYear columns with current month/year as defaults
+                database.execSQL("ALTER TABLE budgets ADD COLUMN budgetMonth INTEGER NOT NULL DEFAULT $currentMonth")
+                database.execSQL("ALTER TABLE budgets ADD COLUMN budgetYear INTEGER NOT NULL DEFAULT $currentYear")
+                
+                // Drop the old category-only unique index
+                database.execSQL("DROP INDEX IF EXISTS index_budgets_category")
+                
+                // Create new composite unique index
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_budgets_category_budgetMonth_budgetYear ON budgets(category, budgetMonth, budgetYear)")
+            }
+        }
 
         fun getDatabase(context: Context): NanaDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -153,7 +172,7 @@ abstract class NanaDatabase : RoomDatabase() {
                     NanaDatabase::class.java,
                     "nana_database"
                 )
-                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .build()
                 INSTANCE = instance
                 instance

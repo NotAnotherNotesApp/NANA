@@ -3,6 +3,7 @@ package com.allubie.nana.data.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.Calendar
 
 @Entity(
     tableName = "transactions",
@@ -32,7 +33,7 @@ enum class TransactionType {
 @Entity(
     tableName = "budgets",
     indices = [
-        Index(value = ["category"], unique = true)
+        Index(value = ["category", "budgetMonth", "budgetYear"], unique = true)
     ]
 )
 data class Budget(
@@ -43,6 +44,8 @@ data class Budget(
     val period: BudgetPeriod,
     val startDate: Long,
     val iconName: String = "", // Icon name for custom categories
+    val budgetMonth: Int = Calendar.getInstance().get(Calendar.MONTH), // 0-11
+    val budgetYear: Int = Calendar.getInstance().get(Calendar.YEAR),
     val createdAt: Long = System.currentTimeMillis()
 )
 

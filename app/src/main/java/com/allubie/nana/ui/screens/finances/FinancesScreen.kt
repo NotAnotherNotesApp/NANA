@@ -75,6 +75,7 @@ fun FinancesScreen(
     
     var showMonthPicker by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showAllTransactions by remember { mutableStateOf(false) }
     
     val hasEffectiveBudget = hasBudget && totalBudget > 0
     val balance = totalIncome - totalExpenses
@@ -210,12 +211,16 @@ fun FinancesScreen(
                 }
             }
             
-            // Balance card
+            // Balance card - clickable to Budget Manager if budget is active
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 16.dp)
+                        .then(
+                            if (hasEffectiveBudget) Modifier.clip(RoundedCornerShape(24.dp)).clickable { onNavigateToBudgetManager() }
+                            else Modifier
+                        ),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -371,7 +376,7 @@ fun FinancesScreen(
                     )
                     TextButton(onClick = onNavigateToOverview) {
                         Text(
-                            text = stringResource(R.string.action_budget_overview),
+                            text = stringResource(R.string.action_spending_breakdown),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -386,7 +391,7 @@ fun FinancesScreen(
                 }
             }
             
-            // Transaction list
+            // Transaction list (supports full monthly list toggle)
             if (transactions.isEmpty()) {
                 item {
                     Box(
@@ -419,7 +424,8 @@ fun FinancesScreen(
                     }
                 }
             } else {
-                items(transactions.take(10), key = { it.id }) { transaction ->
+                val visibleTransactions = if (showAllTransactions) transactions else transactions.take(10)
+                items(visibleTransactions, key = { it.id }) { transaction ->
                     TransactionItem(
                         transaction = transaction,
                         dayFormat = dayFormat,
@@ -428,6 +434,34 @@ fun FinancesScreen(
                         onClick = { onNavigateToEditor(transaction.id) },
                         onDelete = { viewModel.deleteTransaction(transaction) }
                     )
+                }
+                
+                if (transactions.size > 10) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            OutlinedButton(
+                                onClick = { showAllTransactions = !showAllTransactions },
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp, 
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Text(
+                                    text = if (showAllTransactions) 
+                                        stringResource(R.string.action_show_less)
+                                    else 
+                                        stringResource(R.string.action_see_all, transactions.size),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

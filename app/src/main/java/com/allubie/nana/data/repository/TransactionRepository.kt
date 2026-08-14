@@ -25,8 +25,10 @@ class TransactionRepository(
 
     // --- BudgetDao ---
     fun getAllBudgets(): Flow<List<Budget>> = budgetDao.getAllBudgets()
+    fun getBudgetsForMonth(month: Int, year: Int): Flow<List<Budget>> = budgetDao.getBudgetsForMonth(month, year)
     suspend fun getOverallBudget(): Budget? = budgetDao.getOverallBudget()
     suspend fun getBudgetForCategory(category: String): Budget? = budgetDao.getBudgetForCategory(category)
+    suspend fun getBudgetForCategoryInMonth(category: String, month: Int, year: Int): Budget? = budgetDao.getBudgetForCategoryInMonth(category, month, year)
     suspend fun getBudgetById(id: Long): Budget? = budgetDao.getBudgetById(id)
     suspend fun insertBudget(budget: Budget): Long = budgetDao.insertBudget(budget)
     suspend fun updateBudget(budget: Budget) = budgetDao.updateBudget(budget)

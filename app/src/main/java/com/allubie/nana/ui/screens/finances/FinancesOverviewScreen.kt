@@ -1,6 +1,5 @@
 package com.allubie.nana.ui.screens.finances
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,11 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,8 +22,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.util.CurrencyFormatter
 import kotlin.math.roundToInt
-import java.text.NumberFormat
-import java.util.*
 import androidx.compose.ui.res.stringResource
 import com.allubie.nana.R
 
@@ -48,7 +42,7 @@ fun FinancesOverviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.title_overview)) },
+                title = { Text(stringResource(R.string.title_spending_analytics)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -162,9 +156,10 @@ fun FinancesOverviewScreen(
             // Donut Chart
             if (overview.categoryBreakdown.isNotEmpty()) {
                 item {
-                    SpendingDonutChart(
+                    SpendingGaugeCard(
                         categories = overview.categoryBreakdown,
                         totalAmount = overview.totalExpenses,
+                        totalIncome = overview.totalIncome,
                         currencySymbol = currencySymbol
                     )
                 }
@@ -302,102 +297,119 @@ private fun BudgetComparisonItem(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SpendingDonutChart(
+private fun SpendingGaugeCard(
     categories: List<CategorySpending>,
     totalAmount: Double,
+    totalIncome: Double,
     currencySymbol: String
 ) {
     val chartColors = categories.map { Color(it.color) }
     
-    fun formatAmount(amount: Double): String {
-        val formatted = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }.format(amount)
-        return "$currencySymbol$formatted"
-    }
+    // Spending ratio as percentage of income
+    val spentPercentage = if (totalIncome > 0) {
+        ((totalAmount / totalIncome) * 100).roundToInt().coerceIn(0, 100)
+    } else if (totalAmount > 0) 100 else 0
+    
+    val remainingPercentage = (100 - spentPercentage).coerceAtLeast(0)
     
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Circular gauge matching Budget Manager style
             Box(
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.size(180.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Donut chart
-                Canvas(modifier = Modifier.size(180.dp)) {
-                    val strokeWidth = 32.dp.toPx()
-                    val radius = (size.minDimension - strokeWidth) / 2
-                    val topLeft = Offset(
-                        (size.width - radius * 2) / 2,
-                        (size.height - radius * 2) / 2
-                    )
-                    val arcSize = Size(radius * 2, radius * 2)
-                    
-                    var startAngle = -90f
-                    categories.forEachIndexed { index, category ->
-                        val sweepAngle = category.percentage * 360f
-                        drawArc(
-                            color = chartColors[index],
-                            startAngle = startAngle,
-                            sweepAngle = sweepAngle,
-                            useCenter = false,
-                            topLeft = topLeft,
-                            size = arcSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-                        )
-                        startAngle += sweepAngle
-                    }
-                }
-                
-                // Center text
+                CircularProgressIndicator(
+                    progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
+                    modifier = Modifier.size(180.dp),
+                    strokeWidth = 10.dp,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    color = if (spentPercentage >= 80) MaterialTheme.colorScheme.error 
+                            else MaterialTheme.colorScheme.primary,
+                    strokeCap = StrokeCap.Round
+                )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stringResource(R.string.status_total),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "$spentPercentage%",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = formatAmount(totalAmount),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        text = stringResource(R.string.label_spent),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Legend
-            FlowRow(
+            Text(
+                text = stringResource(R.string.status_total_spent),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = CurrencyFormatter.formatWithSymbol(totalAmount, currencySymbol),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = if (spentPercentage >= 80) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                maxItemsInEachRow = 3
-            ) {
-                categories.forEachIndexed { index, category ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(chartColors[index])
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = category.name,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+            if (totalIncome > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.template_of_total_income, 
+                        CurrencyFormatter.formatWithSymbol(totalIncome, currencySymbol)),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+            
+            if (categories.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Category legend
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    maxItemsInEachRow = 3
+                ) {
+                    categories.forEachIndexed { index, category ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(chartColors[index])
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = category.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

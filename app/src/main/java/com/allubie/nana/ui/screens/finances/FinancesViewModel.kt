@@ -33,7 +33,7 @@ class FinancesViewModel(
         val isLoading: Boolean = true,
         val totalBudget: Double = 0.0,
         val hasBudget: Boolean = false,
-        val currencySymbol: String = "$",
+        val currencySymbol: String = "",
         val expenseLabels: List<Label> = emptyList(),
         val incomeLabels: List<Label> = emptyList(),
         val filteredTransactions: List<Transaction> = emptyList(),
@@ -45,8 +45,13 @@ class FinancesViewModel(
     private val _isLoading = MutableStateFlow(true)
     
     private val totalBudgetLimit = preferencesManager.totalBudget
-    private val totalAllocated = transactionRepository.getAllBudgets()
-        .map { budgets -> budgets.sumOf { it.amount } }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val totalAllocated = _selectedMonth.flatMapLatest { calendar ->
+        val month = calendar.get(Calendar.MONTH)
+        val year = calendar.get(Calendar.YEAR)
+        transactionRepository.getBudgetsForMonth(month, year)
+            .map { budgets -> budgets.sumOf { it.amount } }
+    }
     
     private val _totalBudget = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
         if (limit > 0) limit else allocated

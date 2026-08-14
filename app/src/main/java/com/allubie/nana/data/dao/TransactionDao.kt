@@ -64,11 +64,17 @@ interface BudgetDao {
     @Query("SELECT * FROM budgets ORDER BY createdAt DESC")
     fun getAllBudgets(): Flow<List<Budget>>
     
+    @Query("SELECT * FROM budgets WHERE budgetMonth = :month AND budgetYear = :year ORDER BY createdAt DESC")
+    fun getBudgetsForMonth(month: Int, year: Int): Flow<List<Budget>>
+    
     @Query("SELECT * FROM budgets WHERE category = '' LIMIT 1")
     suspend fun getOverallBudget(): Budget?
     
     @Query("SELECT * FROM budgets WHERE category = :category LIMIT 1")
     suspend fun getBudgetForCategory(category: String): Budget?
+    
+    @Query("SELECT * FROM budgets WHERE category = :category AND budgetMonth = :month AND budgetYear = :year LIMIT 1")
+    suspend fun getBudgetForCategoryInMonth(category: String, month: Int, year: Int): Budget?
     
     @Query("SELECT * FROM budgets WHERE id = :id")
     suspend fun getBudgetById(id: Long): Budget?
