@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.2 (Build 9)
+
+### Bug Fixes
+- **Finance — Month-Scoped Spending Breakdown**: Spending Analytics overview now displays data for the selected month instead of always defaulting to the current month. Month and year are passed as navigation arguments from the Finance screen.
+- **Finance — Month-Specific Budgets**: Fixed overall monthly budget limit and category budgets.
+- **Currency — Region Default Fix**
+
+### Improvements
+- **Finance — Multi-Segment Category Donut**
+- **Finance — Spending Analytics**: Fixed spent percentage calculation to accurately reflect category proportions of total expenses rather than showing a flat 100%.
+- **Finance — UI Cleanliness**: Cleaned up the category legend in Spending Breakdown to show category names with color indicators without redundant percentage tags.
+
 ## v1.0.1 (Build 8)
 
 ### Improvements

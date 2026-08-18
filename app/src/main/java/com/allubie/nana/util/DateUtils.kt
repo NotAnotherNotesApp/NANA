@@ -7,44 +7,18 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/**
- * Centralized date utilities and formatters for consistent date handling across the app.
- */
 object DateUtils {
     
-    /**
-     * Check if two timestamps represent the same calendar day.
-     */
     fun isSameDay(date1: Long, date2: Long): Boolean {
         val ld1 = Instant.ofEpochMilli(date1).atZone(ZoneId.systemDefault()).toLocalDate()
         val ld2 = Instant.ofEpochMilli(date2).atZone(ZoneId.systemDefault()).toLocalDate()
         return ld1 == ld2
     }
     
-    /**
-     * Check if two Calendar instances represent the same day.
-     */
-    fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
-        return isSameDay(cal1.timeInMillis, cal2.timeInMillis)
-    }
+    fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean = isSameDay(cal1.timeInMillis, cal2.timeInMillis)
+    fun isSameDay(date1: Date, date2: Date): Boolean = isSameDay(date1.time, date2.time)
+    fun isToday(timestamp: Long): Boolean = isSameDay(timestamp, System.currentTimeMillis())
     
-    /**
-     * Check if two Date instances represent the same day.
-     */
-    fun isSameDay(date1: Date, date2: Date): Boolean {
-        return isSameDay(date1.time, date2.time)
-    }
-    
-    /**
-     * Check if the given timestamp is today.
-     */
-    fun isToday(timestamp: Long): Boolean {
-        return isSameDay(timestamp, System.currentTimeMillis())
-    }
-    
-    /**
-     * Get start of day (midnight) for the given calendar.
-     */
     fun getStartOfDay(calendar: Calendar): Calendar {
         val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
@@ -56,9 +30,6 @@ object DateUtils {
         return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
     
-    /**
-     * Get end of day (23:59:59.999) for the given calendar.
-     */
     fun getEndOfDay(calendar: Calendar): Calendar {
         val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1_000_000).toInstant()
@@ -70,9 +41,6 @@ object DateUtils {
         return date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1_000_000).toInstant().toEpochMilli()
     }
     
-    /**
-     * Get start of month for the given calendar.
-     */
     fun getStartOfMonth(calendar: Calendar): Calendar {
         val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         val startOfMonth = date.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
@@ -84,9 +52,7 @@ object DateUtils {
         return date.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
     
-    /**
-     * Get start of next month for the given calendar (exclusive end for range queries).
-     */
+    // Exclusive end boundary for monthly range queries
     fun getStartOfNextMonth(calendar: Calendar): Calendar {
         val date = Instant.ofEpochMilli(calendar.timeInMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         val startOfNextMonth = date.withDayOfMonth(1).plusMonths(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
@@ -99,10 +65,6 @@ object DateUtils {
     }
 }
 
-/**
- * Centralized date formatters using immutable DateTimeFormatter.
- * DateTimeFormatter is thread-safe, so these are properties.
- */
 object DateFormatters {
     val monthYear: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
     val monthShort: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())

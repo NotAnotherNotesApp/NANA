@@ -20,8 +20,7 @@ data class FinancesOverviewData(
     val totalIncome: Double = 0.0,
     val totalExpenses: Double = 0.0,
     val netSavings: Double = 0.0,
-    val categoryBreakdown: List<CategorySpending> = emptyList(),
-    val budgetComparisons: List<BudgetComparison> = emptyList()
+    val categoryBreakdown: List<CategorySpending> = emptyList()
 )
 
 data class CategorySpending(
@@ -31,16 +30,12 @@ data class CategorySpending(
     val color: Int = 0
 )
 
-data class BudgetComparison(
-    val category: String,
-    val budgeted: Double,
-    val actual: Double
-)
-
 class FinancesOverviewViewModel(
     private val transactionRepository: TransactionRepository,
     private val labelRepository: LabelRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH),
+    private val selectedYear: Int = Calendar.getInstance().get(Calendar.YEAR)
 ) : ViewModel() {
     
     private val _overview = MutableStateFlow(FinancesOverviewData())
@@ -82,19 +77,16 @@ class FinancesOverviewViewModel(
     
     private fun observeOverview() {
         viewModelScope.launch {
-            val currentCal = Calendar.getInstance()
-            val currentMonth = currentCal.get(Calendar.MONTH)
-            val currentYear = currentCal.get(Calendar.YEAR)
-            
             combine(
                 transactionRepository.getAllTransactions(), 
-                transactionRepository.getBudgetsForMonth(currentMonth, currentYear),
                 labelRepository.getLabelsByType(LabelType.EXPENSE)
-            ) { transactions, budgets, labels ->
-                Triple(transactions, budgets, labels)
-            }.collect { (transactions, budgets, labels) ->
+            ) { transactions, labels ->
+                Pair(transactions, labels)
+            }.collect { (transactions, labels) ->
                 try {
                     val calendar = Calendar.getInstance()
+                    calendar.set(Calendar.YEAR, selectedYear)
+                    calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, 1)
                     calendar.set(Calendar.HOUR_OF_DAY, 0)
                     calendar.set(Calendar.MINUTE, 0)
@@ -139,27 +131,11 @@ class FinancesOverviewViewModel(
                         .filter { it.amount > 0.0 }
                         .sortedByDescending { it.amount }
 
-                    val budgetComparisons = budgets.map { budget ->
-                        val actual = if (budget.category.isEmpty()) {
-                            totalExpenses
-                        } else {
-                            transactions
-                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date in startOfMonth until endOfMonth }
-                                .sumOf { it.amount }
-                        }
-                        BudgetComparison(
-                            category = budget.category,
-                            budgeted = budget.amount,
-                            actual = actual
-                        )
-                    }
-
                     _overview.value = FinancesOverviewData(
                         totalIncome = totalIncome,
                         totalExpenses = totalExpenses,
                         netSavings = totalIncome - totalExpenses,
-                        categoryBreakdown = categoryBreakdown,
-                        budgetComparisons = budgetComparisons
+                        categoryBreakdown = categoryBreakdown
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -169,7 +145,7 @@ class FinancesOverviewViewModel(
     }
     
     companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
+        fun factory(selectedMonth: Int, selectedYear: Int): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as NanaApplication
                 val transactionRepository = TransactionRepository(
@@ -180,7 +156,9 @@ class FinancesOverviewViewModel(
                 FinancesOverviewViewModel(
                     transactionRepository,
                     labelRepository,
-                    application.preferencesManager
+                    application.preferencesManager,
+                    selectedMonth,
+                    selectedYear
                 )
             }
         }

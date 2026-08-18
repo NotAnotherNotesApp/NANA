@@ -90,10 +90,8 @@ fun RoutinesScreen(
     val dayNumberFormat = SimpleDateFormat("d", Locale.getDefault())
     val dateStringFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
-    // Helper to check if timer should show for current selected date
     val selectedDateString = remember(selectedDate) { dateStringFormat.format(selectedDate) }
     
-    // Helper function to format time for display
     fun formatTimeForDisplay(reminderTime: String?): String? {
         if (reminderTime == null) return null
         return try {
@@ -308,7 +306,6 @@ fun RoutinesScreen(
                 }
             }
             
-            // Progress card
             item {
                 ProgressCard(
                     completionRate = completionRate.coerceAtMost(1f),
@@ -319,7 +316,6 @@ fun RoutinesScreen(
                 )
             }
             
-            // Morning section
             if (morningRoutines.isNotEmpty()) {
                 item {
                     Text(

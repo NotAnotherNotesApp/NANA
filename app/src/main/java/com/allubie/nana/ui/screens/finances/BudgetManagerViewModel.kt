@@ -40,17 +40,25 @@ class BudgetManagerViewModel(
     
     private val _currencySymbol = preferencesManager.currencySymbol
     
-    private val _totalBudgetLimit = preferencesManager.totalBudget
-    
-    // Budgets scoped to selected month/year
+    // All budgets (overall + category) scoped to selected month/year
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private val _budgets = combine(_selectedMonth, _selectedYear) { month, year ->
+    private val _allBudgetsForMonth = combine(_selectedMonth, _selectedYear) { month, year ->
         Pair(month, year)
     }.flatMapLatest { (month, year) ->
         transactionRepository.getBudgetsForMonth(month, year)
     }
     
-    private val _totalAllocated = _budgets.map { budgetList ->
+    // Overall budget limit for this specific month (category == "")
+    private val _totalBudgetLimit = _allBudgetsForMonth.map { list ->
+        list.find { it.category.isEmpty() }?.amount ?: 0.0
+    }
+    
+    // Category-specific budgets for this month (category != "")
+    private val _categoryBudgets = _allBudgetsForMonth.map { list ->
+        list.filter { it.category.isNotEmpty() }
+    }
+    
+    private val _totalAllocated = _categoryBudgets.map { budgetList ->
         budgetList.sumOf { it.amount }
     }
     
@@ -87,7 +95,7 @@ class BudgetManagerViewModel(
     }
     
     val uiState: StateFlow<BudgetManagerUiState> = combine(
-        _selectedMonth, _selectedYear, _currencySymbol, _totalBudgetLimit, _budgets,
+        _selectedMonth, _selectedYear, _currencySymbol, _totalBudgetLimit, _categoryBudgets,
         _totalAllocated, _totalBudget, _categorySpending, _totalSpent
     ) { args: Array<Any> ->
         BudgetManagerUiState(
@@ -127,24 +135,42 @@ class BudgetManagerViewModel(
                 budgetYear = _selectedYear.value
             )
             transactionRepository.insertBudget(budget)
+            requestBudgetWidgetRefresh(application)
         }
     }
     
     fun updateBudget(budget: Budget) {
         viewModelScope.launch {
             transactionRepository.updateBudget(budget)
+            requestBudgetWidgetRefresh(application)
         }
     }
     
     fun deleteBudget(budget: Budget) {
         viewModelScope.launch {
             transactionRepository.deleteBudget(budget)
+            requestBudgetWidgetRefresh(application)
         }
     }
     
     fun setTotalBudgetLimit(amount: Double) {
         viewModelScope.launch {
-            preferencesManager.setTotalBudget(amount)
+            val month = _selectedMonth.value
+            val year = _selectedYear.value
+            val existingOverallBudget = transactionRepository.getBudgetForCategoryInMonth("", month, year)
+            if (amount > 0) {
+                val budget = existingOverallBudget?.copy(amount = amount) ?: Budget(
+                    category = "",
+                    amount = amount,
+                    period = BudgetPeriod.MONTHLY,
+                    startDate = System.currentTimeMillis(),
+                    budgetMonth = month,
+                    budgetYear = year
+                )
+                transactionRepository.insertBudget(budget)
+            } else if (existingOverallBudget != null) {
+                transactionRepository.deleteBudget(existingOverallBudget)
+            }
             requestBudgetWidgetRefresh(application)
         }
     }

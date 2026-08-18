@@ -52,7 +52,6 @@ class NoteEditorViewModel(
     private val _uiState = MutableStateFlow(NoteEditorUiState())
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
     
-    // Available note labels from database
     val availableLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.NOTE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     

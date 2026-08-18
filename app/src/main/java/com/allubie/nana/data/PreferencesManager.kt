@@ -35,7 +35,10 @@ class PreferencesManager(private val context: Context) {
             "KES" to "KSh", "GHS" to "₵", "AED" to "د.إ", "SAR" to "﷼", "QAR" to "﷼",
             "KWD" to "د.ك", "THB" to "฿", "MYR" to "RM", "SGD" to "S$", "IDR" to "Rp",
             "PHP" to "₱", "VND" to "₫", "PKR" to "₨", "LKR" to "₨", "TWD" to "NT$",
-            "HKD" to "HK$", "NZD" to "NZ$"
+            "HKD" to "HK$", "NZD" to "NZ$", "BDT" to "৳", "MMK" to "K",
+            "KRW" to "₩", "UAH" to "₴", "ILS" to "₪", "KZT" to "₸", "GEL" to "₾",
+            "NPR" to "₨", "AFN" to "؋", "IRR" to "﷼", "MNT" to "₮", "LAK" to "₭",
+            "CRC" to "₡", "PEN" to "S/."
         )
 
         private fun resolveCurrencySymbol(code: String, rawSymbol: String?): String {
@@ -43,37 +46,37 @@ class PreferencesManager(private val context: Context) {
             if (!rawSymbol.isNullOrBlank() && rawSymbol != cleanCode) {
                 return rawSymbol
             }
-            val mappedSymbol = knownCurrencySymbols[cleanCode]
-            if (mappedSymbol != null) {
-                return mappedSymbol
-            }
+            knownCurrencySymbols[cleanCode]?.let { return it }
+
             return try {
                 val currency = Currency.getInstance(cleanCode)
-                val symbol = currency.getSymbol(Locale.US)
-                if (symbol.isNotBlank() && symbol != cleanCode) symbol else "$"
+                val localSymbol = currency.getSymbol(Locale.getDefault())
+                if (localSymbol.isNotBlank() && localSymbol != cleanCode) {
+                    return localSymbol
+                }
+                val usSymbol = currency.getSymbol(Locale.US)
+                if (usSymbol.isNotBlank() && usSymbol != cleanCode) usSymbol else cleanCode
             } catch (e: Exception) {
-                "$"
+                cleanCode.ifEmpty { "$" }
             }
         }
         
-        // Get default currency from device locale
         private fun getDefaultCurrency(): Pair<String, String> {
             return try {
                 val locale = Locale.getDefault()
                 val currency = Currency.getInstance(locale)
                 val code = currency.currencyCode
-                val symbol = resolveCurrencySymbol(code, currency.getSymbol(Locale.US))
+                val rawSymbol = currency.getSymbol(locale)
+                val symbol = resolveCurrencySymbol(code, rawSymbol)
                 Pair(code, symbol)
             } catch (e: Exception) {
                 Pair("USD", "$")
             }
         }
         
-        // Get default timezone from device
         private fun getDefaultTimezone(): String = TimeZone.getDefault().id
     }
     
-    // Cache locale defaults
     private val defaultCurrency = getDefaultCurrency()
     private val defaultTimezone = getDefaultTimezone()
     

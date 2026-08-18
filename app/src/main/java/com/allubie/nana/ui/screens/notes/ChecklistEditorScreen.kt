@@ -85,7 +85,6 @@ fun ChecklistEditorScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top App Bar
             TopAppBar(
                 title = {
                     BasicTextField(
@@ -151,7 +150,6 @@ fun ChecklistEditorScreen(
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
             )
             
-            // Checklist Items + Input in single scrollable list
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -161,7 +159,6 @@ fun ChecklistEditorScreen(
                 contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Unchecked items first
                 val uncheckedItems = uiState.items.filter { !it.isChecked }
                 val checkedItems = uiState.items.filter { it.isChecked }
                 
@@ -177,7 +174,6 @@ fun ChecklistEditorScreen(
                     )
                 }
                 
-                // New Item Input - inline with list items
                 item(key = "new_item_input") {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),

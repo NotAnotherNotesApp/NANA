@@ -9,7 +9,6 @@ class TransactionRepository(
     private val transactionDao: TransactionDao,
     private val budgetDao: BudgetDao
 ) {
-    // --- TransactionDao ---
     fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
     fun getTransactionsInRange(startDate: Long, endDate: Long): Flow<List<Transaction>> = transactionDao.getTransactionsInRange(startDate, endDate)
     fun getTransactionsByType(type: TransactionType): Flow<List<Transaction>> = transactionDao.getTransactionsByType(type)
@@ -23,7 +22,6 @@ class TransactionRepository(
     suspend fun deleteTransaction(transaction: Transaction) = transactionDao.deleteTransaction(transaction)
     suspend fun deleteTransactionById(id: Long) = transactionDao.deleteTransactionById(id)
 
-    // --- BudgetDao ---
     fun getAllBudgets(): Flow<List<Budget>> = budgetDao.getAllBudgets()
     fun getBudgetsForMonth(month: Int, year: Int): Flow<List<Budget>> = budgetDao.getBudgetsForMonth(month, year)
     suspend fun getOverallBudget(): Budget? = budgetDao.getOverallBudget()

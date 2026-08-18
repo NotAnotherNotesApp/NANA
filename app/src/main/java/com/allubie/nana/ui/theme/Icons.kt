@@ -16,7 +16,6 @@ object NanaIcons {
             viewportHeight = 960f
         ).apply {
             path(fill = SolidColor(Color.Black)) {
-                // Outer shape
                 moveTo(640f, 480f)
                 lineToRelative(80f, 80f)
                 verticalLineToRelative(80f)
@@ -36,7 +35,6 @@ object NanaIcons {
                 horizontalLineToRelative(-40f)
                 verticalLineToRelative(280f)
                 close()
-                // Inner cutout
                 moveTo(354f, 560f)
                 horizontalLineToRelative(252f)
                 lineToRelative(-46f, -46f)
@@ -45,7 +43,6 @@ object NanaIcons {
                 verticalLineToRelative(314f)
                 lineToRelative(-46f, 46f)
                 close()
-                // Center point
                 moveTo(480f, 560f)
                 close()
             }

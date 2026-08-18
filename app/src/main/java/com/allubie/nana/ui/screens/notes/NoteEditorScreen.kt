@@ -58,7 +58,6 @@ fun NoteEditorScreen(
     val richTextState = rememberRichTextState()
     val context = LocalContext.current
     
-    // State for label picker dialog
     var showLabelPicker by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
@@ -67,7 +66,6 @@ fun NoteEditorScreen(
         }
     }
     
-    // Image picker
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -153,7 +151,6 @@ fun NoteEditorScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top Bar
             TopAppBar(
                 title = {
                     Text(
@@ -206,7 +203,6 @@ fun NoteEditorScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Title input
                 TextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
@@ -354,7 +350,6 @@ fun NoteEditorScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 
-                // Rich Text Editor
                 RichTextEditor(
                     state = richTextState,
                     modifier = Modifier
@@ -385,7 +380,6 @@ fun NoteEditorScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
             
-            // Bottom Formatting Toolbar
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()

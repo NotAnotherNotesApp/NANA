@@ -12,10 +12,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-/**
- * Section header for settings-style grouped lists.
- * Uses Material 3 labelMedium with proximity-based spacing.
- */
 @Composable
 fun SectionHeader(
     title: String,
@@ -35,9 +31,6 @@ fun SectionHeader(
     )
 }
 
-/**
- * Material 3 card container for grouped settings items.
- */
 @Composable
 fun SettingsCard(
     modifier: Modifier = Modifier,
@@ -51,9 +44,6 @@ fun SettingsCard(
     }
 }
 
-/**
- * A single clickable settings row following Material 3 ListItem pattern.
- */
 @Composable
 fun SettingsItem(
     icon: ImageVector,
@@ -98,9 +88,6 @@ fun SettingsItem(
     )
 }
 
-/**
- * A settings row with a trailing Switch instead of a chevron.
- */
 @Composable
 fun SettingsItemWithSwitch(
     icon: ImageVector,

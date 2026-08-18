@@ -69,7 +69,6 @@ class BudgetStatusWidget : GlanceAppWidget() {
                 0.0
             }
 
-            val totalBudgetLimit = prefs.totalBudget.first()
             val currentMonth = calendar.get(Calendar.MONTH)
             val currentYear = calendar.get(Calendar.YEAR)
             val allBudgets = try {
@@ -78,8 +77,9 @@ class BudgetStatusWidget : GlanceAppWidget() {
                 Log.e(TAG, "Failed to read budgets for widget", e)
                 emptyList()
             }
-            val totalAllocated = allBudgets.sumOf { it.amount }
-            val budgetAmount = if (totalBudgetLimit > 0) totalBudgetLimit else totalAllocated
+            val overallBudgetLimit = allBudgets.find { it.category.isEmpty() }?.amount ?: 0.0
+            val totalAllocated = allBudgets.filter { it.category.isNotEmpty() }.sumOf { it.amount }
+            val budgetAmount = if (overallBudgetLimit > 0) overallBudgetLimit else totalAllocated
             val remainingAmountRaw = budgetAmount - monthSpending
             val remainingAmount = remainingAmountRaw.coerceAtLeast(0.0)
             val remainingPercentage = if (budgetAmount > 0) {

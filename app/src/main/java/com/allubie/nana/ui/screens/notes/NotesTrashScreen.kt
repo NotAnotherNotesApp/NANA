@@ -148,7 +148,6 @@ fun NotesTrashScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Info banner
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -179,7 +178,6 @@ fun NotesTrashScreen(
                     }
                 }
                 
-                // Trash items
                 items(notes, key = { it.id }) { note ->
                     TrashNoteItem(
                         note = note,

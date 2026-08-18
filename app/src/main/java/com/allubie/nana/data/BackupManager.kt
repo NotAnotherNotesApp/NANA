@@ -108,7 +108,7 @@ class BackupManager(
             val backupData = gson.fromJson(json, BackupData::class.java)
             
             database.withTransaction {
-                // Clear existing data (order matters for foreign keys)
+                // Clear existing tables in dependent order to satisfy foreign keys
                 database.noteImageDao().deleteAllImages()
                 database.checklistItemDao().deleteAllItems()
                 database.noteDao().deleteAllNotes()
@@ -119,50 +119,15 @@ class BackupManager(
                 database.budgetDao().deleteAllBudgets()
                 database.labelDao().deleteAllLabels()
                 
-                // Import notes
-                backupData.notes.forEach { note ->
-                    database.noteDao().insertNote(note)
-                }
-                
-                // Import note images
-                backupData.noteImages.forEach { image ->
-                    database.noteImageDao().insertImage(image)
-                }
-                
-                // Import checklist items
-                backupData.checklistItems.forEach { item ->
-                    database.checklistItemDao().insertItem(item)
-                }
-                
-                // Import events
-                backupData.events.forEach { event ->
-                    database.eventDao().insertEvent(event)
-                }
-                
-                // Import routines
-                backupData.routines.forEach { routine ->
-                    database.routineDao().insertRoutine(routine)
-                }
-                
-                // Import routine completions
-                backupData.routineCompletions.forEach { completion ->
-                    database.routineCompletionDao().insertCompletion(completion)
-                }
-                
-                // Import transactions
-                backupData.transactions.forEach { transaction ->
-                    database.transactionDao().insertTransaction(transaction)
-                }
-                
-                // Import budgets
-                backupData.budgets.forEach { budget ->
-                    database.budgetDao().insertBudget(budget)
-                }
-                
-                // Import labels
-                backupData.labels.forEach { label ->
-                    database.labelDao().insertLabel(label)
-                }
+                backupData.notes.forEach { database.noteDao().insertNote(it) }
+                backupData.noteImages.forEach { database.noteImageDao().insertImage(it) }
+                backupData.checklistItems.forEach { database.checklistItemDao().insertItem(it) }
+                backupData.events.forEach { database.eventDao().insertEvent(it) }
+                backupData.routines.forEach { database.routineDao().insertRoutine(it) }
+                backupData.routineCompletions.forEach { database.routineCompletionDao().insertCompletion(it) }
+                backupData.transactions.forEach { database.transactionDao().insertTransaction(it) }
+                backupData.budgets.forEach { database.budgetDao().insertBudget(it) }
+                backupData.labels.forEach { database.labelDao().insertLabel(it) }
             }
             
             // Restore preferences

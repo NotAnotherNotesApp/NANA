@@ -75,7 +75,6 @@ fun ScheduleScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_schedule)) },
                 actions = {
-                    // Today button
                     TextButton(onClick = { viewModel.selectDate(Date()) }) {
                         Text(
                             text = stringResource(R.string.status_today),
@@ -145,7 +144,6 @@ fun ScheduleScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Week day selector - horizontal scroll
                 Row(
                 modifier = Modifier
                     .fillMaxWidth()

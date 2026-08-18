@@ -86,7 +86,6 @@ class ReminderReceiver : BroadcastReceiver() {
             NotificationHelper.cancelNotification(context, notificationId)
         }
         
-        // Mark routine as completed in database
         if (routineId != -1L) {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
@@ -96,11 +95,9 @@ class ReminderReceiver : BroadcastReceiver() {
                         val completionDao = db.routineCompletionDao()
                         val routineDao = db.routineDao()
                         
-                        // Create completion record for today
                         val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
                         val todayString = dateFormat.format(java.util.Date())
                         
-                        // Check if already completed today
                         val existing = completionDao.getCompletionForDate(routineId, todayString)
                         if (existing == null || !existing.isCompleted) {
                             completionDao.insertCompletion(
@@ -113,7 +110,7 @@ class ReminderReceiver : BroadcastReceiver() {
                             )
                         }
                         
-                        // Also update the routine's streak
+                        // Increment streak
                         val routine = routineDao.getRoutineById(routineId)
                         routine?.let {
                             routineDao.updateRoutine(it.copy(
@@ -132,7 +129,6 @@ class ReminderReceiver : BroadcastReceiver() {
     }
     
     private fun handleBootCompleted(context: Context) {
-        // Reschedule all reminders after device reboot
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {

@@ -51,7 +51,7 @@ import com.allubie.nana.ui.theme.*
 @Composable
 fun FinancesScreen(
     onNavigateToEditor: (Long?) -> Unit,
-    onNavigateToOverview: () -> Unit,
+    onNavigateToOverview: (month: Int, year: Int) -> Unit,
     onNavigateToBudgetManager: () -> Unit,
     onNavigateToSettings: () -> Unit,
     viewModel: FinancesViewModel = viewModel(factory = FinancesViewModel.Factory)
@@ -68,7 +68,6 @@ fun FinancesScreen(
     val expenseLabels = uiState.expenseLabels
     val incomeLabels = uiState.incomeLabels
     
-    // Create label lookup map for quick access
     val labelMap = remember(expenseLabels, incomeLabels) {
         (expenseLabels + incomeLabels).associateBy { it.name.lowercase() }
     }
@@ -177,7 +176,6 @@ fun FinancesScreen(
                     .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                // Month picker
                 item {
                 Row(
                     modifier = Modifier
@@ -242,7 +240,6 @@ fun FinancesScreen(
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Status badge
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = if (isOnTrack) 
@@ -374,7 +371,12 @@ fun FinancesScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 1.sp
                     )
-                    TextButton(onClick = onNavigateToOverview) {
+                    TextButton(onClick = {
+                        onNavigateToOverview(
+                            selectedMonth.get(java.util.Calendar.MONTH),
+                            selectedMonth.get(java.util.Calendar.YEAR)
+                        )
+                    }) {
                         Text(
                             text = stringResource(R.string.action_spending_breakdown),
                             color = MaterialTheme.colorScheme.primary,

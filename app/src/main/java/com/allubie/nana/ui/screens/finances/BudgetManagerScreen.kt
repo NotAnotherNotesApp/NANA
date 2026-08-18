@@ -68,7 +68,6 @@ private val CategoryIcons = mapOf(
     "Other" to Icons.Outlined.MoreHoriz
 )
 
-// Available icons for custom categories
 private val AvailableCategoryIcons = listOf(
     "restaurant" to Icons.Outlined.Restaurant,
     "car" to Icons.Outlined.DirectionsCar,
@@ -108,7 +107,6 @@ private val AvailableCategoryIcons = listOf(
     "brush" to Icons.Outlined.Brush
 )
 
-// Get icon from name
 private fun getIconFromName(iconName: String): ImageVector {
     return AvailableCategoryIcons.find { it.first == iconName }?.second ?: Icons.Outlined.Category
 }
@@ -916,7 +914,7 @@ private fun TotalBudgetDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Total Budget") },
+                    label = { Text(stringResource(R.string.label_total_budget)) },
                     prefix = { Text(currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),

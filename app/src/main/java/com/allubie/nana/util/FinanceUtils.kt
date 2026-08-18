@@ -8,18 +8,7 @@ import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
 
-/**
- * Centralized utility for currency formatting across the app.
- */
 object CurrencyFormatter {
-    
-    /**
-     * Format amount with currency symbol.
-     * @param amount The amount to format
-     * @param currencyCode ISO 4217 currency code (e.g., "USD", "EUR", "BDT")
-     * @param showSymbol Whether to show currency symbol or code
-     * @return Formatted currency string
-     */
     fun format(amount: Double, currencyCode: String, showSymbol: Boolean = true): String {
         return try {
             val currency = Currency.getInstance(currencyCode)
@@ -47,9 +36,6 @@ object CurrencyFormatter {
         }
     }
     
-    /**
-     * Get currency symbol from currency code.
-     */
     fun getSymbol(currencyCode: String): String {
         return try {
             Currency.getInstance(currencyCode).symbol
@@ -58,9 +44,6 @@ object CurrencyFormatter {
         }
     }
     
-    /**
-     * Format with explicit symbol prefix.
-     */
     fun formatWithSymbol(amount: Double, symbol: String): String {
         val formatted = if (amount % 1.0 == 0.0) {
             NumberFormat.getNumberInstance().format(amount.toLong())
@@ -71,9 +54,6 @@ object CurrencyFormatter {
     }
 }
 
-/**
- * Centralized icon mapping for categories.
- */
 object CategoryIcons {
     
     private val iconMap: Map<String, ImageVector> = mapOf(
@@ -228,23 +208,10 @@ object CategoryIcons {
         "check_circle" to Icons.Outlined.CheckCircle
     )
     
-    /**
-     * Get icon by name. Falls back to MoreHoriz if not found.
-     */
-    fun getIcon(iconName: String?): ImageVector {
-        return iconMap[iconName] ?: Icons.Outlined.MoreHoriz
-    }
+    fun getIcon(iconName: String?): ImageVector = iconMap[iconName] ?: Icons.Outlined.MoreHoriz
     
-    /**
-     * Get all available icons for category picker.
-     */
-    fun getAllIcons(): List<Pair<String, ImageVector>> {
-        return iconMap.toList()
-    }
+    fun getAllIcons(): List<Pair<String, ImageVector>> = iconMap.toList()
     
-    /**
-     * Get icons grouped by category for better UX.
-     */
     fun getIconsByGroup(): Map<String, List<Pair<String, ImageVector>>> {
         return mapOf(
             "Food" to listOf(
@@ -323,19 +290,9 @@ object CategoryIcons {
     }
 }
 
-/**
- * Utility for color operations.
- */
 object ColorUtils {
-    
-    /**
-     * Convert Int color to Compose Color.
-     */
     fun intToColor(colorInt: Int): Color = Color(colorInt)
     
-    /**
-     * Available colors for label/category picker.
-     */
     val availableColors = listOf(
         0xFF3B82F6.toInt(),  // Blue
         0xFF06B6D4.toInt(),  // Cyan
@@ -383,9 +340,6 @@ object ColorUtils {
         0xFF0D9488.toInt()   // Dark Teal
     )
 
-    /**
-     * Get the next unused color from availableColors given a list of already-used colors.
-     */
     fun nextAvailableColor(usedColors: List<Int>): Int {
         return availableColors.firstOrNull { it !in usedColors } ?: availableColors.random()
     }

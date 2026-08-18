@@ -1,5 +1,9 @@
 package com.allubie.nana.ui.screens.finances
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,8 +17,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,8 +35,12 @@ import com.allubie.nana.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinancesOverviewScreen(
+    selectedMonth: Int = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH),
+    selectedYear: Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR),
     onNavigateBack: () -> Unit,
-    viewModel: FinancesOverviewViewModel = viewModel(factory = FinancesOverviewViewModel.Factory)
+    viewModel: FinancesOverviewViewModel = viewModel(
+        factory = FinancesOverviewViewModel.factory(selectedMonth, selectedYear)
+    )
 ) {
     val overview by viewModel.overview.collectAsStateWithLifecycle()
     val currencySymbol by viewModel.currencySymbol.collectAsStateWithLifecycle()
@@ -42,7 +53,7 @@ fun FinancesOverviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.title_spending_analytics)) },
+                title = { Text(stringResource(R.string.title_spending_breakdown)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -174,28 +185,7 @@ fun FinancesOverviewScreen(
                 )
             }
             
-            if (overview.budgetComparisons.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.section_budget_vs_actual),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                
-                items(overview.budgetComparisons, key = { it.category }) { budget ->
-                    BudgetComparisonItem(
-                        category = budget.category,
-                        budgeted = formatCurrency(budget.budgeted),
-                        actual = formatCurrency(budget.actual),
-                        progress = if (budget.budgeted > 0.0) {
-                            (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f)
-                        } else 0f,
-                        isOverBudget = budget.actual > budget.budgeted
-                    )
-                }
-            }
+
             
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
@@ -247,53 +237,6 @@ private fun CategorySpendingItem(
     }
 }
 
-@Composable
-private fun BudgetComparisonItem(
-    category: String,
-    budgeted: String,
-    actual: String,
-    progress: Float,
-    isOverBudget: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = category.ifEmpty { stringResource(R.string.label_overall) },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "$actual / $budgeted",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isOverBudget) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = if (isOverBudget) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
-    }
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -305,12 +248,17 @@ private fun SpendingGaugeCard(
 ) {
     val chartColors = categories.map { Color(it.color) }
     
-    // Spending ratio as percentage of income
-    val spentPercentage = if (totalIncome > 0) {
-        ((totalAmount / totalIncome) * 100).roundToInt().coerceIn(0, 100)
-    } else if (totalAmount > 0) 100 else 0
+    // Animate the chart drawing for smooth entry
+    val animationProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "chartAnimation"
+    )
     
-    val remainingPercentage = (100 - spentPercentage).coerceAtLeast(0)
+    // Spending ratio as percentage of income (for the sub-text)
+    val spentPercentage = if (totalIncome > 0) {
+        ((totalAmount / totalIncome) * 100).roundToInt().coerceIn(0, 999)
+    } else if (totalAmount > 0) 100 else 0
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -325,57 +273,73 @@ private fun SpendingGaugeCard(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Circular gauge matching Budget Manager style
+            // Multi-segment donut chart using Canvas
+            val trackColor = MaterialTheme.colorScheme.surfaceVariant
             Box(
                 modifier = Modifier.size(180.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
-                    modifier = Modifier.size(180.dp),
-                    strokeWidth = 10.dp,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    color = if (spentPercentage >= 80) MaterialTheme.colorScheme.error 
-                            else MaterialTheme.colorScheme.primary,
-                    strokeCap = StrokeCap.Round
-                )
+                Canvas(modifier = Modifier.size(180.dp)) {
+                    val strokeWidthPx = 10.dp.toPx()
+                    val diameter = size.minDimension - strokeWidthPx
+                    val topLeft = Offset(
+                        (size.width - diameter) / 2f,
+                        (size.height - diameter) / 2f
+                    )
+                    val arcSize = Size(diameter, diameter)
+                    
+                    // Draw track (background ring)
+                    drawArc(
+                        color = trackColor,
+                        startAngle = 0f,
+                        sweepAngle = 360f,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = arcSize,
+                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                    )
+                    
+                    // Draw category segments
+                    if (categories.isNotEmpty() && totalAmount > 0) {
+                        var currentAngle = -90f // Start from top
+                        categories.forEachIndexed { index, category ->
+                            val sweepAngle = (category.percentage * 360f) * animationProgress
+                            if (sweepAngle > 0.5f) { // Only draw visible segments
+                                drawArc(
+                                    color = chartColors[index],
+                                    startAngle = currentAngle,
+                                    sweepAngle = sweepAngle,
+                                    useCenter = false,
+                                    topLeft = topLeft,
+                                    size = arcSize,
+                                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                                )
+                            }
+                            currentAngle += sweepAngle
+                        }
+                    }
+                }
+                
+                // Center text
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "$spentPercentage%",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold
+                        text = CurrencyFormatter.formatWithSymbol(totalAmount, currencySymbol),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                     Text(
-                        text = stringResource(R.string.label_spent),
+                        text = stringResource(R.string.status_total_spent),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = stringResource(R.string.status_total_spent),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = CurrencyFormatter.formatWithSymbol(totalAmount, currencySymbol),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = if (spentPercentage >= 80) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
             if (totalIncome > 0) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.template_of_total_income, 
+                    text = stringResource(R.string.template_of_total_income,
                         CurrencyFormatter.formatWithSymbol(totalIncome, currencySymbol)),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
@@ -386,7 +350,7 @@ private fun SpendingGaugeCard(
             if (categories.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Category legend
+                // Category legend with colored dots
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,

@@ -167,7 +167,6 @@ fun NotesScreen(
                 verticalItemSpacing = 16.dp,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            // Pinned section - horizontal scroll
             if (pinnedNotes.isNotEmpty()) {
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Column {
@@ -208,7 +207,6 @@ fun NotesScreen(
                 }
             }
             
-            // Recent section header
             if (otherNotes.isNotEmpty()) {
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Text(
@@ -636,14 +634,12 @@ fun NoteCard(
             }
         }
         
-        // Context menu dropdown
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
             offset = DpOffset(x = 8.dp, y = 0.dp)
         ) {
             if (isArchived) {
-                // Archive screen menu: Unarchive and Delete
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.menu_unarchive)) },
                     onClick = { 
@@ -673,7 +669,6 @@ fun NoteCard(
                     }
                 )
             } else {
-                // Normal notes screen menu: Pin, Archive, Delete
                 DropdownMenuItem(
                     text = { Text(if (note.isPinned) stringResource(R.string.menu_unpin) else stringResource(R.string.menu_pin_note)) },
                     onClick = { 

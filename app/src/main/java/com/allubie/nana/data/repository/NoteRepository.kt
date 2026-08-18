@@ -9,7 +9,6 @@ class NoteRepository(
     private val noteImageDao: NoteImageDao,
     private val checklistItemDao: ChecklistItemDao
 ) {
-    // --- NoteDao ---
     fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
     fun getRecentNonChecklistNotes(limit: Int = 3): Flow<List<Note>> = noteDao.getRecentNonChecklistNotes(limit)
     suspend fun getRecentNonChecklistNotesOnce(limit: Int = 3): List<Note> = noteDao.getRecentNonChecklistNotesOnce(limit)
@@ -34,7 +33,6 @@ class NoteRepository(
     suspend fun emptyTrash() = noteDao.emptyTrash()
     suspend fun deleteNote(note: Note) = noteDao.deleteNote(note)
 
-    // --- NoteImageDao ---
     fun getImagesForNote(noteId: Long): Flow<List<NoteImage>> = noteImageDao.getImagesForNote(noteId)
     suspend fun getImagesForNoteSync(noteId: Long): List<NoteImage> = noteImageDao.getImagesForNoteSync(noteId)
     suspend fun insertImage(image: NoteImage): Long = noteImageDao.insertImage(image)
@@ -42,7 +40,6 @@ class NoteRepository(
     suspend fun deleteImagesForNote(noteId: Long) = noteImageDao.deleteImagesForNote(noteId)
     suspend fun deleteImageById(imageId: Long) = noteImageDao.deleteImageById(imageId)
 
-    // --- ChecklistItemDao ---
     fun getItemsForNote(noteId: Long): Flow<List<ChecklistItem>> = checklistItemDao.getItemsForNote(noteId)
     suspend fun getItemById(id: Long): ChecklistItem? = checklistItemDao.getItemById(id)
     suspend fun insertItem(item: ChecklistItem): Long = checklistItemDao.insertItem(item)

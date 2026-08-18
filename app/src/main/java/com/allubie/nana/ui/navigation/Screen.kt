@@ -122,11 +122,13 @@ sealed class Screen(
     )
     
     data object FinancesOverview : Screen(
-        route = "finances/overview",
+        route = "finances/overview/{month}/{year}",
         title = "Overview",
         selectedIcon = Icons.Filled.AttachMoney,
         unselectedIcon = Icons.Outlined.AttachMoney
-    )
+    ) {
+        fun createRoute(month: Int, year: Int) = "finances/overview/$month/$year"
+    }
     
     data object BudgetManager : Screen(
         route = "finances/budget",
