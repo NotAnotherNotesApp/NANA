@@ -67,9 +67,11 @@ fun NoteEditorScreen(
     }
     
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.addImage(context, it) }
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            viewModel.addImages(context, uris)
+        }
     }
     
     LaunchedEffect(noteId) {
@@ -312,7 +314,7 @@ fun NoteEditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(uiState.images, key = { it.id }) { image ->
+                        items(uiState.images, key = { "editor_img_${it.id}_${it.imagePath}" }) { image ->
                             Box(
                                 modifier = Modifier
                                     .size(100.dp)

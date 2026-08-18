@@ -380,7 +380,7 @@ fun NoteViewerScreen(
             
             // Images section
             if (uiState.images.isNotEmpty()) {
-                items(uiState.images, key = { it.id }) { image ->
+                items(uiState.images, key = { "viewer_img_${it.id}_${it.imagePath}" }) { image ->
                     NoteImageCard(
                         image = image,
                         onExpandImage = { expandedImage = image },

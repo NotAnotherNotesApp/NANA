@@ -69,7 +69,7 @@ object PresetLabels {
     )
     
     val expenseCategories = listOf(
-        Label(name = "Food", type = LabelType.EXPENSE, iconName = "restaurant", color = 0xFFF97316.toInt(), isPreset = true, sortOrder = 0),
+        Label(name = "Food & Drinks", type = LabelType.EXPENSE, iconName = "restaurant", color = 0xFFF97316.toInt(), isPreset = true, sortOrder = 0),
         Label(name = "Transport", type = LabelType.EXPENSE, iconName = "directions_bus", color = 0xFF3B82F6.toInt(), isPreset = true, sortOrder = 1),
         Label(name = "Shopping", type = LabelType.EXPENSE, iconName = "shopping_bag", color = 0xFFEC4899.toInt(), isPreset = true, sortOrder = 2),
         Label(name = "Entertainment", type = LabelType.EXPENSE, iconName = "movie", color = 0xFF8B5CF6.toInt(), isPreset = true, sortOrder = 3),
