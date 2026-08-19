@@ -28,7 +28,6 @@ A minimal personal productivity app for Android.
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/8.png?raw=true" width="19.2%" alt="finance_editor" />
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/9.png?raw=true" width="19.2%" alt="settings" />
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/10.png?raw=true" width="19.2%" alt="label_editor" />
-    
     <br/>
     <br/>
 </div>
