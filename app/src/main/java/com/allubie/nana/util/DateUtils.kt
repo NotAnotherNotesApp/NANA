@@ -115,3 +115,77 @@ object DateFormatters {
     val dateFull: DateTimeFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
     val dateTime: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.getDefault())
 }
+
+/**
+ * Checks if an event occurs on a target date.
+ * Handles single-day, multi-day, and recurring events (Daily, Weekly, Monthly, Yearly).
+ */
+fun com.allubie.nana.data.model.Event.occursOn(targetDate: Long): Boolean {
+    val targetStartOfDay = DateUtils.getStartOfDay(targetDate)
+    val eventStartOfDay = DateUtils.getStartOfDay(this.startTime)
+
+    // Events cannot occur before their start date
+    if (targetStartOfDay < eventStartOfDay) return false
+
+    val rule = this.recurrenceRule?.trim()
+    if (rule.isNullOrEmpty() || rule.equals("Never", ignoreCase = true) || rule.equals("none", ignoreCase = true)) {
+        val eventEndOfDay = if (this.endTime != null && this.endTime > this.startTime) {
+            DateUtils.getStartOfDay(this.endTime)
+        } else {
+            eventStartOfDay
+        }
+        return targetStartOfDay in eventStartOfDay..eventEndOfDay
+    }
+
+    val calTarget = Calendar.getInstance().apply { timeInMillis = targetDate }
+    val calEvent = Calendar.getInstance().apply { timeInMillis = this@occursOn.startTime }
+
+    return when (rule.lowercase()) {
+        "daily", "every day", "everyday" -> true
+        "weekly", "every week" -> {
+            calTarget.get(Calendar.DAY_OF_WEEK) == calEvent.get(Calendar.DAY_OF_WEEK)
+        }
+        "monthly", "every month" -> {
+            val eventDom = calEvent.get(Calendar.DAY_OF_MONTH)
+            val maxDomInTargetMonth = calTarget.getActualMaximum(Calendar.DAY_OF_MONTH)
+            val targetDom = calTarget.get(Calendar.DAY_OF_MONTH)
+            if (eventDom > maxDomInTargetMonth) {
+                targetDom == maxDomInTargetMonth
+            } else {
+                targetDom == eventDom
+            }
+        }
+        "yearly", "every year", "annually" -> {
+            calTarget.get(Calendar.MONTH) == calEvent.get(Calendar.MONTH) &&
+            calTarget.get(Calendar.DAY_OF_MONTH) == calEvent.get(Calendar.DAY_OF_MONTH)
+        }
+        else -> false
+    }
+}
+
+/**
+ * Projects an event's startTime and endTime to match the specified targetDate,
+ * preserving the original time-of-day (hours, minutes, seconds) and event duration.
+ */
+fun com.allubie.nana.data.model.Event.projectForDay(targetDate: Long): com.allubie.nana.data.model.Event {
+    if (DateUtils.isSameDay(this.startTime, targetDate)) return this
+
+    val calEvent = Calendar.getInstance().apply { timeInMillis = this@projectForDay.startTime }
+    val calTarget = Calendar.getInstance().apply {
+        timeInMillis = targetDate
+        set(Calendar.HOUR_OF_DAY, calEvent.get(Calendar.HOUR_OF_DAY))
+        set(Calendar.MINUTE, calEvent.get(Calendar.MINUTE))
+        set(Calendar.SECOND, calEvent.get(Calendar.SECOND))
+        set(Calendar.MILLISECOND, calEvent.get(Calendar.MILLISECOND))
+    }
+    val projectedStartTime = calTarget.timeInMillis
+    val duration = if (this.endTime != null && this.endTime > this.startTime) {
+        this.endTime - this.startTime
+    } else null
+    val projectedEndTime = duration?.let { projectedStartTime + it }
+
+    return this.copy(
+        startTime = projectedStartTime,
+        endTime = projectedEndTime
+    )
+}

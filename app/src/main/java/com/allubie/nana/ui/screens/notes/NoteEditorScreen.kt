@@ -42,6 +42,10 @@ import com.allubie.nana.data.model.Label
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
 import androidx.compose.ui.res.stringResource
 import com.allubie.nana.R
+import com.allubie.nana.util.sanitizeHtmlForEditor
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.ClipEntry
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.mohamedrejeb.richeditor.ui.material3.RichTextEditorDefaults
 import com.allubie.nana.ui.theme.*
@@ -80,21 +84,10 @@ fun NoteEditorScreen(
         }
     }
     
-    // Show loading indicator when loading note
-    if (uiState.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-    
     // Sync rich text state with viewModel content
     LaunchedEffect(uiState.content) {
         if (uiState.content.isNotEmpty() && richTextState.annotatedString.text.isEmpty()) {
-            richTextState.setHtml(uiState.content)
+            richTextState.setHtml(sanitizeHtmlForEditor(uiState.content))
         }
     }
     
@@ -173,7 +166,7 @@ fun NoteEditorScreen(
                 actions = {
                     Button(
                         onClick = {
-                            viewModel.updateContent(richTextState.toHtml())
+                            viewModel.updateContent(sanitizeHtmlForEditor(richTextState.toHtml()))
                             viewModel.saveNote()
                         },
                         shape = RoundedCornerShape(24.dp),
@@ -316,7 +309,7 @@ fun NoteEditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(uiState.images, key = { it.id }) { image ->
+                        items(uiState.images, key = { if (it.id > 0) it.id else it.imagePath }) { image ->
                             Box(
                                 modifier = Modifier
                                     .size(100.dp)
@@ -354,33 +347,56 @@ fun NoteEditorScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 
-                // Rich Text Editor
-                RichTextEditor(
-                    state = richTextState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = 300.dp),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.hint_start_typing),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                // Rich Text Editor with sanitized clipboard for dark/light mode contrast
+                val currentClipboard = LocalClipboard.current
+                val sanitizedClipboard = remember(currentClipboard) {
+                    object : Clipboard by currentClipboard {
+                        override suspend fun getClipEntry(): ClipEntry? {
+                            val entry = currentClipboard.getClipEntry() ?: return null
+                            val clipData = entry.clipData
+                            if (clipData.itemCount > 0) {
+                                val item = clipData.getItemAt(0)
+                                val htmlText = item.htmlText
+                                if (htmlText != null) {
+                                    val sanitizedHtml = sanitizeHtmlForEditor(htmlText)
+                                    val label = clipData.description.label ?: "text"
+                                    val sanitizedClipData = android.content.ClipData.newHtmlText(label, item.text ?: "", sanitizedHtml)
+                                    return ClipEntry(sanitizedClipData)
+                                }
+                            }
+                            return entry
+                        }
+                    }
+                }
+
+                CompositionLocalProvider(LocalClipboard provides sanitizedClipboard) {
+                    RichTextEditor(
+                        state = richTextState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 300.dp),
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.hint_start_typing),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                        },
+                        textStyle = LocalTextStyle.current.copy(
                             fontSize = 16.sp,
+                            lineHeight = 26.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Normal
+                        ),
+                        colors = RichTextEditorDefaults.richTextEditorColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = MaterialTheme.colorScheme.primary
                         )
-                    },
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = 16.sp,
-                        lineHeight = 26.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Normal
-                    ),
-                    colors = RichTextEditorDefaults.richTextEditorColors(
-                        containerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = MaterialTheme.colorScheme.primary
                     )
-                )
+                }
                 
                 Spacer(modifier = Modifier.height(16.dp))
             }

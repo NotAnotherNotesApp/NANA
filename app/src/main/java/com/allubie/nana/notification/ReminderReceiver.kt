@@ -121,6 +121,9 @@ class ReminderReceiver : BroadcastReceiver() {
                                 updatedAt = System.currentTimeMillis()
                             ))
                         }
+
+                        // Refresh widgets
+                        com.allubie.nana.widget.updateAllWidgets(context)
                     }
                 } catch (e: Exception) {
                     Log.e("ReminderReceiver", "Failed to mark routine done", e)

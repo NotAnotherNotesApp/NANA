@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
+import com.allubie.nana.data.model.isScheduledFor
+import com.allubie.nana.data.model.Routine
 import com.allubie.nana.data.repository.RoutineRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -68,32 +70,70 @@ class RoutineStatisticsViewModel(
                 val cal = Calendar.getInstance()
                 cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
                 
+                var scheduledInWeekCount = 0
+                var completedInWeekCount = 0
+
                 for (i in 0..6) {
                     val dayString = dateFormat.format(cal.time)
+                    val scheduledOnDay = routines.filter { it.isScheduledFor(cal.time) }
                     val completedOnDay = weekCompletions.count { it.date == dayString }
-                    weeklyData.add(completedOnDay.toFloat() / totalRoutines)
+                    
+                    scheduledInWeekCount += scheduledOnDay.size
+                    completedInWeekCount += completedOnDay
+
+                    val rate = if (scheduledOnDay.isNotEmpty()) {
+                        (completedOnDay.toFloat() / scheduledOnDay.size).coerceAtMost(1f)
+                    } else {
+                        0f
+                    }
+                    weeklyData.add(rate)
                     cal.add(Calendar.DAY_OF_MONTH, 1)
                 }
                 
                 // Calculate per-routine stats
                 val routineStats = routines.map { routine ->
                     val completions = monthCompletions.filter { it.routineId == routine.id }
+                    
+                    // Count how many days this routine was scheduled in past 30 days
+                    val past30Cal = Calendar.getInstance()
+                    var scheduledDaysInMonth = 0
+                    for (d in 0..29) {
+                        if (routine.isScheduledFor(past30Cal.time)) {
+                            scheduledDaysInMonth++
+                        }
+                        past30Cal.add(Calendar.DAY_OF_MONTH, -1)
+                    }
+
+                    val rate = if (scheduledDaysInMonth > 0) {
+                        (completions.size * 100 / scheduledDaysInMonth).coerceAtMost(100)
+                    } else 0
+
                     RoutineStat(
                         name = routine.title,
-                        completionRate = if (30 > 0) (completions.size * 100 / 30).coerceAtMost(100) else 0,
-                        streak = calculateStreak(routine.id, monthCompletions.filter { it.routineId == routine.id })
+                        completionRate = rate,
+                        streak = calculateStreak(routine, monthCompletions.filter { it.routineId == routine.id })
                     )
                 }
                 
+                val weeklyRate = if (scheduledInWeekCount > 0) {
+                    (completedInWeekCount * 100 / scheduledInWeekCount).coerceAtMost(100)
+                } else 0
+
+                var scheduledInMonthCount = 0
+                val monthCal = Calendar.getInstance()
+                for (d in 0..29) {
+                    scheduledInMonthCount += routines.count { it.isScheduledFor(monthCal.time) }
+                    monthCal.add(Calendar.DAY_OF_MONTH, -1)
+                }
+                val monthlyRate = if (scheduledInMonthCount > 0) {
+                    (monthCompletions.size * 100 / scheduledInMonthCount).coerceAtMost(100)
+                } else 0
+
                 RoutineStatistics(
-                    weeklyCompletionRate = if (totalRoutines > 0) 
-                        (weekCompletions.distinctBy { "${it.routineId}-${it.date}" }.size * 100 / (totalRoutines * 7)).coerceAtMost(100) 
-                        else 0,
-                    monthlyCompletionRate = if (totalRoutines > 0) 
-                        (monthCompletions.distinctBy { "${it.routineId}-${it.date}" }.size * 100 / (totalRoutines * 30)).coerceAtMost(100) 
-                        else 0,
-                    currentStreak = calculateOverallStreak(routines.map { it.id }.toSet(), weekCompletions),
-                    longestStreak = calculateLongestStreak(routines.map { it.id }.toSet(), monthCompletions),
+                    weeklyCompletionRate = weeklyRate,
+                    monthlyCompletionRate = monthlyRate,
+                    currentStreak = calculateOverallStreak(routines, monthCompletions),
+                    longestStreak = calculateLongestStreak(routines, monthCompletions),
                     weeklyData = weeklyData,
                     routineStats = routineStats
                 )
@@ -103,51 +143,55 @@ class RoutineStatisticsViewModel(
         }
     }
     
-    private fun calculateStreak(routineId: Long, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
+    private fun calculateStreak(routine: Routine, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
         if (completions.isEmpty()) return 0
         
-        val sortedDates = completions.map { it.date }.sorted().reversed()
+        val completedDates = completions.map { it.date }.toSet()
         var streak = 0
         val calendar = Calendar.getInstance()
         
-        for (i in sortedDates.indices) {
+        for (i in 0..60) {
             val expectedDate = dateFormat.format(calendar.time)
-            if (sortedDates.contains(expectedDate)) {
-                streak++
-                calendar.add(Calendar.DAY_OF_MONTH, -1)
-            } else {
-                break
+            if (routine.isScheduledFor(calendar.time)) {
+                if (completedDates.contains(expectedDate)) {
+                    streak++
+                } else {
+                    break
+                }
             }
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
         }
         
         return streak
     }
     
-    private fun calculateOverallStreak(routineIds: Set<Long>, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
-        if (routineIds.isEmpty() || completions.isEmpty()) return 0
+    private fun calculateOverallStreak(routines: List<Routine>, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
+        if (routines.isEmpty() || completions.isEmpty()) return 0
         
         var streak = 0
         val calendar = Calendar.getInstance()
         
         for (i in 0..30) {
             val dateString = dateFormat.format(calendar.time)
-            val completedRoutines = completions.filter { it.date == dateString }.map { it.routineId }.toSet()
+            val scheduledOnDay = routines.filter { it.isScheduledFor(calendar.time) }.map { it.id }.toSet()
             
-            if (completedRoutines == routineIds) {
-                streak++
-                calendar.add(Calendar.DAY_OF_MONTH, -1)
-            } else {
-                break
+            if (scheduledOnDay.isNotEmpty()) {
+                val completedRoutines = completions.filter { it.date == dateString }.map { it.routineId }.toSet()
+                if (completedRoutines.containsAll(scheduledOnDay)) {
+                    streak++
+                } else {
+                    break
+                }
             }
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
         }
         
         return streak
     }
     
-    private fun calculateLongestStreak(routineIds: Set<Long>, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
-        if (routineIds.isEmpty() || completions.isEmpty()) return 0
+    private fun calculateLongestStreak(routines: List<Routine>, completions: List<com.allubie.nana.data.model.RoutineCompletion>): Int {
+        if (routines.isEmpty() || completions.isEmpty()) return 0
         
-        // Get all unique dates with completions, sorted
         val allDates = completions.map { it.date }.distinct().sorted()
         if (allDates.isEmpty()) return 0
         
@@ -156,24 +200,20 @@ class RoutineStatisticsViewModel(
         var previousDate: Date? = null
         
         for (dateString in allDates) {
+            val currentDate = dateFormat.parse(dateString) ?: continue
+            val scheduledOnDay = routines.filter { it.isScheduledFor(currentDate) }.map { it.id }.toSet()
             val completedRoutines = completions.filter { it.date == dateString }.map { it.routineId }.toSet()
             
-            // Check if all routines were completed on this day
-            if (completedRoutines == routineIds) {
-                val currentDate = dateFormat.parse(dateString)
-                
+            if (scheduledOnDay.isNotEmpty() && completedRoutines.containsAll(scheduledOnDay)) {
                 if (previousDate == null) {
                     currentStreak = 1
                 } else {
-                    // Check if this date is consecutive
-                    val diffDays = ((currentDate?.time ?: 0) - previousDate.time) / (24 * 60 * 60 * 1000)
+                    val diffDays = (currentDate.time - previousDate.time) / (24 * 60 * 60 * 1000)
                     currentStreak = if (diffDays == 1L) currentStreak + 1 else 1
                 }
-                
                 longestStreak = maxOf(longestStreak, currentStreak)
                 previousDate = currentDate
-            } else {
-                // Reset streak if not all routines completed
+            } else if (scheduledOnDay.isNotEmpty()) {
                 currentStreak = 0
                 previousDate = null
             }

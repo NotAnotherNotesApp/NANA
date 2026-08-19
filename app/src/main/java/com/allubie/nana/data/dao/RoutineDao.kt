@@ -16,7 +16,7 @@ interface RoutineDao {
     @Query("SELECT * FROM routines WHERE id = :id")
     suspend fun getRoutineById(id: Long): Routine?
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertRoutine(routine: Routine): Long
     
     @Update

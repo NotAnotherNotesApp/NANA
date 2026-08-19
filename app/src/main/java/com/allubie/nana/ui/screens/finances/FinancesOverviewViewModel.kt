@@ -110,17 +110,15 @@ class FinancesOverviewViewModel(
                         .filter { it.type == TransactionType.INCOME && it.date in startOfMonth until endOfMonth }
                         .sumOf { it.amount }
 
-                    val totalExpenses = transactions
+                    // Group expenses by category - include custom categories
+                    val expenseTransactions = transactions
                         .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth until endOfMonth }
-                        .sumOf { it.amount }
+
+                    val totalExpenses = expenseTransactions.sumOf { it.amount }
                     
                     // Build label color map
                     val labelColorMap = labels.associate { it.name.lowercase() to it.color }
 
-                    // Group expenses by category - include custom categories
-                    val expenseTransactions = transactions
-                        .filter { it.type == TransactionType.EXPENSE && it.date in startOfMonth until endOfMonth }
-                    
                     val categoryBreakdown = expenseTransactions
                         .groupBy { it.category }
                         .entries

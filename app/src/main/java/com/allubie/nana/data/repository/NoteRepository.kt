@@ -28,11 +28,41 @@ class NoteRepository(
     }
     suspend fun insertNote(note: Note): Long = noteDao.insertNote(note)
     suspend fun updateNote(note: Note) = noteDao.updateNote(note)
+    suspend fun saveNote(note: Note): Long {
+        return if (note.id > 0) {
+            noteDao.updateNote(note)
+            note.id
+        } else {
+            noteDao.insertNote(note)
+        }
+    }
     suspend fun updatePinStatus(id: Long, isPinned: Boolean) = noteDao.updatePinStatus(id, isPinned)
     suspend fun updateArchiveStatus(id: Long, isArchived: Boolean) = noteDao.updateArchiveStatus(id, isArchived)
     suspend fun updateDeleteStatus(id: Long, isDeleted: Boolean) = noteDao.updateDeleteStatus(id, isDeleted)
-    suspend fun emptyTrash() = noteDao.emptyTrash()
-    suspend fun deleteNote(note: Note) = noteDao.deleteNote(note)
+    suspend fun getLatestActiveChecklistNoteSync(): Note? = noteDao.getLatestActiveChecklistNoteSync()
+    suspend fun emptyTrash() {
+        val deletedNotes = noteDao.getAllNotesSync().filter { it.isDeleted }
+        deletedNotes.forEach { note ->
+            val images = noteImageDao.getImagesForNoteSync(note.id)
+            images.forEach { img ->
+                try {
+                    val file = java.io.File(img.imagePath)
+                    if (file.exists()) file.delete()
+                } catch (_: Exception) {}
+            }
+        }
+        noteDao.emptyTrash()
+    }
+    suspend fun deleteNote(note: Note) {
+        val images = noteImageDao.getImagesForNoteSync(note.id)
+        images.forEach { img ->
+            try {
+                val file = java.io.File(img.imagePath)
+                if (file.exists()) file.delete()
+            } catch (_: Exception) {}
+        }
+        noteDao.deleteNote(note)
+    }
 
     // --- NoteImageDao ---
     fun getImagesForNote(noteId: Long): Flow<List<NoteImage>> = noteImageDao.getImagesForNote(noteId)
@@ -48,6 +78,7 @@ class NoteRepository(
     suspend fun insertItem(item: ChecklistItem): Long = checklistItemDao.insertItem(item)
     suspend fun insertItems(items: List<ChecklistItem>) = checklistItemDao.insertItems(items)
     suspend fun updateItem(item: ChecklistItem) = checklistItemDao.updateItem(item)
+    suspend fun updateItems(items: List<ChecklistItem>) = checklistItemDao.updateItems(items)
     suspend fun deleteItem(item: ChecklistItem) = checklistItemDao.deleteItem(item)
     suspend fun deleteItemsForNote(noteId: Long) = checklistItemDao.deleteItemsForNote(noteId)
 }

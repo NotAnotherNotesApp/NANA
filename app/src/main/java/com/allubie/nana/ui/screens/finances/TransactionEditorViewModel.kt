@@ -16,15 +16,7 @@ import com.allubie.nana.data.model.TransactionType
 import com.allubie.nana.data.repository.LabelRepository
 import com.allubie.nana.data.repository.TransactionRepository
 import com.allubie.nana.widget.requestBudgetWidgetRefresh
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class TransactionEditorUiState(
@@ -54,8 +46,12 @@ class TransactionEditorViewModel(
     private val _errorMessage = MutableSharedFlow<String>()
     val errorMessage: SharedFlow<String> = _errorMessage.asSharedFlow()
     
-    private val _customBudgets = MutableStateFlow<List<Budget>>(emptyList())
-    val customBudgets: StateFlow<List<Budget>> = _customBudgets.asStateFlow()
+    val customBudgets: StateFlow<List<Budget>> = transactionRepository.getAllBudgets()
+        .map { budgets ->
+            val presetCategories = listOf("Food and Drinks", "Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Education", "Other", "")
+            budgets.filter { it.category !in presetCategories }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     // Labels from database
     val expenseLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.EXPENSE)
@@ -72,23 +68,12 @@ class TransactionEditorViewModel(
     
 
     init {
-        loadCustomBudgets()
         seedLabelsIfNeeded()
     }
     
     private fun seedLabelsIfNeeded() {
         viewModelScope.launch {
             labelRepository.seedPresetsIfNeeded()
-        }
-    }
-    
-    private fun loadCustomBudgets() {
-        viewModelScope.launch {
-            transactionRepository.getAllBudgets().collect { budgets ->
-                // Filter for custom categories (non-empty category that's not a preset)
-                val presetCategories = listOf("Food and Drinks", "Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Education", "Other", "")
-                _customBudgets.value = budgets.filter { it.category !in presetCategories }
-            }
         }
     }
     

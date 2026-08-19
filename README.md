@@ -5,7 +5,7 @@
 # Nana
 
 </div>
-A beautiful, all-in-one personal productivity app for Android built with Jetpack Compose and Material Design 3.
+A minimal personal productivity app for Android.
 
 ![Android](https://img.shields.io/badge/Android-26%2B-green?logo=android)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9-blue?logo=kotlin)
@@ -18,14 +18,17 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 
 <div align="center">
     <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png?raw=true" width="19.2%" alt="notes" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png?raw=true" width="19.2%" alt="schedule" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png?raw=true" width="19.2%" alt="routine" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png?raw=true" width="19.2%" alt="finance" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png?raw=true" width="19.2%" alt="finance-overview" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png?raw=true" width="19.2%" alt="notes_editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png?raw=true" width="19.2%" alt="schedule" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png?raw=true" width="19.2%" alt="schedule_editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/5.png?raw=true" width="19.2%" alt="routine" />
     <br/>
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/6.png?raw=true" width="19.2%" alt="finance-budget" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7.png?raw=true" width="19.2%" alt="schedule-add" />
-    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/8.png?raw=true" width="19.2%" alt="notes-editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/6.png?raw=true" width="19.2%" alt="routine_editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/7.png?raw=true" width="19.2%" alt="finance" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/8.png?raw=true" width="19.2%" alt="finance_editor" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/9.png?raw=true" width="19.2%" alt="settings" />
+    <img src="https://github.com/allubie/NANA/blob/main/fastlane/metadata/android/en-US/images/phoneScreenshots/10.png?raw=true" width="19.2%" alt="label_editor" />
+    
     <br/>
     <br/>
 </div>
@@ -45,20 +48,16 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 
 - Create and manage task lists
 - Check off completed items
-- Organize with labels
 
 ### Finance Tracker
 
 - Track income and expenses
 - Customizable expense/income categories with unique colors
-- Budget management with weekly/monthly/yearly periods
-- Visual spending breakdown with donut charts
-- Cash flow overview and insights
+- Visual spending breakdown
 
 ### Schedule
 
 - Event management with categories
-- Visual calendar integration
 - Event viewer with details
 
 ### Routines
@@ -72,7 +71,6 @@ A beautiful, all-in-one personal productivity app for Android built with Jetpack
 - Multiple theme options (Light, Dark, AMOLED Black, System)
 - Dynamic color support (Material You)
 - Customizable labels and categories
-- Currency symbol configuration
 
 ## Download
 

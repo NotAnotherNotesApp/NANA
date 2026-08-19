@@ -44,6 +44,7 @@ import com.mohamedrejeb.richeditor.ui.material3.RichText
 import java.text.SimpleDateFormat
 import java.util.*
 import com.allubie.nana.util.stripHtml
+import com.allubie.nana.util.sanitizeHtmlForEditor
 import androidx.compose.ui.res.stringResource
 import com.allubie.nana.R
 import android.content.Context
@@ -128,7 +129,7 @@ fun NoteViewerScreen(
     LaunchedEffect(uiState.content) {
         if (uiState.content.isNotEmpty()) {
             try {
-                richTextState.setHtml(uiState.content)
+                richTextState.setHtml(sanitizeHtmlForEditor(uiState.content))
             } catch (e: Exception) {
                 // Fallback for plain text content
             }
@@ -380,7 +381,7 @@ fun NoteViewerScreen(
             
             // Images section
             if (uiState.images.isNotEmpty()) {
-                items(uiState.images, key = { it.id }) { image ->
+                items(uiState.images, key = { if (it.id > 0) it.id else it.imagePath }) { image ->
                     NoteImageCard(
                         image = image,
                         onExpandImage = { expandedImage = image },

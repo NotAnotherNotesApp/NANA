@@ -269,22 +269,12 @@ fun RoutinesScreen(
             }
         }
     ) { paddingValues ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
                 // Week day selector
                 item {
                 Row(
@@ -347,7 +337,6 @@ fun RoutinesScreen(
                         onPauseTimer = { viewModel.pauseTimer() },
                         onResetTimer = { viewModel.resetTimer(routine) },
                         onClick = { onNavigateToEditor(routine.id) },
-                        onTogglePin = { viewModel.togglePin(routine) },
                         onDelete = { viewModel.deleteRoutine(routine) }
                     )
                 }
@@ -381,7 +370,6 @@ fun RoutinesScreen(
                         onPauseTimer = { viewModel.pauseTimer() },
                         onResetTimer = { viewModel.resetTimer(routine) },
                         onClick = { onNavigateToEditor(routine.id) },
-                        onTogglePin = { viewModel.togglePin(routine) },
                         onDelete = { viewModel.deleteRoutine(routine) }
                     )
                 }
@@ -415,7 +403,6 @@ fun RoutinesScreen(
                         onPauseTimer = { viewModel.pauseTimer() },
                         onResetTimer = { viewModel.resetTimer(routine) },
                         onClick = { onNavigateToEditor(routine.id) },
-                        onTogglePin = { viewModel.togglePin(routine) },
                         onDelete = { viewModel.deleteRoutine(routine) }
                     )
                 }
@@ -454,7 +441,6 @@ fun RoutinesScreen(
                     }
                 }
             }
-        }
         }
     }
 }
@@ -686,7 +672,6 @@ private fun RoutineCard(
     onPauseTimer: () -> Unit,
     onResetTimer: () -> Unit,
     onClick: () -> Unit,
-    onTogglePin: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -732,13 +717,10 @@ private fun RoutineCard(
                     }
                 ),
             shape = RoundedCornerShape(16.dp),
-            color = if (routine.isPinned) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-                    else if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.03f)
+            color = if (isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.03f)
                     else MaterialTheme.colorScheme.surface,
-            tonalElevation = if (isCompleted || routine.isPinned) 0.dp else 1.dp,
-            border = if (routine.isPinned) 
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                else if (isCompleted) 
+            tonalElevation = if (isCompleted) 0.dp else 1.dp,
+            border = if (isCompleted) 
                 androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                 else null
         ) {
@@ -748,17 +730,6 @@ private fun RoutineCard(
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pin indicator
-                if (routine.isPinned) {
-                    Icon(
-                        imageVector = NanaIcons.KeepFilled,
-                        contentDescription = stringResource(R.string.cd_pinned),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .padding(end = 4.dp)
-                    )
-                }
                 // Icon container
             Box(
                 modifier = Modifier
@@ -799,48 +770,45 @@ private fun RoutineCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            LinearProgressIndicator(
-                                progress = { currentCount.toFloat() / routine.targetCount.coerceAtLeast(1) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                strokeCap = StrokeCap.Round
-                            )
                             Text(
-                                text = "$currentCount/${routine.targetCount}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
+                                text = "$currentCount / ${routine.targetCount}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if (formattedReminderTime != null) {
+                                Text(
+                                    text = "•",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formattedReminderTime,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                     RoutineType.TIMER -> {
-                        val displayMinutes = elapsedSeconds / 60
-                        val displaySeconds = elapsedSeconds % 60
-                        val targetMinutes = targetSeconds / 60
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            LinearProgressIndicator(
-                                progress = { elapsedSeconds.toFloat() / targetSeconds.coerceAtLeast(1) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                strokeCap = StrokeCap.Round
-                            )
                             Text(
-                                text = String.format("%d:%02d / %d:00", displayMinutes, displaySeconds, targetMinutes),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
+                                text = "${elapsedSeconds / 60}:${String.format("%02d", elapsedSeconds % 60)} / ${routine.durationMinutes}:00",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if (formattedReminderTime != null) {
+                                Text(
+                                    text = "•",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = formattedReminderTime,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                     RoutineType.SIMPLE -> {
@@ -848,53 +816,41 @@ private fun RoutineCard(
                             Text(
                                 text = formattedReminderTime,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            // Controls based on type
+            // Action controls based on routine type
             when (routineType) {
                 RoutineType.COUNTER -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .clickable { onDecrement() },
-                            color = MaterialTheme.colorScheme.surfaceVariant
+                        IconButton(
+                            onClick = onDecrement,
+                            enabled = currentCount > 0,
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Remove,
-                                    contentDescription = "Decrease",
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Outlined.Remove,
+                                contentDescription = "Decrease",
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .clickable { onIncrement() },
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        IconButton(
+                            onClick = onIncrement,
+                            enabled = currentCount < routine.targetCount,
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Add,
-                                    contentDescription = "Increase",
-                                    modifier = Modifier.size(18.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = "Increase",
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -903,19 +859,16 @@ private fun RoutineCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        // Reset button
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .clickable { onResetTimer() },
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
+                        // Reset button (only when timer is paused or has progress)
+                        if (elapsedSeconds > 0 && timerState?.isRunning != true) {
+                            IconButton(
+                                onClick = onResetTimer,
+                                modifier = Modifier.size(32.dp)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Refresh,
                                     contentDescription = "Reset",
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -944,17 +897,31 @@ private fun RoutineCard(
                     }
                 }
                 RoutineType.SIMPLE -> {
-                    Switch(
-                        checked = isCompleted,
-                        onCheckedChange = { onToggle() },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.height(24.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isCompleted) MaterialTheme.colorScheme.primary
+                                else Color.Transparent
+                            )
+                            .border(
+                                width = if (isCompleted) 0.dp else 2.dp,
+                                color = if (isCompleted) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                shape = CircleShape
+                            )
+                            .clickable(onClick = onToggle),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCompleted) {
+                            Icon(
+                                imageVector = Icons.Outlined.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -966,19 +933,6 @@ private fun RoutineCard(
             onDismissRequest = { showMenu = false },
             offset = DpOffset(x = 8.dp, y = 0.dp)
         ) {
-            DropdownMenuItem(
-                text = { Text(if (routine.isPinned) "Unpin Routine" else "Pin Routine") },
-                onClick = {
-                    showMenu = false
-                    onTogglePin()
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = NanaIcons.Keep,
-                        contentDescription = null
-                    )
-                }
-            )
             DropdownMenuItem(
                 text = { Text("Edit") },
                 onClick = {

@@ -178,11 +178,10 @@ class ChecklistEditorViewModel(
                 
                 _uiState.update { it.copy(items = updatedItems) }
                 
-                // Persist position changes
-                updatedItems.forEach { item ->
-                    if (item.id > 0) {
-                        noteRepository.updateItem(item)
-                    }
+                // Persist position changes in a single batch
+                val persistedItems = updatedItems.filter { it.id > 0 }
+                if (persistedItems.isNotEmpty()) {
+                    noteRepository.updateItems(persistedItems)
                 }
             }
         }
@@ -216,6 +215,7 @@ class ChecklistEditorViewModel(
     fun saveChecklist() {
         viewModelScope.launch {
             val state = _uiState.value
+            val isNewNote = state.id == null || state.id == 0L
             val note = com.allubie.nana.data.model.Note(
                 id = state.id ?: 0,
                 title = state.title.ifBlank { "Checklist" },
@@ -226,11 +226,10 @@ class ChecklistEditorViewModel(
                 isChecklist = true,
                 updatedAt = System.currentTimeMillis()
             )
-            val noteId = noteRepository.insertNote(note)
+            val noteId = noteRepository.saveNote(note)
             
-            // Save all items with the note ID
-            if (state.id == null) {
-                // New checklist - save all items
+            // Save all items with the note ID for new checklists
+            if (isNewNote) {
                 state.items.forEachIndexed { index, item ->
                     noteRepository.insertItem(
                         item.copy(noteId = noteId, position = index)

@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.allubie.nana.data.model.Event
 import com.allubie.nana.ui.components.NanaConfirmationDialog
 import com.allubie.nana.ui.theme.*
+import com.allubie.nana.util.occursOn
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -47,6 +48,7 @@ fun ScheduleScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val events = uiState.eventsForSelectedDay
+    val allEvents = uiState.allEvents
     val isLoading = uiState.isLoading
     val selectedDate = Date(uiState.selectedDate)
     val use24HourFormat = uiState.use24HourFormat
@@ -155,7 +157,7 @@ fun ScheduleScreen(
             ) {
                 weekDays.forEach { date ->
                     val isSelected = isSameDay(date, selectedDate)
-                    val hasEvents = events.any { isSameDay(Date(it.startTime), date) }
+                    val hasEvents = allEvents.any { it.occursOn(date.time) }
                     val isToday = isSameDay(date, Date())
                     
                     DayChip(
@@ -213,8 +215,7 @@ fun ScheduleScreen(
                             timeFormat = timeFormat,
                             isPast = isPast,
                             onClick = { onNavigateToViewer(event.id) },
-                            onDelete = { viewModel.deleteEvent(event) },
-                            onTogglePin = { viewModel.togglePin(event) }
+                            onDelete = { viewModel.deleteEvent(event) }
                         )
                     }
                     
@@ -327,8 +328,7 @@ private fun TimelineEventCard(
     timeFormat: SimpleDateFormat,
     isPast: Boolean = false,
     onClick: () -> Unit,
-    onDelete: () -> Unit = {},
-    onTogglePin: () -> Unit = {}
+    onDelete: () -> Unit = {}
 ) {
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -349,9 +349,6 @@ private fun TimelineEventCard(
     }
     
     val categoryName = event.category
-    
-    // Use the actual isPinned field
-    val isPinned = event.isPinned
     
     // Apply opacity for past events
     val contentAlpha = if (isPast) 0.5f else 1f
@@ -420,12 +417,8 @@ private fun TimelineEventCard(
                 .clip(RoundedCornerShape(16.dp))
                 .clickable(onClick = onClick),
             shape = RoundedCornerShape(16.dp),
-            color = if (isPinned) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-                    else MaterialTheme.colorScheme.surface,
-            border = if (isPinned) 
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                else null,
-            tonalElevation = if (isPinned) 0.dp else 1.dp
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 1.dp
         ) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 // Left accent bar
@@ -461,65 +454,45 @@ private fun TimelineEventCard(
                             )
                         }
                         
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isPinned) {
+                        Box {
+                            IconButton(
+                                onClick = { showMoreOptions = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
                                 Icon(
-                                    imageVector = NanaIcons.KeepFilled,
-                                    contentDescription = stringResource(R.string.cd_pinned),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    imageVector = Icons.Outlined.MoreVert,
+                                    contentDescription = stringResource(R.string.cd_more),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Box {
-                                IconButton(
-                                    onClick = { showMoreOptions = true },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.MoreVert,
-                                        contentDescription = stringResource(R.string.cd_more),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showMoreOptions,
-                                    onDismissRequest = { showMoreOptions = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text(if (isPinned) stringResource(R.string.menu_unpin_short) else stringResource(R.string.menu_pin)) },
-                                        leadingIcon = {
-                                            Icon(NanaIcons.Keep, contentDescription = null)
-                                        },
-                                        onClick = {
-                                            showMoreOptions = false
-                                            onTogglePin()
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_edit)) },
-                                        leadingIcon = {
-                                            Icon(Icons.Outlined.Edit, contentDescription = null)
-                                        },
-                                        onClick = {
-                                            showMoreOptions = false
-                                            onClick()
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_delete)) },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Outlined.Delete,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        },
-                                        onClick = {
-                                            showMoreOptions = false
-                                            showDeleteConfirmation = true
-                                        }
-                                    )
-                                }
+                            DropdownMenu(
+                                expanded = showMoreOptions,
+                                onDismissRequest = { showMoreOptions = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_edit)) },
+                                    leadingIcon = {
+                                        Icon(Icons.Outlined.Edit, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMoreOptions = false
+                                        onClick()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_delete)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Outlined.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        showMoreOptions = false
+                                        showDeleteConfirmation = true
+                                    }
+                                )
                             }
                         }
                     }

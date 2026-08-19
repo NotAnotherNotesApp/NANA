@@ -31,7 +31,7 @@ interface NoteDao {
     @Query("SELECT notes.* FROM notes JOIN notes_fts ON notes.rowid = notes_fts.docid WHERE notes_fts MATCH :query AND notes.isDeleted = 0 ORDER BY notes.isPinned DESC, notes.updatedAt DESC")
     fun searchNotes(query: String): Flow<List<Note>>
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertNote(note: Note): Long
     
     @Update
@@ -58,6 +58,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE labels LIKE '%' || :label || '%'")
     suspend fun getNotesWithLabel(label: String): List<Note>
 
+    @Query("SELECT * FROM notes WHERE isChecklist = 1 AND isDeleted = 0 AND isArchived = 0 ORDER BY isPinned DESC, updatedAt DESC LIMIT 1")
+    suspend fun getLatestActiveChecklistNoteSync(): Note?
+
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
 }
@@ -78,6 +81,9 @@ interface ChecklistItemDao {
     
     @Update
     suspend fun updateItem(item: ChecklistItem)
+    
+    @Update
+    suspend fun updateItems(items: List<ChecklistItem>)
     
     @Delete
     suspend fun deleteItem(item: ChecklistItem)

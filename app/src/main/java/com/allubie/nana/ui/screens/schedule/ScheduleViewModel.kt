@@ -9,7 +9,8 @@ import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.model.Event
 import com.allubie.nana.data.repository.EventRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.allubie.nana.util.occursOn
+import com.allubie.nana.util.projectForDay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -23,38 +24,32 @@ class ScheduleViewModel(
         val selectedDate: Long = System.currentTimeMillis(),
         val isLoading: Boolean = true,
         val use24HourFormat: Boolean = false,
-        val eventsForSelectedDay: List<Event> = emptyList()
+        val eventsForSelectedDay: List<Event> = emptyList(),
+        val allEvents: List<Event> = emptyList()
     )
     
     private val _selectedDate = MutableStateFlow(Date())
     private val _isLoading = MutableStateFlow(true)
     private val _use24HourFormat = preferencesManager.use24HourFormat
     
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val _eventsForSelectedDay = _selectedDate.flatMapLatest { date ->
-        val calendar = Calendar.getInstance().apply {
-            time = date
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val startOfDay = calendar.timeInMillis
-        calendar.add(Calendar.DAY_OF_MONTH, 1)
-        val endOfDay = calendar.timeInMillis
-        
-        eventRepository.getEventsForDay(startOfDay, endOfDay)
-    }.onStart { _isLoading.value = true }
-     .onEach { _isLoading.value = false }
+    private val _allEvents = eventRepository.getAllEvents()
+        .onStart { _isLoading.value = true }
+        .onEach { _isLoading.value = false }
 
     val uiState: StateFlow<ScheduleUiState> = combine(
-        _selectedDate, _isLoading, _use24HourFormat, _eventsForSelectedDay
-    ) { date, loading, use24, events ->
+        _selectedDate, _isLoading, _use24HourFormat, _allEvents
+    ) { date, loading, use24, allEvents ->
+        val eventsForDay = allEvents
+            .filter { it.occursOn(date.time) }
+            .map { it.projectForDay(date.time) }
+            .sortedBy { it.startTime }
+
         ScheduleUiState(
             selectedDate = date.time,
             isLoading = loading,
             use24HourFormat = use24,
-            eventsForSelectedDay = events
+            eventsForSelectedDay = eventsForDay,
+            allEvents = allEvents
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ScheduleUiState())
     
@@ -65,12 +60,6 @@ class ScheduleViewModel(
     fun deleteEvent(event: Event) {
         viewModelScope.launch {
             eventRepository.deleteEvent(event)
-        }
-    }
-    
-    fun togglePin(event: Event) {
-        viewModelScope.launch {
-            eventRepository.updateEvent(event.copy(isPinned = !event.isPinned))
         }
     }
     

@@ -3,6 +3,7 @@ package com.allubie.nana.ui.screens.routines
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +30,12 @@ import androidx.compose.ui.res.stringResource
 import com.allubie.nana.R
 import com.allubie.nana.data.model.RoutineType
 
+data class RoutineCategory(
+    val key: String,
+    val name: String,
+    val icon: ImageVector
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineEditorScreen(
@@ -36,12 +44,25 @@ fun RoutineEditorScreen(
     viewModel: RoutineEditorViewModel = viewModel(factory = RoutineEditorViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var reminderEnabled by remember { mutableStateOf(true) }
-    var selectedHour by remember { mutableIntStateOf(7) }
-    var selectedMinute by remember { mutableIntStateOf(30) }
-    var isAm by remember { mutableStateOf(true) }
-    var showIconPicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    
+    val reminderTime = uiState.reminderTime
+    val reminderEnabled = reminderTime != null
+    val (selectedHour, selectedMinute, isAm) = remember(reminderTime) {
+        if (reminderTime != null) {
+            val parts = reminderTime.split(":")
+            val h = parts.getOrNull(0)?.toIntOrNull() ?: 7
+            val m = parts.getOrNull(1)?.toIntOrNull() ?: 30
+            val hour12 = when {
+                h == 0 -> 12
+                h > 12 -> h - 12
+                else -> h
+            }
+            Triple(hour12, m, h < 12)
+        } else {
+            Triple(7, 30, true)
+        }
+    }
     
     LaunchedEffect(Unit) {
         viewModel.navigateBack.collectLatest {
@@ -49,81 +70,56 @@ fun RoutineEditorScreen(
         }
     }
     
-    // Icon mapping for display
-    val iconOptions = listOf(
-        "reading" to (Icons.Outlined.AutoStories to stringResource(R.string.cd_icon_reading)),
-        "fitness" to (Icons.Outlined.FitnessCenter to stringResource(R.string.cd_icon_fitness)),
-        "running" to (Icons.AutoMirrored.Outlined.DirectionsRun to stringResource(R.string.cd_icon_running)),
-        "meditation" to (Icons.Outlined.SelfImprovement to stringResource(R.string.cd_icon_meditation)),
-        "water" to (Icons.Outlined.WaterDrop to stringResource(R.string.cd_icon_water)),
-        "sleep" to (Icons.Outlined.Bedtime to stringResource(R.string.cd_icon_sleep)),
-        "study" to (Icons.Outlined.School to stringResource(R.string.cd_icon_study)),
-        "coding" to (Icons.Outlined.Code to stringResource(R.string.cd_icon_coding)),
-        "writing" to (Icons.Outlined.Create to stringResource(R.string.cd_icon_writing)),
-        "music" to (Icons.Outlined.MusicNote to stringResource(R.string.cd_icon_music)),
-        "art" to (Icons.Outlined.Brush to stringResource(R.string.cd_icon_art)),
-        "nutrition" to (Icons.Outlined.Restaurant to stringResource(R.string.cd_icon_nutrition))
-    )
+    val readingLabel = stringResource(R.string.cd_icon_reading)
+    val fitnessLabel = stringResource(R.string.cd_icon_fitness)
+    val runningLabel = stringResource(R.string.cd_icon_running)
+    val meditationLabel = stringResource(R.string.cd_icon_meditation)
+    val waterLabel = stringResource(R.string.cd_icon_water)
+    val sleepLabel = stringResource(R.string.cd_icon_sleep)
+    val studyLabel = stringResource(R.string.cd_icon_study)
+    val codingLabel = stringResource(R.string.cd_icon_coding)
+    val writingLabel = stringResource(R.string.cd_icon_writing)
+    val musicLabel = stringResource(R.string.cd_icon_music)
+    val artLabel = stringResource(R.string.cd_icon_art)
+    val nutritionLabel = stringResource(R.string.cd_icon_nutrition)
+    
+    // Category mapping for prominent label picker
+    val categories = remember(
+        readingLabel, fitnessLabel, runningLabel, meditationLabel,
+        waterLabel, sleepLabel, studyLabel, codingLabel,
+        writingLabel, musicLabel, artLabel, nutritionLabel
+    ) {
+        listOf(
+            RoutineCategory("reading", readingLabel, Icons.Outlined.AutoStories),
+            RoutineCategory("fitness", fitnessLabel, Icons.Outlined.FitnessCenter),
+            RoutineCategory("running", runningLabel, Icons.AutoMirrored.Outlined.DirectionsRun),
+            RoutineCategory("meditation", meditationLabel, Icons.Outlined.SelfImprovement),
+            RoutineCategory("water", waterLabel, Icons.Outlined.WaterDrop),
+            RoutineCategory("sleep", sleepLabel, Icons.Outlined.Bedtime),
+            RoutineCategory("study", studyLabel, Icons.Outlined.School),
+            RoutineCategory("coding", codingLabel, Icons.Outlined.Code),
+            RoutineCategory("writing", writingLabel, Icons.Outlined.Create),
+            RoutineCategory("music", musicLabel, Icons.Outlined.MusicNote),
+            RoutineCategory("art", artLabel, Icons.Outlined.Brush),
+            RoutineCategory("nutrition", nutritionLabel, Icons.Outlined.Restaurant)
+        )
+    }
     
     // Get current icon from uiState.iconName
-    val currentIcon = iconOptions.find { it.first == uiState.iconName }?.second?.first 
+    val currentIcon = categories.find { it.key == uiState.iconName }?.icon 
         ?: Icons.Outlined.CheckCircle
     
     val timePickerState = rememberTimePickerState(
-        initialHour = selectedHour + if (!isAm && selectedHour != 12) 12 else if (isAm && selectedHour == 12) 0 else 0,
+        initialHour = if (isAm) (if (selectedHour == 12) 0 else selectedHour) else (if (selectedHour == 12) 12 else selectedHour + 12),
         initialMinute = selectedMinute
     )
-    
-    // Initialize selected hour/minute from ViewModel when routine is loaded
-    LaunchedEffect(uiState.reminderTime) {
-        uiState.reminderTime?.let { timeStr ->
-            val parts = timeStr.split(":")
-            if (parts.size == 2) {
-                val h = parts[0].toIntOrNull() ?: 0
-                val m = parts[1].toIntOrNull() ?: 0
-                val hour12 = when {
-                    h == 0 -> 12
-                    h > 12 -> h - 12
-                    else -> h
-                }
-                selectedHour = if (hour12 == 0) 12 else hour12
-                selectedMinute = m
-                isAm = h < 12
-            }
-        }
-    }
 
     // When opening time picker, set the TimePickerState to current reminder time
     LaunchedEffect(showTimePicker) {
         if (showTimePicker) {
-            val timeStr = uiState.reminderTime
-            if (timeStr != null) {
-                val parts = timeStr.split(":")
-                if (parts.size == 2) {
-                    val h = parts[0].toIntOrNull() ?: 0
-                    val m = parts[1].toIntOrNull() ?: 0
-                    timePickerState.hour = h
-                    timePickerState.minute = m
-                }
-            } else {
-                // default to current selectedHour/Minute
-                val h24 = if (isAm) (if (selectedHour == 12) 0 else selectedHour) else (if (selectedHour == 12) 12 else selectedHour + 12)
-                timePickerState.hour = h24
-                timePickerState.minute = selectedMinute
-            }
-        }
-    }
-    
-    // Sync AM/PM toggle and time changes to ViewModel (fixes AM always being saved)
-    LaunchedEffect(isAm, selectedHour, selectedMinute) {
-        if (reminderEnabled) {
-            val h24 = if (isAm) {
-                if (selectedHour == 12) 0 else selectedHour
-            } else {
-                if (selectedHour == 12) 12 else selectedHour + 12
-            }
-            val formatted = String.format("%02d:%02d", h24, selectedMinute)
-            viewModel.updateReminderTime(formatted)
+            val parts = (uiState.reminderTime ?: "07:30").split(":")
+            timePickerState.hour = parts.getOrNull(0)?.toIntOrNull() ?: 7
+            timePickerState.minute = parts.getOrNull(1)?.toIntOrNull() ?: 30
         }
     }
     
@@ -133,27 +129,17 @@ fun RoutineEditorScreen(
         }
     }
     
-    // Show loading indicator when loading routine
-    if (uiState.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-    
     // Days: S M T W T F S (starting with Sunday = 0)
-    val daysOfWeek = listOf(
-        stringResource(R.string.day_initial_sun),
-        stringResource(R.string.day_initial_mon),
-        stringResource(R.string.day_initial_tue),
-        stringResource(R.string.day_initial_wed),
-        stringResource(R.string.day_initial_thu),
-        stringResource(R.string.day_initial_fri),
-        stringResource(R.string.day_initial_sat)
-    )
+    val sunLabel = stringResource(R.string.day_initial_sun)
+    val monLabel = stringResource(R.string.day_initial_mon)
+    val tueLabel = stringResource(R.string.day_initial_tue)
+    val wedLabel = stringResource(R.string.day_initial_wed)
+    val thuLabel = stringResource(R.string.day_initial_thu)
+    val friLabel = stringResource(R.string.day_initial_fri)
+    val satLabel = stringResource(R.string.day_initial_sat)
+    val daysOfWeek = remember(sunLabel, monLabel, tueLabel, wedLabel, thuLabel, friLabel, satLabel) {
+        listOf(sunLabel, monLabel, tueLabel, wedLabel, thuLabel, friLabel, satLabel)
+    }
     
     Scaffold(
         topBar = {
@@ -177,7 +163,9 @@ fun RoutineEditorScreen(
                     TextButton(onClick = { viewModel.saveRoutine() }) {
                         Text(
                             text = stringResource(R.string.action_save),
-                            fontWeight = FontWeight.Bold
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
                         )
                     }
                 },
@@ -196,44 +184,18 @@ fun RoutineEditorScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Routine Name Section with Icon Picker
-            Row(
+            // Header Card (Routine Name, Category / Label picker)
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.Top
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp
             ) {
-                // Icon picker button
-                Surface(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { showIconPicker = true },
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = currentIcon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-                
-                // Name input
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.section_routine_name),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
+                    // Routine Name input
                     TextField(
                         value = uiState.title,
                         onValueChange = { viewModel.updateTitle(it) },
@@ -242,13 +204,13 @@ fun RoutineEditorScreen(
                             Text(
                                 text = stringResource(R.string.hint_routine_name),
                                 fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
                         },
                         textStyle = LocalTextStyle.current.copy(
                             fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontWeight = FontWeight.Bold
                         ),
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.Transparent,
@@ -258,6 +220,32 @@ fun RoutineEditorScreen(
                         ),
                         singleLine = true
                     )
+
+                    // Category / Label picker (Same style as Schedule editor)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { category ->
+                            val isSelected = uiState.iconName == category.key
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    viewModel.updateIconName(category.key)
+                                },
+                                label = { Text(category.name) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = category.icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
             
@@ -604,7 +592,13 @@ fun RoutineEditorScreen(
                         }
                         Switch(
                             checked = reminderEnabled,
-                            onCheckedChange = { reminderEnabled = it }
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    viewModel.updateReminderTime("07:30")
+                                } else {
+                                    viewModel.updateReminderTime(null)
+                                }
+                            }
                         )
                     }
                     
@@ -673,7 +667,10 @@ fun RoutineEditorScreen(
                                     shape = RoundedCornerShape(4.dp),
                                     color = if (isAm) MaterialTheme.colorScheme.surfaceVariant 
                                            else Color.Transparent,
-                                    modifier = Modifier.clickable { isAm = true }
+                                    modifier = Modifier.clickable {
+                                        val h24 = if (selectedHour == 12) 0 else selectedHour
+                                        viewModel.updateReminderTime(String.format("%02d:%02d", h24, selectedMinute))
+                                    }
                                 ) {
                                     Text(
                                         text = stringResource(R.string.time_am),
@@ -688,7 +685,10 @@ fun RoutineEditorScreen(
                                     shape = RoundedCornerShape(4.dp),
                                     color = if (!isAm) MaterialTheme.colorScheme.surfaceVariant 
                                            else Color.Transparent,
-                                    modifier = Modifier.clickable { isAm = false }
+                                    modifier = Modifier.clickable {
+                                        val h24 = if (selectedHour == 12) 12 else selectedHour + 12
+                                        viewModel.updateReminderTime(String.format("%02d:%02d", h24, selectedMinute))
+                                    }
                                 ) {
                                     Text(
                                         text = stringResource(R.string.time_pm),
@@ -747,69 +747,6 @@ fun RoutineEditorScreen(
         }
     }
     
-    // Icon Picker Dialog
-    if (showIconPicker) {
-        AlertDialog(
-            onDismissRequest = { showIconPicker = false },
-            title = { Text(stringResource(R.string.dialog_choose_icon), fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    iconOptions.chunked(4).forEach { row ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            row.forEach { (iconName, iconPair) ->
-                                val (icon, name) = iconPair
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable {
-                                            viewModel.updateIconName(iconName)
-                                            showIconPicker = false
-                                        },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (uiState.iconName == iconName)
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.surfaceVariant
-                                ) {
-                                    Box(
-                                        contentAlignment = Alignment.Center,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = name,
-                                            tint = if (uiState.iconName == iconName)
-                                                MaterialTheme.colorScheme.primary
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            // Fill remaining slots if row is incomplete
-                            repeat(4 - row.size) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showIconPicker = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-    
     // Time Picker Dialog
     if (showTimePicker) {
         AlertDialog(
@@ -821,12 +758,7 @@ fun RoutineEditorScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val hour24 = timePickerState.hour
-                        selectedHour = if (hour24 == 0) 12 else if (hour24 > 12) hour24 - 12 else hour24
-                        selectedMinute = timePickerState.minute
-                        isAm = hour24 < 12
-                        // Persist to ViewModel
-                        val formatted = String.format("%02d:%02d", hour24, timePickerState.minute)
+                        val formatted = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
                         viewModel.updateReminderTime(formatted)
                         showTimePicker = false
                     }

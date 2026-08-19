@@ -166,7 +166,7 @@ fun ScheduleViewerScreen(
                 .padding(horizontal = 24.dp)
                 .padding(top = 16.dp, bottom = 48.dp)
         ) {
-            // Category badge and pin
+            // Category badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -182,16 +182,6 @@ fun ScheduleViewerScreen(
                         fontWeight = FontWeight.Bold,
                         color = categoryColor,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-                
-                // Show pin icon if event is pinned
-                if (uiState.isPinned) {
-                    Icon(
-                        imageVector = Icons.Outlined.PushPin,
-                        contentDescription = stringResource(R.string.cd_pinned),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

@@ -14,6 +14,14 @@ class RoutineRepository(
     suspend fun getRoutineById(id: Long): Routine? = routineDao.getRoutineById(id)
     suspend fun insertRoutine(routine: Routine): Long = routineDao.insertRoutine(routine)
     suspend fun updateRoutine(routine: Routine) = routineDao.updateRoutine(routine)
+    suspend fun saveRoutine(routine: Routine): Long {
+        return if (routine.id > 0) {
+            routineDao.updateRoutine(routine)
+            routine.id
+        } else {
+            routineDao.insertRoutine(routine)
+        }
+    }
     suspend fun deleteRoutine(routine: Routine) = routineDao.deleteRoutine(routine)
     suspend fun deleteRoutineById(id: Long) = routineDao.deleteRoutineById(id)
 

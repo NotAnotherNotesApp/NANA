@@ -119,16 +119,16 @@ class RoutineEditorViewModel(
                 iconName = state.iconName,
                 reminderTime = state.reminderTime,
                 daysOfWeek = state.selectedDays.sorted().joinToString(","),
-                scheduledDays = state.selectedDays.map { it - 1 }.sorted().joinToString(","),
+                scheduledDays = state.selectedDays.map { if (it == 7) 0 else it }.sorted().joinToString(","),
                 routineType = state.routineType.name,
                 targetCount = state.targetCount,
                 durationMinutes = state.durationMinutes,
                 updatedAt = System.currentTimeMillis()
             )
-            val insertedId = routineRepository.insertRoutine(routine)
+            val insertedId = routineRepository.saveRoutine(routine)
             
             // Schedule reminders for the routine
-            val savedRoutine = if (state.id != null) routine else routine.copy(id = insertedId)
+            val savedRoutine = if (state.id != null && state.id > 0) routine else routine.copy(id = insertedId)
             if (savedRoutine.reminderTime != null) {
                 ReminderScheduler.scheduleRoutineReminder(applicationContext, savedRoutine)
             }

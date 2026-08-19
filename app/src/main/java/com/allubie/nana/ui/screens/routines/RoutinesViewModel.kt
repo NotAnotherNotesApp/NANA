@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.allubie.nana.NanaApplication
 import com.allubie.nana.data.PreferencesManager
 import com.allubie.nana.data.model.Routine
+import com.allubie.nana.data.model.isScheduledFor
 import com.allubie.nana.data.model.RoutineCompletion
 import com.allubie.nana.data.model.RoutineType
 import com.allubie.nana.data.repository.RoutineRepository
@@ -45,51 +46,39 @@ class RoutinesViewModel(
     
     private val _selectedDate = MutableStateFlow(Date())
     
-    private val _isLoading = MutableStateFlow(true)
-    
     private val _routines = routineRepository.getActiveRoutines()
-        .onStart { _isLoading.value = true }
-        .onEach { _isLoading.value = false }
     
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val _completedTodayIds = _selectedDate.flatMapLatest { date ->
-        val dateString = dateFormat.format(date)
-        combine(
-            routineRepository.getCompletionsForDate(dateString),
-            _routines
-        ) { completions, activeRoutines ->
-            val activeIds = activeRoutines.map { it.id }.toSet()
-            completions
-                .filter { it.isCompleted && it.routineId in activeIds }
-                .map { it.routineId }
-                .toSet()
-        }
-    }
-    
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val _todayCompletions = _selectedDate.flatMapLatest { date ->
-        val dateString = dateFormat.format(date)
-        routineRepository.getCompletionsForDate(dateString).map { completions ->
-            completions.associateBy { it.routineId }
-        }
-    }
-    
     private val _timerState = MutableStateFlow(TimerState())
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<RoutinesUiState> = combine(
-        _use24HourFormat, _selectedDate, _isLoading, _routines, 
-        _completedTodayIds, _todayCompletions, _timerState
-    ) { args: Array<Any> ->
+        _use24HourFormat,
+        _selectedDate,
+        _routines,
+        _selectedDate.flatMapLatest { date ->
+            val dateString = dateFormat.format(date)
+            routineRepository.getCompletionsForDate(dateString)
+        },
+        _timerState
+    ) { use24, selectedDate, allActiveRoutines, completionsForDate, timerState ->
+        val routinesForDate = allActiveRoutines.filter { it.isScheduledFor(selectedDate) }
+        val scheduledIds = routinesForDate.map { it.id }.toSet()
+        val completedIds = completionsForDate
+            .filter { it.isCompleted && it.routineId in scheduledIds }
+            .map { it.routineId }
+            .toSet()
+        val completionsMap = completionsForDate.associateBy { it.routineId }
+
         RoutinesUiState(
-            use24HourFormat = args[0] as Boolean,
-            selectedDate = args[1] as Date,
-            isLoading = args[2] as Boolean,
-            routines = args[3] as List<Routine>,
-            completedTodayIds = args[4] as Set<Long>,
-            todayCompletions = args[5] as Map<Long, RoutineCompletion>,
-            timerState = args[6] as TimerState
+            use24HourFormat = use24,
+            selectedDate = selectedDate,
+            isLoading = false,
+            routines = routinesForDate,
+            completedTodayIds = completedIds,
+            todayCompletions = completionsMap,
+            timerState = timerState
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RoutinesUiState())
     
@@ -252,12 +241,6 @@ class RoutinesViewModel(
                 elapsedSeconds = elapsedSeconds
             )
         )
-    }
-    
-    fun togglePin(routine: Routine) {
-        viewModelScope.launch {
-            routineRepository.updateRoutine(routine.copy(isPinned = !routine.isPinned))
-        }
     }
     
     fun deleteRoutine(routine: Routine) {

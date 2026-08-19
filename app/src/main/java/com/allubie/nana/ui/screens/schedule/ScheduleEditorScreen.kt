@@ -51,7 +51,6 @@ fun ScheduleEditorScreen(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-    var showRepeatPicker by remember { mutableStateOf(false) }
     var showReminderPicker by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
@@ -381,49 +380,6 @@ fun ScheduleEditorScreen(
                 tonalElevation = 1.dp
             ) {
                 Column {
-                    // Repeat row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showRepeatPicker = true }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Repeat,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = stringResource(R.string.label_repeat),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = uiState.recurrenceRule ?: stringResource(R.string.status_never),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 14.sp
-                            )
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                    
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
-                    
                     // Reminders row
                     Row(
                         modifier = Modifier
@@ -635,62 +591,6 @@ fun ScheduleEditorScreen(
             dismissButton = {
                 TextButton(onClick = { showEndTimePicker = false }) {
                     Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-    
-    // Repeat Picker Dialog
-    if (showRepeatPicker) {
-        val repeatOptions = listOf("Never", "Daily", "Weekly", "Monthly", "Yearly")
-        AlertDialog(
-            onDismissRequest = { showRepeatPicker = false },
-            title = { Text(stringResource(R.string.dialog_repeat), fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    repeatOptions.forEach { option ->
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    viewModel.updateRecurrence(if (option == "Never") null else option)
-                                    showRepeatPicker = false
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (uiState.recurrenceRule == option || (option == "Never" && uiState.recurrenceRule == null))
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                Color.Transparent
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = option,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                if (uiState.recurrenceRule == option || (option == "Never" && uiState.recurrenceRule == null)) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRepeatPicker = false }) {
-                    Text(stringResource(R.string.action_done))
                 }
             }
         )

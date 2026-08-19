@@ -76,7 +76,7 @@ fun NotesArchiveScreen(
             }
         } else {
             LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
+                columns = StaggeredGridCells.Adaptive(minSize = 160.dp),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)

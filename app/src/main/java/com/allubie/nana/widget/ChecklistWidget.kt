@@ -60,9 +60,7 @@ class ChecklistWidget : GlanceAppWidget() {
         // Load note + items in a single IO dispatch for fast initial render
         val (checklistNote, initialItems) = withContext(Dispatchers.IO) {
             val note = try {
-                db.noteDao().getAllNotesSync()
-                    .filter { it.isChecklist && !it.isDeleted && !it.isArchived }
-                    .maxByOrNull { it.updatedAt }
+                db.noteDao().getLatestActiveChecklistNoteSync()
             } catch (_: Exception) { null }
 
             val items = if (note != null) {

@@ -112,6 +112,7 @@ class NoteEditorViewModel(
     fun saveNote() {
         viewModelScope.launch {
             val state = _uiState.value
+            val isNewNote = state.id == null || state.id == 0L
             val note = Note(
                 id = state.id ?: 0,
                 title = state.title,
@@ -121,11 +122,11 @@ class NoteEditorViewModel(
                 isPinned = state.isPinned,
                 updatedAt = System.currentTimeMillis()
             )
-            val noteId = noteRepository.insertNote(note)
+            val noteId = noteRepository.saveNote(note)
             
-            // Save images for new notes
-            if (state.id == null) {
-                state.images.forEach { image ->
+            // Save images for new notes or newly added un-persisted images
+            state.images.forEach { image ->
+                if (image.id == 0L || isNewNote) {
                     noteRepository.insertImage(image.copy(noteId = noteId))
                 }
             }
@@ -150,15 +151,16 @@ class NoteEditorViewModel(
                 }
                 
                 val noteId = _uiState.value.id ?: 0
-                val newImage = NoteImage(
+                var newImage = NoteImage(
                     noteId = noteId,
                     imagePath = destFile.absolutePath,
                     position = _uiState.value.images.size
                 )
                 
-                // If note already exists, save immediately
+                // If note already exists, save immediately and get generated ID
                 if (noteId > 0) {
-                    noteRepository.insertImage(newImage)
+                    val imageId = noteRepository.insertImage(newImage)
+                    newImage = newImage.copy(id = imageId)
                 }
                 
                 _uiState.update { it.copy(images = it.images + newImage) }

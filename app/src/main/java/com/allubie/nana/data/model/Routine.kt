@@ -62,3 +62,30 @@ data class RoutineCompletion(
     val elapsedSeconds: Int = 0, // For timer routines
     val completedAt: Long = System.currentTimeMillis()
 )
+
+/**
+ * Checks if this routine is scheduled for the given date based on its [daysOfWeek].
+ * Model days: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun.
+ */
+fun Routine.isScheduledFor(date: java.util.Date): Boolean {
+    if (!this.isActive) return false
+    val cal = java.util.Calendar.getInstance().apply { time = date }
+    val modelDayOfWeek = when (cal.get(java.util.Calendar.DAY_OF_WEEK)) {
+        java.util.Calendar.MONDAY -> 1
+        java.util.Calendar.TUESDAY -> 2
+        java.util.Calendar.WEDNESDAY -> 3
+        java.util.Calendar.THURSDAY -> 4
+        java.util.Calendar.FRIDAY -> 5
+        java.util.Calendar.SATURDAY -> 6
+        java.util.Calendar.SUNDAY -> 7
+        else -> 1
+    }
+    val days = this.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
+    if (days.isEmpty()) return true
+    return modelDayOfWeek in days
+}
+
+fun Routine.isScheduledFor(timestamp: Long): Boolean {
+    return isScheduledFor(java.util.Date(timestamp))
+}
+
