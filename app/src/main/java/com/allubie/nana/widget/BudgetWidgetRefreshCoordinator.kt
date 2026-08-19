@@ -79,5 +79,5 @@ private object BudgetWidgetRefreshCoordinator {
 }
 
 fun requestBudgetWidgetRefresh(context: Context) {
-    BudgetWidgetRefreshCoordinator.requestRefresh(context)
+    // No-op while decoupled
 }

@@ -32,7 +32,7 @@ data class TransactionEditorUiState(
     val title: String = "",
     val amount: String = "",
     val type: TransactionType = TransactionType.EXPENSE,
-    val category: String = "Food",
+    val category: String = "Food and Drinks",
     val note: String = "",
     val date: Long = System.currentTimeMillis(),
     val isLoading: Boolean = false
@@ -86,7 +86,7 @@ class TransactionEditorViewModel(
         viewModelScope.launch {
             transactionRepository.getAllBudgets().collect { budgets ->
                 // Filter for custom categories (non-empty category that's not a preset)
-                val presetCategories = listOf("Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Education", "Other", "")
+                val presetCategories = listOf("Food and Drinks", "Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Education", "Other", "")
                 _customBudgets.value = budgets.filter { it.category !in presetCategories }
             }
         }
@@ -130,7 +130,7 @@ class TransactionEditorViewModel(
         _uiState.update { 
             it.copy(
                 type = type,
-                category = if (type == TransactionType.EXPENSE) "Food" else "Allowance"
+                category = if (type == TransactionType.EXPENSE) "Food and Drinks" else "Allowance"
             ) 
         }
     }

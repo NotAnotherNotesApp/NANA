@@ -52,6 +52,7 @@ class NoteEditorViewModel(
     private val _uiState = MutableStateFlow(NoteEditorUiState())
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
     
+    // Available note labels from database
     val availableLabels: StateFlow<List<Label>> = labelRepository.getLabelsByType(LabelType.NOTE)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
@@ -134,44 +135,33 @@ class NoteEditorViewModel(
     }
     
     fun addImage(context: Context, uri: Uri) {
-        addImages(context, listOf(uri))
-    }
-
-    fun addImages(context: Context, uris: List<Uri>) {
-        if (uris.isEmpty()) return
         viewModelScope.launch {
             try {
-                val noteId = _uiState.value.id ?: 0
+                // Copy image to app storage
+                val fileName = "img_${UUID.randomUUID()}.jpg"
                 val imagesDir = File(context.filesDir, "note_images")
                 if (!imagesDir.exists()) imagesDir.mkdirs()
-
-                val newImages = mutableListOf<NoteImage>()
-                var currentPosition = _uiState.value.images.size
-
-                for (uri in uris) {
-                    val fileName = "img_${UUID.randomUUID()}.jpg"
-                    val destFile = File(imagesDir, fileName)
-
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        destFile.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
+                val destFile = File(imagesDir, fileName)
+                
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    destFile.outputStream().use { output ->
+                        input.copyTo(output)
                     }
-
-                    var noteImage = NoteImage(
-                        noteId = noteId,
-                        imagePath = destFile.absolutePath,
-                        position = currentPosition++
-                    )
-
-                    if (noteId > 0) {
-                        val insertedId = noteRepository.insertImage(noteImage)
-                        noteImage = noteImage.copy(id = insertedId)
-                    }
-                    newImages.add(noteImage)
                 }
-
-                _uiState.update { it.copy(images = it.images + newImages) }
+                
+                val noteId = _uiState.value.id ?: 0
+                val newImage = NoteImage(
+                    noteId = noteId,
+                    imagePath = destFile.absolutePath,
+                    position = _uiState.value.images.size
+                )
+                
+                // If note already exists, save immediately
+                if (noteId > 0) {
+                    noteRepository.insertImage(newImage)
+                }
+                
+                _uiState.update { it.copy(images = it.images + newImage) }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.update { it.copy(errorMessage = "Failed to add image") }
@@ -185,14 +175,16 @@ class NoteEditorViewModel(
     
     fun removeImage(image: NoteImage) {
         viewModelScope.launch {
+            // Delete from database if exists
             if (image.id > 0) {
                 noteRepository.deleteImage(image)
             }
             
+            // Delete file
             val file = File(image.imagePath)
             if (file.exists()) file.delete()
             
-            _uiState.update { it.copy(images = it.images.filter { img -> img.imagePath != image.imagePath }) }
+            _uiState.update { it.copy(images = it.images - image) }
         }
     }
     

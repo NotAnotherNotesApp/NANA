@@ -6,7 +6,13 @@ import com.allubie.nana.data.model.LabelType
 import com.allubie.nana.data.model.PresetLabels
 import kotlinx.coroutines.flow.Flow
 
-class LabelRepository(private val labelDao: LabelDao) {
+import com.allubie.nana.data.NanaDatabase
+import com.allubie.nana.data.model.TransactionType
+
+class LabelRepository(
+    private val labelDao: LabelDao,
+    private val database: NanaDatabase? = null
+) {
     
     fun getAllLabels(): Flow<List<Label>> = labelDao.getAllLabels()
     
@@ -21,7 +27,34 @@ class LabelRepository(private val labelDao: LabelDao) {
     
     suspend fun insertLabel(label: Label): Long = labelDao.insertLabel(label)
     
-    suspend fun updateLabel(label: Label) = labelDao.updateLabel(label)
+    suspend fun updateLabel(label: Label) {
+        val oldLabel = labelDao.getLabelById(label.id)
+        labelDao.updateLabel(label)
+        if (oldLabel != null && oldLabel.name != label.name && database != null) {
+            when (label.type) {
+                LabelType.EXPENSE -> {
+                    database.transactionDao().updateCategoryName(oldLabel.name, label.name, TransactionType.EXPENSE)
+                    database.budgetDao().updateCategoryName(oldLabel.name, label.name)
+                }
+                LabelType.INCOME -> {
+                    database.transactionDao().updateCategoryName(oldLabel.name, label.name, TransactionType.INCOME)
+                }
+                LabelType.EVENT -> {
+                    database.eventDao().updateCategoryName(oldLabel.name, label.name)
+                }
+                LabelType.NOTE -> {
+                    val notes = database.noteDao().getNotesWithLabel(oldLabel.name)
+                    notes.forEach { note ->
+                        val labelsList = note.labels.split(",").map { it.trim() }
+                        if (labelsList.contains(oldLabel.name)) {
+                            val updatedLabels = labelsList.map { if (it == oldLabel.name) label.name else it }
+                            database.noteDao().updateNote(note.copy(labels = updatedLabels.joinToString(",")))
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     suspend fun hideLabel(id: Long) = labelDao.hideLabel(id)
     

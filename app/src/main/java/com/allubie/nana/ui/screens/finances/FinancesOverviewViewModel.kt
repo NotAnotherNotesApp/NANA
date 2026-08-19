@@ -20,7 +20,8 @@ data class FinancesOverviewData(
     val totalIncome: Double = 0.0,
     val totalExpenses: Double = 0.0,
     val netSavings: Double = 0.0,
-    val categoryBreakdown: List<CategorySpending> = emptyList()
+    val categoryBreakdown: List<CategorySpending> = emptyList(),
+    val budgetComparisons: List<BudgetComparison> = emptyList()
 )
 
 data class CategorySpending(
@@ -28,6 +29,12 @@ data class CategorySpending(
     val amount: Double,
     val percentage: Float,
     val color: Int = 0
+)
+
+data class BudgetComparison(
+    val category: String,
+    val budgeted: Double,
+    val actual: Double
 )
 
 class FinancesOverviewViewModel(
@@ -50,6 +57,7 @@ class FinancesOverviewViewModel(
 
     // Standard category colors as fallbacks
     private val standardCategoryColors = mapOf(
+        "Food and Drinks" to 0xFFFF7043.toInt(),
         "Food" to 0xFFFF7043.toInt(),
         "Transport" to 0xFF42A5F5.toInt(),
         "Entertainment" to 0xFFAB47BC.toInt(),
@@ -79,10 +87,11 @@ class FinancesOverviewViewModel(
         viewModelScope.launch {
             combine(
                 transactionRepository.getAllTransactions(), 
+                transactionRepository.getBudgetsForMonth(selectedMonth, selectedYear),
                 labelRepository.getLabelsByType(LabelType.EXPENSE)
-            ) { transactions, labels ->
-                Pair(transactions, labels)
-            }.collect { (transactions, labels) ->
+            ) { transactions, budgets, labels ->
+                Triple(transactions, budgets, labels)
+            }.collect { (transactions, budgets, labels) ->
                 try {
                     val calendar = Calendar.getInstance()
                     calendar.set(Calendar.YEAR, selectedYear)
@@ -131,11 +140,27 @@ class FinancesOverviewViewModel(
                         .filter { it.amount > 0.0 }
                         .sortedByDescending { it.amount }
 
+                    val budgetComparisons = budgets.map { budget ->
+                        val actual = if (budget.category.isEmpty()) {
+                            totalExpenses
+                        } else {
+                            transactions
+                                .filter { it.type == TransactionType.EXPENSE && it.category == budget.category && it.date in startOfMonth until endOfMonth }
+                                .sumOf { it.amount }
+                        }
+                        BudgetComparison(
+                            category = budget.category,
+                            budgeted = budget.amount,
+                            actual = actual
+                        )
+                    }
+
                     _overview.value = FinancesOverviewData(
                         totalIncome = totalIncome,
                         totalExpenses = totalExpenses,
                         netSavings = totalIncome - totalExpenses,
-                        categoryBreakdown = categoryBreakdown
+                        categoryBreakdown = categoryBreakdown,
+                        budgetComparisons = budgetComparisons
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()

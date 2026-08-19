@@ -8,6 +8,7 @@ class RoutineRepository(
     private val routineDao: RoutineDao,
     private val routineCompletionDao: RoutineCompletionDao
 ) {
+    // --- RoutineDao ---
     fun getActiveRoutines(): Flow<List<Routine>> = routineDao.getActiveRoutines()
     fun getAllRoutines(): Flow<List<Routine>> = routineDao.getAllRoutines()
     suspend fun getRoutineById(id: Long): Routine? = routineDao.getRoutineById(id)
@@ -16,6 +17,7 @@ class RoutineRepository(
     suspend fun deleteRoutine(routine: Routine) = routineDao.deleteRoutine(routine)
     suspend fun deleteRoutineById(id: Long) = routineDao.deleteRoutineById(id)
 
+    // --- RoutineCompletionDao ---
     fun getCompletionsForRoutine(routineId: Long): Flow<List<RoutineCompletion>> = routineCompletionDao.getCompletionsForRoutine(routineId)
     suspend fun getCompletionForDate(routineId: Long, date: String): RoutineCompletion? = routineCompletionDao.getCompletionForDate(routineId, date)
     fun getCompletionsForDate(date: String): Flow<List<RoutineCompletion>> = routineCompletionDao.getCompletionsForDate(date)

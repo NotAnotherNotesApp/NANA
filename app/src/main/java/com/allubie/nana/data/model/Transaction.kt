@@ -56,7 +56,7 @@ enum class BudgetPeriod {
 // Predefined expense categories
 object ExpenseCategories {
     val list = listOf(
-        "Food",
+        "Food and Drinks",
         "Transport",
         "Entertainment",
         "Shopping",

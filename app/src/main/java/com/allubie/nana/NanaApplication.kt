@@ -33,12 +33,6 @@ class NanaApplication : Application() {
         BackupManager(this, database, preferencesManager)
     }
 
-    private val budgetWidgetDbObserver = object : InvalidationTracker.Observer("transactions", "budgets") {
-        override fun onInvalidated(tables: Set<String>) {
-            requestBudgetWidgetRefresh(this@NanaApplication)
-        }
-    }
-
     private val checklistWidgetDbObserver = object : InvalidationTracker.Observer("notes", "checklist_items") {
         override fun onInvalidated(tables: Set<String>) {
             applicationScope.launch {
@@ -59,7 +53,6 @@ class NanaApplication : Application() {
             TimeZone.setDefault(TimeZone.getTimeZone(savedTimezone))
         }
 
-        database.invalidationTracker.addObserver(budgetWidgetDbObserver)
         database.invalidationTracker.addObserver(checklistWidgetDbObserver)
         WidgetRefreshWorker.schedule(this)
     }

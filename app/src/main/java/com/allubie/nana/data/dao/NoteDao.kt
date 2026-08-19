@@ -55,6 +55,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes")
     suspend fun getAllNotesSync(): List<Note>
     
+    @Query("SELECT * FROM notes WHERE labels LIKE '%' || :label || '%'")
+    suspend fun getNotesWithLabel(label: String): List<Note>
+
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
 }

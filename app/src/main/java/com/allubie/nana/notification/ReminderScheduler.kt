@@ -42,7 +42,11 @@ object ReminderScheduler {
         reminderMinutes: Int
     ) {
         val alarmManager = getAlarmManager(context)
+        
+        // Calculate trigger time
         val triggerTime = event.startTime - (reminderMinutes * 60 * 1000L)
+        
+        // Don't schedule if time has passed
         if (triggerTime <= System.currentTimeMillis()) return
         
         val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -67,6 +71,7 @@ object ReminderScheduler {
         
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                // Fall back to inexact alarm
                 alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
@@ -74,6 +79,7 @@ object ReminderScheduler {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             }
         } catch (e: SecurityException) {
+            // Fall back to inexact alarm if permission denied
             alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
         }
         Log.d("ReminderScheduler", "Scheduled event reminder: id=${event.id}, minutes=$reminderMinutes, requestCode=$requestCode, trigger=$triggerTime")
@@ -117,13 +123,16 @@ object ReminderScheduler {
         val reminderTime = routine.reminderTime ?: return
         val scheduledDays = routine.scheduledDays
         
+        // Parse time (format: "HH:mm")
         val timeParts = reminderTime.split(":")
         if (timeParts.size != 2) return
         
         val hour = timeParts[0].toIntOrNull() ?: return
         val minute = timeParts[1].toIntOrNull() ?: return
         
+        // Schedule for each day of the week
         val daysToSchedule = if (scheduledDays.isEmpty()) {
+            // Daily if no specific days
             listOf(0, 1, 2, 3, 4, 5, 6)
         } else {
             scheduledDays.split(",").mapNotNull { it.trim().toIntOrNull() }
@@ -139,7 +148,7 @@ object ReminderScheduler {
         routine: Routine,
         hour: Int,
         minute: Int,
-        dayOfWeek: Int
+        dayOfWeek: Int // 0 = Sunday, 6 = Saturday
     ) {
         val alarmManager = getAlarmManager(context)
         
@@ -149,7 +158,8 @@ object ReminderScheduler {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             
-            val currentDayOfWeek = get(Calendar.DAY_OF_WEEK) - 1
+            // Set to the correct day of week
+            val currentDayOfWeek = get(Calendar.DAY_OF_WEEK) - 1 // Convert to 0-based
             var daysUntil = dayOfWeek - currentDayOfWeek
             if (daysUntil < 0) daysUntil += 7
             if (daysUntil == 0 && timeInMillis <= System.currentTimeMillis()) {
@@ -174,6 +184,7 @@ object ReminderScheduler {
         )
         
         try {
+            // Schedule repeating weekly alarm
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setRepeating(
                     AlarmManager.RTC_WAKEUP,
@@ -182,6 +193,7 @@ object ReminderScheduler {
                     pendingIntent
                 )
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // For exact alarms, schedule next occurrence and reschedule after it fires
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
@@ -208,6 +220,7 @@ object ReminderScheduler {
     fun cancelRoutineReminders(context: Context, routineId: Long) {
         val alarmManager = getAlarmManager(context)
         
+        // Cancel all 7 possible day alarms
         for (dayOfWeek in 0..6) {
             val intent = Intent(context, ReminderReceiver::class.java).apply {
                 action = ReminderReceiver.ACTION_ROUTINE_REMINDER
@@ -235,6 +248,7 @@ object ReminderScheduler {
     }
     
     suspend fun rescheduleAllReminders(context: Context, database: NanaDatabase) {
+        // Reschedule all upcoming events
         val events = database.eventDao().getAllEvents().first()
         val now = System.currentTimeMillis()
         
@@ -242,6 +256,7 @@ object ReminderScheduler {
             scheduleAllEventReminders(context, event)
         }
         
+        // Reschedule all routines
         val routines = database.routineDao().getAllRoutines().first()
         routines.filter { it.reminderTime != null }.forEach { routine ->
             scheduleRoutineReminder(context, routine)

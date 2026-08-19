@@ -55,6 +55,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions")
     suspend fun getAllTransactionsSync(): List<Transaction>
     
+    @Query("UPDATE transactions SET category = :newCategory WHERE category = :oldCategory AND type = :type")
+    suspend fun updateCategoryName(oldCategory: String, newCategory: String, type: TransactionType)
+
     @Query("DELETE FROM transactions")
     suspend fun deleteAllTransactions()
 }
@@ -88,6 +91,9 @@ interface BudgetDao {
     @Delete
     suspend fun deleteBudget(budget: Budget)
     
+    @Query("UPDATE budgets SET category = :newCategory WHERE category = :oldCategory")
+    suspend fun updateCategoryName(oldCategory: String, newCategory: String)
+
     @Query("SELECT * FROM budgets")
     suspend fun getAllBudgetsSync(): List<Budget>
     

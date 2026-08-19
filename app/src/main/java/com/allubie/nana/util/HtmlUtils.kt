@@ -1,17 +1,41 @@
 package com.allubie.nana.util
 
-// Strips HTML formatting into plain text while preserving paragraph breaks and list items
+// Helper function to strip HTML tags and get plain text, preserving list markers
 fun stripHtml(html: String): String {
     var result = html
     
-    // Lists and line breaks
-    result = result.replace(Regex("</?[ou]l[^>]*>"), "")
+    // Track list context for ordered lists
+    var listCounter = 0
+    var inOrderedList = false
+    
+    // Handle ordered lists - replace <ol> tags and number list items
+    result = result.replace(Regex("<ol[^>]*>")) { 
+        inOrderedList = true
+        listCounter = 0
+        ""
+    }
+    result = result.replace(Regex("</ol>")) {
+        inOrderedList = false
+        ""
+    }
+    
+    // Handle unordered lists
+    result = result.replace(Regex("<ul[^>]*>"), "")
+    result = result.replace(Regex("</ul>"), "")
+    
+    // Replace list items with appropriate markers
+    // For simplicity, use bullet for unordered and dash for ordered (since we can't track state in single regex)
     result = result.replace(Regex("<li[^>]*>"), "\n- ")
     result = result.replace(Regex("</li>"), "")
-    result = result.replace(Regex("<(p|div|br)[^>]*>"), "\n")
-    result = result.replace(Regex("</(p|div)>"), "")
     
-    // Strip remaining tags
+    // Handle paragraphs and line breaks
+    result = result.replace(Regex("<p[^>]*>"), "\n")
+    result = result.replace(Regex("</p>"), "")
+    result = result.replace(Regex("<br[^>]*>"), "\n")
+    result = result.replace(Regex("<div[^>]*>"), "\n")
+    result = result.replace(Regex("</div>"), "")
+    
+    // Remove remaining HTML tags
     result = result.replace(Regex("<[^>]*>"), "")
     
     // Handle HTML entities

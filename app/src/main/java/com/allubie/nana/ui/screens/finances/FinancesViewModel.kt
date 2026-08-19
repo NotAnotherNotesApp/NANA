@@ -44,16 +44,17 @@ class FinancesViewModel(
     private val _selectedMonth = MutableStateFlow(Calendar.getInstance())
     private val _isLoading = MutableStateFlow(true)
     
-    private val _monthBudgets = _selectedMonth.flatMapLatest { calendar ->
+    private val totalBudgetLimit = preferencesManager.totalBudget
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val totalAllocated = _selectedMonth.flatMapLatest { calendar ->
         val month = calendar.get(Calendar.MONTH)
         val year = calendar.get(Calendar.YEAR)
         transactionRepository.getBudgetsForMonth(month, year)
+            .map { budgets -> budgets.sumOf { it.amount } }
     }
     
-    private val _totalBudget = _monthBudgets.map { budgets ->
-        val overallLimit = budgets.find { it.category.isEmpty() }?.amount ?: 0.0
-        val categoryAllocated = budgets.filter { it.category.isNotEmpty() }.sumOf { it.amount }
-        if (overallLimit > 0.0) overallLimit else categoryAllocated
+    private val _totalBudget = combine(totalBudgetLimit, totalAllocated) { limit, allocated ->
+        if (limit > 0) limit else allocated
     }
     
     private val _hasBudget = _totalBudget.map { it > 0 }

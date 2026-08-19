@@ -32,30 +32,42 @@ import com.allubie.nana.ui.screens.schedule.ScheduleScreen
 import com.allubie.nana.ui.screens.schedule.ScheduleViewerScreen
 import com.allubie.nana.ui.screens.settings.SettingsScreen
 
-// Shared transition animations for navigation destinations
+// ── Shared transition helpers ────────────────────────────────────────────────
+// All sub-screens share the same enter/popEnter/popExit animations.
+// Only the exit animation varies: slideOutLeft for screens that push deeper,
+// fadeOut for leaf/editor screens.
+
 private const val TRANSITION_DURATION_MS = 300
 
+/** Sub-screen enter: slide in from the right edge (visually "pushed" onto the stack). */
 private val subScreenEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
     slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(TRANSITION_DURATION_MS))
 }
 
+/** Sub-screen pop-enter: slide back in from the left edge (returning from a deeper screen). */
 private val subScreenPopEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
     slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
 }
 
+/** Sub-screen pop-exit: slide out to the right edge (being popped off the stack). */
 private val subScreenPopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
     slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(TRANSITION_DURATION_MS))
 }
 
+/** Exit by sliding out left – used by screens that can navigate deeper (viewers, settings). */
 private val exitSlideLeft: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
     slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(TRANSITION_DURATION_MS))
 }
 
+/** Exit with a fade – used by leaf/editor screens that don't push further. */
 private val exitFade: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
     fadeOut(animationSpec = tween(TRANSITION_DURATION_MS))
 }
 
-// Main tabs slide when navigating to/from child sub-screens, and fade when switching between sibling tabs
+// ── Main-tab transition helpers ──────────────────────────────────────────────
+// Main tabs use conditional transitions: slide when navigating to/from child
+// sub-screens, fade when switching between sibling tabs.
+
 private fun mainTabEnter(
     childRoutes: Set<String>
 ): AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
@@ -83,11 +95,14 @@ private fun mainTabPopEnter(
         fadeIn(animationSpec = tween(TRANSITION_DURATION_MS))
 }
 
+// ── NanaNavHost ──────────────────────────────────────────────────────────────
+
 @Composable
 fun NanaNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    // Child route sets for each main tab's conditional transitions
     val notesChildRoutes = setOf(
         Screen.NoteViewer.route, Screen.NoteEditor.route,
         Screen.ChecklistEditor.route, Screen.NotesArchive.route,
@@ -100,8 +115,7 @@ fun NanaNavHost(
         Screen.RoutineEditor.route, Screen.RoutineStatistics.route, Screen.Settings.route
     )
     val financesChildRoutes = setOf(
-        Screen.TransactionEditor.route, Screen.FinancesOverview.route,
-        Screen.BudgetManager.route, Screen.Settings.route
+        Screen.TransactionEditor.route, Screen.FinancesOverview.route, Screen.Settings.route
     )
 
     NavHost(
@@ -109,6 +123,7 @@ fun NanaNavHost(
         startDestination = Screen.Notes.route,
         modifier = modifier
     ) {
+        // ── Main tab screens ─────────────────────────────────────────────
 
         composable(
             route = Screen.Notes.route,
@@ -192,9 +207,6 @@ fun NanaNavHost(
                 },
                 onNavigateToOverview = { month, year ->
                     navController.navigate(Screen.FinancesOverview.createRoute(month, year))
-                },
-                onNavigateToBudgetManager = {
-                    navController.navigate(Screen.BudgetManager.route)
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
@@ -280,6 +292,8 @@ fun NanaNavHost(
                 onNavigateToLabels = { navController.navigate(Screen.LabelsAndCategories.route) }
             )
         }
+
+        // ── Leaf/editor sub-screens (fade exit: don't push deeper) ───────
 
         composable(
             route = Screen.NoteEditor.route,

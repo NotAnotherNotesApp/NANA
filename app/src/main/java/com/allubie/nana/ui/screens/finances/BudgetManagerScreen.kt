@@ -46,6 +46,7 @@ import com.allubie.nana.R
 
 // Category colors - using theme colors
 private val CategoryColors = mapOf(
+    "Food and Drinks" to CategoryFood,
     "Food" to CategoryFood,
     "Transport" to CategoryTransport,
     "Entertainment" to CategoryEntertainment,
@@ -58,6 +59,7 @@ private val CategoryColors = mapOf(
 
 // Category icons
 private val CategoryIcons = mapOf(
+    "Food and Drinks" to Icons.Outlined.Restaurant,
     "Food" to Icons.Outlined.Restaurant,
     "Transport" to Icons.Outlined.DirectionsCar,
     "Entertainment" to Icons.Outlined.Movie,
@@ -68,6 +70,7 @@ private val CategoryIcons = mapOf(
     "Other" to Icons.Outlined.MoreHoriz
 )
 
+// Available icons for custom categories
 private val AvailableCategoryIcons = listOf(
     "restaurant" to Icons.Outlined.Restaurant,
     "car" to Icons.Outlined.DirectionsCar,
@@ -107,6 +110,7 @@ private val AvailableCategoryIcons = listOf(
     "brush" to Icons.Outlined.Brush
 )
 
+// Get icon from name
 private fun getIconFromName(iconName: String): ImageVector {
     return AvailableCategoryIcons.find { it.first == iconName }?.second ?: Icons.Outlined.Category
 }
@@ -131,6 +135,8 @@ fun BudgetManagerScreen(
     var editingBudget by remember { mutableStateOf<Budget?>(null) }
     var showTotalBudgetDialog by remember { mutableStateOf(false) }
     
+    val isOverBudget = totalSpent > totalBudget || (totalBudget == 0.0 && totalSpent > 0.0)
+    val overAmount = if (totalBudget > 0.0) totalSpent - totalBudget else totalSpent
     val remainingBudget = totalBudget - totalSpent
     val remainingPercentage = if (totalBudget > 0) {
         ((remainingBudget / totalBudget) * 100).coerceIn(0.0, 100.0).toInt()
@@ -278,7 +284,7 @@ fun BudgetManagerScreen(
                 }
             }
             
-            // Budget overview card with semi-circle gauge
+            // Budget overview card with circular gauge
             item {
                 Card(
                     modifier = Modifier
@@ -301,39 +307,60 @@ fun BudgetManagerScreen(
                                 .size(180.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
-                                modifier = Modifier.size(180.dp),
-                                strokeWidth = 10.dp,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeCap = StrokeCap.Round
-                            )
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "$remainingPercentage%",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold
+                            if (isOverBudget) {
+                                CircularProgressIndicator(
+                                    progress = { 1f },
+                                    modifier = Modifier.size(180.dp),
+                                    strokeWidth = 10.dp,
+                                    trackColor = MaterialTheme.colorScheme.error,
+                                    color = MaterialTheme.colorScheme.error,
+                                    strokeCap = StrokeCap.Round
                                 )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.status_over),
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            } else {
+                                CircularProgressIndicator(
+                                    progress = { (remainingPercentage / 100f).coerceIn(0f, 1f) },
+                                    modifier = Modifier.size(180.dp),
+                                    strokeWidth = 10.dp,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    strokeCap = StrokeCap.Round
+                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "$remainingPercentage%",
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         Text(
-                            text = stringResource(R.string.status_remaining_budget),
+                            text = if (isOverBudget) stringResource(R.string.status_over_budget) else stringResource(R.string.status_remaining_budget),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = formatCurrency(remainingBudget.coerceAtLeast(0.0)),
+                            text = if (isOverBudget) formatCurrency(overAmount) else formatCurrency(remainingBudget.coerceAtLeast(0.0)),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             maxLines = 1,
@@ -341,7 +368,11 @@ fun BudgetManagerScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = stringResource(R.string.template_of_total_limit, formatCurrency(totalBudget)),
+                            text = if (isOverBudget) {
+                                stringResource(R.string.template_spent_of_limit, formatCurrency(totalSpent), formatCurrency(totalBudget))
+                            } else {
+                                stringResource(R.string.template_of_total_limit, formatCurrency(totalBudget))
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -914,7 +945,7 @@ private fun TotalBudgetDialog(
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text(stringResource(R.string.label_total_budget)) },
+                    label = { Text("Total Budget") },
                     prefix = { Text(currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),

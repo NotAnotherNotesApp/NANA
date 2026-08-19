@@ -58,6 +58,7 @@ fun NoteEditorScreen(
     val richTextState = rememberRichTextState()
     val context = LocalContext.current
     
+    // State for label picker dialog
     var showLabelPicker by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
@@ -66,12 +67,11 @@ fun NoteEditorScreen(
         }
     }
     
+    // Image picker
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            viewModel.addImages(context, uris)
-        }
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.addImage(context, it) }
     }
     
     LaunchedEffect(noteId) {
@@ -153,6 +153,7 @@ fun NoteEditorScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            // Top Bar
             TopAppBar(
                 title = {
                     Text(
@@ -205,6 +206,7 @@ fun NoteEditorScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
+                // Title input
                 TextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
@@ -314,7 +316,7 @@ fun NoteEditorScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(uiState.images, key = { "editor_img_${it.id}_${it.imagePath}" }) { image ->
+                        items(uiState.images, key = { it.id }) { image ->
                             Box(
                                 modifier = Modifier
                                     .size(100.dp)
@@ -352,6 +354,7 @@ fun NoteEditorScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 
+                // Rich Text Editor
                 RichTextEditor(
                     state = richTextState,
                     modifier = Modifier
@@ -382,6 +385,7 @@ fun NoteEditorScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
             
+            // Bottom Formatting Toolbar
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()

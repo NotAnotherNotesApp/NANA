@@ -26,6 +26,7 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             
+            // Events channel
             val eventsChannel = NotificationChannel(
                 CHANNEL_EVENTS,
                 CHANNEL_EVENTS_NAME,
@@ -36,6 +37,7 @@ object NotificationHelper {
                 enableLights(true)
             }
             
+            // Routines channel
             val routinesChannel = NotificationChannel(
                 CHANNEL_ROUTINES,
                 CHANNEL_ROUTINES_NAME,
@@ -45,6 +47,7 @@ object NotificationHelper {
                 enableVibration(true)
             }
             
+            // General reminders channel
             val remindersChannel = NotificationChannel(
                 CHANNEL_REMINDERS,
                 CHANNEL_REMINDERS_NAME,

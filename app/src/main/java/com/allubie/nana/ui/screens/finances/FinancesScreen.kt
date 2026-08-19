@@ -52,8 +52,8 @@ import com.allubie.nana.ui.theme.*
 fun FinancesScreen(
     onNavigateToEditor: (Long?) -> Unit,
     onNavigateToOverview: (month: Int, year: Int) -> Unit,
-    onNavigateToBudgetManager: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToBudgetManager: () -> Unit = {},
     viewModel: FinancesViewModel = viewModel(factory = FinancesViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -63,24 +63,19 @@ fun FinancesScreen(
     val totalExpenses = uiState.totalExpenses
     val selectedMonth = uiState.selectedMonth
     val currencySymbol = uiState.currencySymbol
-    val hasBudget = uiState.hasBudget
-    val totalBudget = uiState.totalBudget
     val expenseLabels = uiState.expenseLabels
     val incomeLabels = uiState.incomeLabels
     
+    // Create label lookup map for quick access
     val labelMap = remember(expenseLabels, incomeLabels) {
         (expenseLabels + incomeLabels).associateBy { it.name.lowercase() }
     }
     
     var showMonthPicker by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
     var showAllTransactions by remember { mutableStateOf(false) }
     
-    val hasEffectiveBudget = hasBudget && totalBudget > 0
     val balance = totalIncome - totalExpenses
-    val displayedTotal = if (hasEffectiveBudget) totalBudget - totalExpenses else balance
-    val totalLabel = if (hasEffectiveBudget) stringResource(R.string.status_remaining_budget) else stringResource(R.string.section_total_balance)
-    val isOnTrack = if (hasEffectiveBudget) displayedTotal >= 0 else balance >= 0
+    val isOnTrack = balance >= 0
     val dateFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val dayFormat = SimpleDateFormat("MMM d", Locale.getDefault())
     
@@ -98,45 +93,11 @@ fun FinancesScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_finances)) },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = stringResource(R.string.cd_more_options)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.title_budget_manager)) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateToBudgetManager()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.AccountBalanceWallet,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.menu_settings)) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateToSettings()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Settings,
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                        }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.cd_settings)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -176,6 +137,7 @@ fun FinancesScreen(
                     .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
+                // Month picker
                 item {
                 Row(
                     modifier = Modifier
@@ -210,25 +172,22 @@ fun FinancesScreen(
             }
             
             // Balance card - clickable to Budget Manager if budget is active
+            // Balance card
             item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp)
-                        .then(
-                            if (hasEffectiveBudget) Modifier.clip(RoundedCornerShape(24.dp)).clickable { onNavigateToBudgetManager() }
-                            else Modifier
-                        ),
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = totalLabel,
+                        text = stringResource(R.string.section_total_balance),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = formatSignedCurrency(displayedTotal),
+                        text = formatSignedCurrency(balance),
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = (-1).sp,
@@ -240,6 +199,7 @@ fun FinancesScreen(
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
+                    // Status badge
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = if (isOnTrack) 
@@ -290,67 +250,6 @@ fun FinancesScreen(
                         isIncome = false,
                         modifier = Modifier.weight(1f)
                     )
-                }
-            }
-            
-            // Budget setup prompt card (only shown when no budget is set)
-            if (!hasBudget) {
-                item {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onNavigateToBudgetManager() }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.AccountBalanceWallet,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.status_setup_budget),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(R.string.status_track_spending),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
                 }
             }
             

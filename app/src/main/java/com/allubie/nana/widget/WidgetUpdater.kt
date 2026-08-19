@@ -5,13 +5,12 @@ import androidx.glance.appwidget.updateAll
 
 suspend fun updateAllWidgets(context: Context) {
     QuickActionsWidget().updateAll(context)
-    BudgetStatusWidget().updateAll(context)
     RecentNotesWidget().updateAll(context)
     ChecklistWidget().updateAll(context)
 }
 
 suspend fun updateBudgetWidget(context: Context) {
-    BudgetStatusWidget().updateAll(context)
+    // No-op while decoupled
 }
 
 suspend fun updateNotesWidgets(context: Context) {

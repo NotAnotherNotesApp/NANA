@@ -75,7 +75,7 @@
                 android:resource="@xml/widget_quick_actions_info" />
         </receiver>
 
-        <!-- Widget: Budget Status -->
+        <!-- Widget: Budget Status (Disabled/Decoupled)
         <receiver
             android:name=".widget.BudgetStatusWidgetReceiver"
             android:exported="true"
@@ -87,6 +87,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_budget_status_info" />
         </receiver>
+        -->
 
         <!-- Widget: Recent Notes -->
         <receiver

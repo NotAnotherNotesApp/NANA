@@ -36,6 +36,9 @@ interface EventDao {
     @Query("SELECT * FROM events")
     suspend fun getAllEventsSync(): List<Event>
     
+    @Query("UPDATE events SET category = :newCategory WHERE category = :oldCategory")
+    suspend fun updateCategoryName(oldCategory: String, newCategory: String)
+
     @Query("DELETE FROM events")
     suspend fun deleteAllEvents()
 }

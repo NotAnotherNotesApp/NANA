@@ -85,9 +85,11 @@ fun TransactionEditorScreen(
     
     val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
     
+    // Labels from database
     val expenseLabels by viewModel.expenseLabels.collectAsStateWithLifecycle()
     val incomeLabels by viewModel.incomeLabels.collectAsStateWithLifecycle()
     
+    // Get current labels based on transaction type
     val isIncome = uiState.type == TransactionType.INCOME
     val currentLabels = if (uiState.type == TransactionType.EXPENSE) expenseLabels else incomeLabels
     val selectedCategory = currentLabels.find { it.name == uiState.category } ?: currentLabels.firstOrNull()
@@ -95,6 +97,7 @@ fun TransactionEditorScreen(
     
     val snackbarHostState = remember { SnackbarHostState() }
     
+    // Show error messages
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collect { message ->
             snackbarHostState.showSnackbar(message)
@@ -159,6 +162,7 @@ fun TransactionEditorScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
                 
+                // Segmented Pill Toggle: Expense / Income
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -171,6 +175,7 @@ fun TransactionEditorScreen(
                             .fillMaxSize()
                             .padding(4.dp)
                     ) {
+                        // Expense tab
                         Surface(
                             modifier = Modifier
                                 .weight(1f)

@@ -165,7 +165,9 @@ fun ScheduleEditorScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Title & Description Section
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Title input - large bold
                 TextField(
                     value = uiState.title,
                     onValueChange = { viewModel.updateTitle(it) },
@@ -235,6 +237,7 @@ fun ScheduleEditorScreen(
                 )
             }
             
+            // Date & Time Card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -242,6 +245,7 @@ fun ScheduleEditorScreen(
                 tonalElevation = 1.dp
             ) {
                 Column {
+                    // All-day toggle
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -280,6 +284,7 @@ fun ScheduleEditorScreen(
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
                     
+                    // Starts row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -324,6 +329,7 @@ fun ScheduleEditorScreen(
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
                     
+                    // Ends row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

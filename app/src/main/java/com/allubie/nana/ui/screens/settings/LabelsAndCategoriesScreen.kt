@@ -91,7 +91,7 @@ class LabelsViewModel(private val repository: LabelRepository) : ViewModel() {
     class Factory(private val database: NanaDatabase) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return LabelsViewModel(LabelRepository(database.labelDao())) as T
+            return LabelsViewModel(LabelRepository(database.labelDao(), database)) as T
         }
     }
 }

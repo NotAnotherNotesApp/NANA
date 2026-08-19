@@ -52,6 +52,7 @@ class RecentNotesWidget : GlanceAppWidget() {
                         .padding(12.dp)
                         .cornerRadius(R.dimen.widget_outer_radius)
                 ) {
+                    // Header
                     Row(
                         modifier = GlanceModifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally

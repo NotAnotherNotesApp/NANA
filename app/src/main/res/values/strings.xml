@@ -33,7 +33,7 @@
     <string name="action_spending_breakdown">Spending Breakdown</string>
     <string name="action_see_all">See All (%d)</string>
     <string name="action_show_less">Show Less</string>
-    <string name="title_spending_breakdown">Spending Breakdown</string>
+    <string name="title_spending_analytics">Spending &amp; Analytics</string>
     <string name="template_allocated_categories">%1$s allocated across %2$d categories</string>
     <string name="template_sum_allocations">Sum of %d category allocations</string>
     <string name="hint_budget_limit_help">Sets your overall monthly spending limit. Leave at 0 to automatically sum category allocations.</string>
@@ -410,7 +410,9 @@
     <!-- New Strings added for Part 3 -->
     <string name="status_remaining_budget">Remaining Budget</string>
     <string name="status_on_track">On track</string>
-    <string name="status_over_budget">Over budget</string>
+    <string name="status_over_budget">Over Budget</string>
+    <string name="status_over">Over</string>
+    <string name="template_spent_of_limit">Spent %1$s of %2$s</string>
     <string name="action_budget_overview">Budget Overview</string>
     <string name="dialog_msg_delete_transaction_named">\"%1$s\" will be permanently deleted.</string>
     <string name="dialog_msg_delete_transaction_unnamed">This transaction will be permanently deleted.</string>

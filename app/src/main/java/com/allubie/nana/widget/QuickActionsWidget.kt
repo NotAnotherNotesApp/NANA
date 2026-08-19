@@ -38,6 +38,7 @@ class QuickActionsWidget : GlanceAppWidget() {
                         .cornerRadius(R.dimen.widget_outer_radius),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // New Note Button
                     QuickActionRow(
                         context = context,
                         iconRes = R.drawable.ic_widget_add,
@@ -48,6 +49,7 @@ class QuickActionsWidget : GlanceAppWidget() {
 
                     Spacer(modifier = GlanceModifier.height(4.dp))
 
+                    // Add Expense Button
                     QuickActionRow(
                         context = context,
                         iconRes = R.drawable.ic_widget_expense,

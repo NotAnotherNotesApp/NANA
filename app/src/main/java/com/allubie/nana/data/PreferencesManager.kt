@@ -43,17 +43,24 @@ class PreferencesManager(private val context: Context) {
 
         private fun resolveCurrencySymbol(code: String, rawSymbol: String?): String {
             val cleanCode = code.trim().uppercase()
+            // If we have a valid raw symbol that isn't just the code repeated, use it
             if (!rawSymbol.isNullOrBlank() && rawSymbol != cleanCode) {
                 return rawSymbol
             }
-            knownCurrencySymbols[cleanCode]?.let { return it }
-
+            // Check our known symbols map
+            val mappedSymbol = knownCurrencySymbols[cleanCode]
+            if (mappedSymbol != null) {
+                return mappedSymbol
+            }
+            // Try Java's Currency API with the device's default locale
             return try {
                 val currency = Currency.getInstance(cleanCode)
+                // Try device locale first for better symbol resolution
                 val localSymbol = currency.getSymbol(Locale.getDefault())
                 if (localSymbol.isNotBlank() && localSymbol != cleanCode) {
                     return localSymbol
                 }
+                // Fallback to US locale
                 val usSymbol = currency.getSymbol(Locale.US)
                 if (usSymbol.isNotBlank() && usSymbol != cleanCode) usSymbol else cleanCode
             } catch (e: Exception) {
@@ -61,11 +68,13 @@ class PreferencesManager(private val context: Context) {
             }
         }
         
+        // Get default currency from device locale
         private fun getDefaultCurrency(): Pair<String, String> {
             return try {
                 val locale = Locale.getDefault()
                 val currency = Currency.getInstance(locale)
                 val code = currency.currencyCode
+                // Try device locale symbol first, then resolve
                 val rawSymbol = currency.getSymbol(locale)
                 val symbol = resolveCurrencySymbol(code, rawSymbol)
                 Pair(code, symbol)
@@ -74,9 +83,11 @@ class PreferencesManager(private val context: Context) {
             }
         }
         
+        // Get default timezone from device
         private fun getDefaultTimezone(): String = TimeZone.getDefault().id
     }
     
+    // Cache locale defaults
     private val defaultCurrency = getDefaultCurrency()
     private val defaultTimezone = getDefaultTimezone()
     

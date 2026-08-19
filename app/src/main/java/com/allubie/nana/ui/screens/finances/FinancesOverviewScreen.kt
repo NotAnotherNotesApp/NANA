@@ -53,7 +53,7 @@ fun FinancesOverviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.title_spending_breakdown)) },
+                title = { Text(stringResource(R.string.title_spending_analytics)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -185,7 +185,28 @@ fun FinancesOverviewScreen(
                 )
             }
             
-
+            if (overview.budgetComparisons.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.section_budget_vs_actual),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                items(overview.budgetComparisons, key = { it.category }) { budget ->
+                    BudgetComparisonItem(
+                        category = budget.category,
+                        budgeted = formatCurrency(budget.budgeted),
+                        actual = formatCurrency(budget.actual),
+                        progress = if (budget.budgeted > 0.0) {
+                            (budget.actual / budget.budgeted).toFloat().coerceIn(0f, 1f)
+                        } else 0f,
+                        isOverBudget = budget.actual > budget.budgeted
+                    )
+                }
+            }
             
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
@@ -237,6 +258,53 @@ private fun CategorySpendingItem(
     }
 }
 
+@Composable
+private fun BudgetComparisonItem(
+    category: String,
+    budgeted: String,
+    actual: String,
+    progress: Float,
+    isOverBudget: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = category.ifEmpty { stringResource(R.string.label_overall) },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "$actual / $budgeted",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isOverBudget) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = if (isOverBudget) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
